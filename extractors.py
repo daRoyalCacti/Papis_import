@@ -571,6 +571,9 @@ class Extractor:
             "max_tokens": 500,
             "response_format": {"type": "json_object"},
         }
+        # Groq exposes short-window token reset headers.  Estimate the request
+        # size so text LLM can use the same proactive pacing path as vision.
+        estimated_tokens = max(1_500, int(len(json.dumps(messages, ensure_ascii=False)) / 4) + 500)
         cache_key = f"{path.resolve()}::{path.stat().st_mtime_ns}::{endpoint}::{model}::{chars}"
 
         extra_headers: dict[str, str] = {}
@@ -582,6 +585,7 @@ class Extractor:
             url, payload, "llm", cache_key,
             extra_headers=extra_headers,
             bucket="llm", min_interval=0.5,
+            min_remaining_tokens=estimated_tokens,
         )
         http_trace = self.http.take_last_request_trace("llm")
         if http_trace:

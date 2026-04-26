@@ -16,7 +16,7 @@ from papis_import.utils import USER_AGENT, eprint
 
 
 _RESET_DURATION_RE = re.compile(r"([\d.]+)(ms|s|m|h)")
-_TRY_AGAIN_RE = re.compile(r"please\s+try\s+again\s+in\s+([0-9a-zA-Z. ]+?)(?:[.,]|$)", re.I)
+_TRY_AGAIN_RE = re.compile(r"please\s+try\s+again\s+in\s+((?:[\d.]+(?:ms|s|m|h)\s*)+)", re.I)
 
 
 def _parse_reset_duration(value: str) -> float:
