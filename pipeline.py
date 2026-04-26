@@ -1,0 +1,1114 @@
+"""Resolution pipeline: collect-all → verify-in-parallel → best-match wins.
+
+Strategy
+--------
+The earlier pipeline was first-match-wins: it tried each candidate against
+each resolver in sequence and returned as soon as a result cleared the
+threshold.  That allowed a weak candidate (e.g. filename "ass") to land a
+high-similarity match on an unrelated record before a stronger candidate
+(e.g. GROBID or LLM) was even tried.
+
+This version:
+
+1. **Try cheap authoritative identifiers first.**  We gather cheap local
+   candidates, run the deeper identifier text scan, and look up DOI/ISBN/arXiv
+   before paying for GROBID or LLM calls.
+
+2. **Identifier lookups are authoritative.**  DOIs, ISBNs, and arXiv IDs from any
+   source are looked up authoritatively.  Each result is scored by the
+   sanity check below, and the highest-scoring identifier match wins.
+
+3. **Expensive candidate sources are deferred.**  GROBID and LLM candidates
+   run only after the first identifier pass fails, and any new identifiers
+   they reveal get one more authoritative lookup pass.
+
+4. **Parallel title-search.**  Remaining candidates are searched across
+   Crossref / Semantic Scholar / OpenAlex / OpenLibrary / Google Books
+   concurrently — one thread per *resolver* (not per candidate×resolver
+   pair), which keeps per-source rate-limiting sequential and lets the
+   five sources run in parallel.
+
+5. **Sanity-check every external match.**  Before a resolver result is
+   accepted, we verify that the resolved title or at least one author
+   surname appears in the PDF text.  Matches that fail the sanity check
+   are downgraded to unverified regardless of the API's similarity score.
+   This kills the "ass.pdf → crossref_score=1.000" class of false positive.
+
+6. **Fall through to local synthesis** only when nothing verifies.
+"""
+from __future__ import annotations
+
+import argparse
+import concurrent.futures
+import threading
+from typing import Callable
+
+from papis_import.extractors import Extractor
+from papis_import.http_client import HttpClient
+from time import perf_counter
+from papis_import.models import (
+    Candidate,
+    IdentifierLookupTiming,
+    Metadata,
+    TimingBreakdown,
+    TitleSearchTiming,
+)
+from papis_import.resolvers import (
+    arxiv_by_id,
+    crossref_by_doi,
+    crossref_search,
+    google_books_search,
+    openalex_search,
+    openlibrary_by_isbn,
+    openlibrary_search,
+    semanticscholar_search,
+)
+from papis_import.utils import (
+    MIN_SANITY_SCORE,
+    author_overlap,
+    extract_identifiers,
+    is_book_signal,
+    is_garbage_title,
+    is_journal_abbrev_title,
+    is_journal_header_title,
+    is_unreadable_text,
+    jstor_filename_doi,
+    normalize_title,
+    numeric_filename_dois,
+    repair_title_ligatures,
+    sanity_score_for_match,
+    should_import,
+    title_similarity,
+)
+
+
+# ---------------------------------------------------------------------------
+# Generic titles that must never be sent to title-search alone
+# ---------------------------------------------------------------------------
+_GENERIC_TITLES = frozenset({
+    "thesis", "dissertation", "paper", "notes", "chapter", "chapters",
+    "lecture", "lectures", "slides", "document", "main", "draft",
+    "introduction", "appendix", "preface", "summary", "abstract",
+    "report", "manuscript", "preprint", "article", "book", "review",
+    "homework", "exercises", "problems", "solutions", "exam", "quiz",
+    "assignment", "handout", "handouts", "tutorial", "worksheet",
+    # Added: one- and two-letter stems / short filler words that collide
+    # on any search index (the ass.pdf pathology).
+    "a", "b", "c", "d", "e", "ass", "pdf",
+})
+
+
+def _is_too_generic_to_search(cand: Candidate) -> bool:
+    words = normalize_title(cand.title).split()
+    if not words:
+        return True
+    if len(words) == 1 and (words[0] in _GENERIC_TITLES or len(words[0]) <= 3):
+        return not (cand.authors and cand.year)
+    if len(words) == 2 and all(w in _GENERIC_TITLES for w in words):
+        return not (cand.authors and cand.year)
+    return False
+
+
+def _quality(c: Candidate) -> float:
+    score = 0.0
+    if c.title:
+        if is_garbage_title(c.title):
+            score -= 3.0
+        elif is_journal_abbrev_title(c.title):
+            score -= 2.0
+        else:
+            score += min(4.0, max(1.0, len(normalize_title(c.title).split()) / 3.0))
+    if c.authors:
+        score += min(2.0, 0.75 + 0.5 * len(c.authors))
+    if c.year:
+        score += 0.4
+    if c.doi or c.isbn or c.arxiv:
+        score += 2.5
+    if c.source in {"filename_title_only", "text_header"}:
+        score -= 0.8
+    if c.source == "pdfinfo" and (c.title.startswith("PII:") or not c.title):
+        score -= 1.5
+    if c.title and len(normalize_title(c.title).split()) <= 2:
+        score -= 0.5
+    return score
+
+
+def choose_best_local(candidates: list[Candidate]) -> Candidate | None:
+    useful = [c for c in candidates if c.title or c.authors or c.doi or c.isbn or c.arxiv]
+    if not useful:
+        return None
+    useful.sort(key=lambda c: (-_quality(c), c.priority, -len(c.title)))
+    return useful[0]
+
+
+def _scan_for_any_identifier(filename: str, text: str) -> bool:
+    """Return True if the filename OR the first pages of text contain any
+    DOI / ISBN / arXiv identifier pattern.  Used only by the
+    --vision-only-if-hard gate — a positive hit means the text-based
+    pipeline will (almost certainly) find something authoritative, so we
+    can safely skip the vision LLM call."""
+    try:
+        dois, isbns, arxivs, _ = extract_identifiers(filename, text or "")
+    except Exception:
+        return False
+    return bool(dois or isbns or arxivs)
+
+
+# ---------------------------------------------------------------------------
+# Synthetic candidate — combines the best title/authors/year across sources
+# ---------------------------------------------------------------------------
+
+def _synthesize(candidates: list[Candidate]) -> list[Candidate]:
+    for c in candidates:
+        if c.title:
+            c.title = repair_title_ligatures(c.title)
+    good_titles = [c for c in candidates if c.title and not is_garbage_title(c.title)
+                   and not is_journal_abbrev_title(c.title)]
+    all_titles  = [c for c in candidates if c.title]
+    titles  = good_titles or all_titles
+    authors = [c for c in candidates if c.authors]
+    years   = [c for c in candidates if c.year]
+    idents  = [c for c in candidates if c.doi or c.isbn or c.arxiv]
+    if not titles:
+        return []
+    best_t = choose_best_local(titles)
+    best_a = choose_best_local(authors)
+    best_y = choose_best_local(years)
+    best_i = choose_best_local(idents)
+    assert best_t is not None
+    syn = Candidate(
+        title=best_t.title,
+        authors=(best_a.authors[:] if best_a and best_a.authors else best_t.authors[:]),
+        year=(best_y.year if best_y else best_t.year),
+        doi=(best_i.doi if best_i and best_i.doi else best_t.doi),
+        isbn=(best_i.isbn if best_i and best_i.isbn else best_t.isbn),
+        arxiv=(best_i.arxiv if best_i and best_i.arxiv else best_t.arxiv),
+        source="synthesized",
+        priority=min(best_t.priority, 22),
+        notes=["combined local title/author/year candidates"],
+    )
+    return [syn] if (syn.authors or syn.year or syn.doi or syn.isbn or syn.arxiv) else []
+
+
+# ---------------------------------------------------------------------------
+# Local-only fallback metadata (used when nothing verifies externally)
+# ---------------------------------------------------------------------------
+
+def _local_fallback(candidates: list[Candidate]) -> Metadata:
+    best = choose_best_local(candidates)
+    if best is None:
+        return Metadata(source="none", confidence="low", notes=["no metadata extracted"])
+    notes = best.notes[:]
+    best.authors = [
+        a.replace("Author(s):", "").replace("author(s):", "").strip()
+        for a in best.authors
+    ]
+    best.authors = [a for a in best.authors if a]
+    confidence = "low" if best.source in {"filename_title_only", "text_header"} else "medium"
+    if best.source == "pdfinfo" and best.title.startswith("PII:"):
+        confidence = "low"
+        notes.append("pdfinfo title looks like a publisher internal ID")
+    return Metadata(
+        title=best.title, authors=best.authors, year=best.year,
+        doi=best.doi, isbn=best.isbn, arxiv=best.arxiv,
+        source=best.source, confidence=confidence, verified=False,
+        notes=notes + ["best local guess; external verification failed"],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Sanity-check wrapper — attaches a score to every external result
+# ---------------------------------------------------------------------------
+
+def _apply_sanity(meta: Metadata, text: str, filename: str = "") -> Metadata:
+    """Compute the sanity score and set sanity_passed/sanity_score on *meta*.
+
+    Does NOT modify verified/confidence — the caller decides how to react
+    to the score.  Separate method so identifier lookups and title-searches
+    can apply different policies.
+
+    Parameters
+    ----------
+    filename : str, optional
+        Original PDF filename (or full path — only the basename is used).
+        Enables author-surname corroboration via the filename even when
+        the PDF body text is unreadable or only contains the TOC.  Safe
+        to omit; scoring falls back to text-only behaviour.
+    """
+    score = sanity_score_for_match(
+        meta.title, meta.authors, meta.source, text, filename=filename
+    )
+    meta.sanity_score = round(score, 3)
+    meta.sanity_passed = meta.sanity_score >= MIN_SANITY_SCORE
+    return meta
+
+
+def _downgrade_if_sanity_failed(meta: Metadata) -> Metadata:
+    """If the sanity check failed, mark the result as unverified and drop
+    confidence to medium.  The metadata is still returned — it may be the
+    best guess available — but it will land in the review TSV rather than
+    the auto-import TSV."""
+    if not meta.sanity_passed:
+        meta.verified = False
+        if meta.confidence == "high":
+            meta.confidence = "medium"
+        meta.notes.append(f"sanity_score={meta.sanity_score:.3f} (below threshold {MIN_SANITY_SCORE})")
+    else:
+        meta.notes.append(f"sanity_score={meta.sanity_score:.3f} (passed)")
+    return meta
+
+
+def _has_strong_searchable_candidate(candidates: list[Candidate]) -> bool:
+    """Return True if any candidate has a meaningful title from a reliable source.
+
+    Used by the vision_only_if_hard gate to skip vision when the text is
+    readable and something searchable already exists. The threshold is ≥4
+    words so that short / ambiguous stems don't accidentally qualify.
+
+    Excludes text_header and filename_title_only because those are the two
+    weakest heuristics — they fire on every file and are often wrong, so
+    their presence alone shouldn't suppress vision on a genuinely hard case.
+    """
+    _STRONG_SOURCES = {
+        "filename_structured", "filename_author_title", "filename_series",
+        "pdfinfo", "pdf_metadata", "xmp", "grobid",
+    }
+    for c in candidates:
+        if not c.title:
+            continue
+        words = normalize_title(c.title).split()
+        if len(words) < 4:
+            continue
+        if c.source in _STRONG_SOURCES:
+            return True
+        if c.source.startswith("llm:"):
+            return True
+    return False
+
+
+def _is_strong_local_corroborator(source: str) -> bool:
+    """Return True for local extractors strong enough to rescue an unreadable-
+    text title-search hit.
+
+    Excludes synthetic/title-only sources so we do not certify an external hit
+    using the same weak signal that produced the query in the first place.
+    """
+    if not source:
+        return False
+    if source in {"synthesized", "filename_title_only", "text_header", "filename_author_only"}:
+        return False
+    return (
+        source in {"grobid", "pdfinfo", "pdf_metadata", "xmp", "filename_author_title", "filename_structured", "filename_series"}
+        or source.startswith("vision_llm:")
+        or source.startswith("llm:")
+    )
+
+
+def _local_corroboration_note(meta: Metadata, candidates: list[Candidate]) -> str:
+    """Return a note describing strong local corroboration, or "" if absent.
+
+    Used only to rescue externally verified title-search results when the PDF
+    text is unreadable, so the normal text-based sanity check cannot fire.
+    """
+    title_words = normalize_title(meta.title).split()
+    strong_title_sources: list[str] = []
+    strong_full_sources: list[str] = []
+
+    for cand in candidates:
+        if not _is_strong_local_corroborator(cand.source):
+            continue
+        if not cand.title:
+            continue
+        ts = title_similarity(meta.title, cand.title)
+        if ts < 0.97:
+            continue
+        strong_title_sources.append(cand.source)
+
+        ao = author_overlap(meta.authors, cand.authors) if meta.authors and cand.authors else 0.0
+        ym = bool(meta.year and cand.year and meta.year == cand.year)
+        if ao >= 0.5 or ym:
+            strong_full_sources.append(cand.source)
+
+    if strong_full_sources:
+        seen = list(dict.fromkeys(strong_full_sources))
+        return "locally corroborated despite unreadable text via " + ", ".join(seen)
+
+    # Slightly weaker rescue path: two independent strong extractors agree on
+    # a non-trivial title verbatim/near-verbatim, even if they did not recover
+    # authors.  This catches cases where both vision and GROBID see the same
+    # title page but authors are truncated.
+    seen_title = list(dict.fromkeys(strong_title_sources))
+    if len(seen_title) >= 2 and len(title_words) >= 4:
+        return "title corroborated by multiple local extractors despite unreadable text via " + ", ".join(seen_title)
+
+    return ""
+
+
+def _rescue_locally_corroborated_match(meta: Metadata, candidates: list[Candidate], text: str) -> Metadata:
+    """Allow strong local corroboration to rescue an external title-search hit.
+
+    The standard sanity check relies on extracted text. That can fail for two
+    different reasons:
+      1) the text layer is unreadable/scanned, or
+      2) the first short text window only sees a series page / preface rather
+         than the real title page.
+
+    In either regime, keep the external verification if an independent strong
+    local extractor (especially vision) strongly agrees with it.
+    """
+    if meta.sanity_passed or not meta.verified:
+        return meta
+    if meta.source not in {
+        "crossref_search", "openalex_search", "semanticscholar_search",
+        "openlibrary_search", "google_books_search",
+    }:
+        return meta
+
+    note = _local_corroboration_note(meta, candidates)
+    if not note:
+        return meta
+
+    meta.sanity_passed = True
+    meta.sanity_score = max(meta.sanity_score, 0.6)
+    meta.notes.append(note)
+    return meta
+
+
+def _prefer_local_when_external_conflicts(meta: Metadata, candidates: list[Candidate]) -> Metadata:
+    """When a title-search hit fails sanity badly and contradicts strong local
+    evidence, show the local guess instead of the wrong external metadata.
+
+    This keeps review rows actionable: ``Marginal_Likelihood.pdf`` should show
+    the locally recovered talk title, not an unrelated Crossref encyclopedia
+    entry pulled from the filename stem.
+    """
+    if meta.verified:
+        return meta
+    if meta.source not in {
+        "crossref_search", "openalex_search", "semanticscholar_search",
+        "openlibrary_search", "google_books_search",
+    }:
+        return meta
+    local = _local_fallback(candidates)
+    if not local.title:
+        return meta
+    if _is_too_generic_to_search(Candidate(title=local.title, authors=local.authors, year=local.year, source=local.source, priority=0)):
+        return meta
+    if meta.title and title_similarity(meta.title, local.title) >= 0.5:
+        return meta
+    local.notes.append(f"rejected conflicting external match from {meta.source}")
+    for note in meta.notes:
+        if note not in local.notes:
+            local.notes.append(note)
+    return local
+
+
+# ---------------------------------------------------------------------------
+# Parallel title-search helpers
+# ---------------------------------------------------------------------------
+
+# One resolver function takes (HttpClient, Candidate) and returns Metadata|None
+_Resolver = Callable[[HttpClient, Candidate], "Metadata | None"]
+
+
+def _search_one_source(
+    name: str,
+    resolver: _Resolver,
+    candidates: list[Candidate],
+    extractor: Extractor,
+    text: str,
+    filename: str = "",
+    stop_event: threading.Event | None = None,
+    search_started: float | None = None,
+    timeout_s: float = 0.0,
+) -> tuple[Metadata | None, float, str, TitleSearchTiming]:
+    """Run *resolver* against each candidate in sequence (per-source throttle
+    safety), keeping the result with the best sanity score.
+
+    Returns (best_meta_or_None, best_score, source_name, timing).
+    """
+    started = perf_counter()
+    timing = TitleSearchTiming(source=name, candidates_available=len(candidates))
+    best: Metadata | None = None
+    best_score: float = -1.0
+    for cand in candidates:
+        if stop_event is not None and stop_event.is_set():
+            timing.stopped_early = True
+            if not timing.skip_reason:
+                timing.skip_reason = "strong match found by another resolver"
+            break
+        if timeout_s > 0 and search_started is not None and perf_counter() - search_started >= timeout_s:
+            timing.stopped_early = True
+            if not timing.skip_reason:
+                timing.skip_reason = "title search timeout"
+            break
+        timing.candidates_tried += 1
+        try:
+            meta = resolver(extractor.http, cand)
+        except Exception as exc:
+            meta = None
+            timing.errors += 1
+            if len(timing.error_messages) < 5:
+                timing.error_messages.append(f"{cand.source}: {type(exc).__name__}: {exc}")
+        if meta is None:
+            continue
+        timing.matches_returned += 1
+        _apply_sanity(meta, text, filename)
+        # Slight preference for results the API itself scored as high,
+        # so that when sanity scores tie we prefer the higher-confidence
+        # external match.
+        score = meta.sanity_score
+        if meta.confidence == "high":
+            score += 0.05
+        if score > best_score:
+            best_score = score
+            best = meta
+            timing.best_score = score
+            timing.best_source = meta.source
+            timing.best_title = meta.title
+            timing.best_verified = meta.verified
+            timing.best_sanity_passed = meta.sanity_passed
+            timing.best_sanity_score = meta.sanity_score
+        if meta.verified and meta.sanity_passed and meta.confidence == "high":
+            timing.stopped_early = True
+            timing.skip_reason = "high-confidence sanity-passing match"
+            if stop_event is not None:
+                stop_event.set()
+            break
+    timing.elapsed_s = perf_counter() - started
+    return best, best_score, name, timing
+
+
+def _parallel_title_search(
+    candidates: list[Candidate],
+    extractor: Extractor,
+    text: str,
+    max_cands: int,
+    google_key: str,
+    use_ss: bool,
+    filename: str = "",
+    timeout_s: float = 0.0,
+) -> tuple[Metadata | None, float, list[TitleSearchTiming]]:
+    """Query all configured resolvers in parallel; return the (meta, score)
+    pair with the highest sanity-adjusted score across all of them."""
+    search_cands = [
+        c for c in candidates
+        if c.title
+        and not _is_too_generic_to_search(c)
+        and not is_journal_header_title(c.title)
+        and not is_garbage_title(c.title)
+        and not is_journal_abbrev_title(c.title)
+    ]
+    search_cands.sort(key=lambda c: c.priority)
+    search_cands = search_cands[:max_cands]
+    if not search_cands:
+        return None, -1.0, [
+            TitleSearchTiming(source="crossref", skipped=True, skip_reason="no search candidates"),
+            TitleSearchTiming(source="openalex", skipped=True, skip_reason="no search candidates"),
+            TitleSearchTiming(source="openlibrary", skipped=True, skip_reason="no search candidates"),
+            TitleSearchTiming(source="semanticscholar", skipped=True, skip_reason="no search candidates"),
+            TitleSearchTiming(source="google_books", skipped=True, skip_reason="no search candidates"),
+        ]
+
+    # Wave 1: fast sources run in parallel.  OpenLibrary search can be very
+    # slow (30-90 s/request when their CDN is under load), so it is deferred
+    # to wave 2 and only run if wave 1 failed to find a strong match.
+    wave1_jobs: list[tuple[str, _Resolver]] = [
+        ("crossref",    crossref_search),
+        ("openalex",    openalex_search),
+    ]
+    if google_key:
+        wave1_jobs.append(("google_books",
+                           lambda http, c: google_books_search(http, c, google_key)))
+
+    best: Metadata | None = None
+    best_score: float = -1.0
+    timings: list[TitleSearchTiming] = []
+    search_started = perf_counter()
+    stop_event = threading.Event()
+
+    if not use_ss:
+        timings.append(TitleSearchTiming(
+            source="semanticscholar",
+            candidates_available=len(search_cands),
+            skipped=True,
+            skip_reason="disabled",
+        ))
+    if not google_key:
+        timings.append(TitleSearchTiming(
+            source="google_books",
+            candidates_available=len(search_cands),
+            skipped=True,
+            skip_reason="no api key",
+        ))
+
+    def is_strong(meta: Metadata | None) -> bool:
+        return bool(meta and meta.verified and meta.sanity_passed and meta.confidence == "high")
+
+    def budget_exhausted() -> bool:
+        return timeout_s > 0 and perf_counter() - search_started >= timeout_s
+
+    def run_wave(jobs: list[tuple[str, _Resolver]]) -> None:
+        nonlocal best, best_score
+        if not jobs:
+            return
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(jobs)) as ex:
+            futures = [
+                ex.submit(
+                    _search_one_source,
+                    name,
+                    fn,
+                    search_cands,
+                    extractor,
+                    text,
+                    filename,
+                    stop_event,
+                    search_started,
+                    timeout_s,
+                )
+                for name, fn in jobs
+            ]
+            for fut in concurrent.futures.as_completed(futures):
+                try:
+                    meta, score, _name, source_timing = fut.result()
+                    timings.append(source_timing)
+                except Exception as exc:
+                    timings.append(TitleSearchTiming(
+                        source="unknown",
+                        candidates_available=len(search_cands),
+                        errors=1,
+                        error_messages=[f"{type(exc).__name__}: {exc}"],
+                    ))
+                    continue
+                if meta and score > best_score:
+                    best_score = score
+                    best = meta
+                if is_strong(meta):
+                    stop_event.set()
+
+    run_wave(wave1_jobs)
+
+    # Wave 2: OpenLibrary — only if wave 1 didn't already find a strong match
+    # and the time budget hasn't expired.
+    if is_strong(best) or budget_exhausted():
+        timings.append(TitleSearchTiming(
+            source="openlibrary",
+            candidates_available=len(search_cands),
+            skipped=True,
+            skip_reason=(
+                "cheaper resolver found high-confidence sanity-passing match"
+                if is_strong(best) else "title search timeout"
+            ),
+        ))
+    else:
+        run_wave([("openlibrary", openlibrary_search)])
+
+    if use_ss:
+        if is_strong(best):
+            timings.append(TitleSearchTiming(
+                source="semanticscholar",
+                candidates_available=len(search_cands),
+                skipped=True,
+                skip_reason="cheaper resolver found high-confidence sanity-passing match",
+            ))
+        elif budget_exhausted():
+            timings.append(TitleSearchTiming(
+                source="semanticscholar",
+                candidates_available=len(search_cands),
+                skipped=True,
+                skip_reason="title search timeout",
+            ))
+        else:
+            run_wave([("semanticscholar", semanticscholar_search)])
+
+    return best, best_score, timings
+
+
+def _collect_identifier_pool(path, text: str, ident_text: str, candidates: list[Candidate]) -> tuple[list[str], list[str], list[str], list[str]]:
+    """Collect DOI/ISBN/arXiv identifiers from raw text, filename, and candidates."""
+    dois, isbns, arxivs, stable_ids = extract_identifiers(path.name, text, ident_text)
+    for c in candidates:
+        for val, bucket in ((c.doi, dois), (c.isbn, isbns), (c.arxiv, arxivs)):
+            if val and val not in bucket:
+                bucket.append(val)
+    jstor_doi = jstor_filename_doi(path.stem)
+    if jstor_doi and jstor_doi not in dois:
+        dois.insert(0, jstor_doi)
+    for extra_doi in numeric_filename_dois(path.stem):
+        if extra_doi not in dois:
+            dois.append(extra_doi)
+    return dois, isbns, arxivs, stable_ids
+
+
+def _update_identifier_debug(debug: dict[str, str], dois: list[str], isbns: list[str], arxivs: list[str]) -> None:
+    debug["identifier_dois"] = "; ".join(dois)
+    debug["identifier_isbns"] = "; ".join(isbns)
+    debug["identifier_arxivs"] = "; ".join(arxivs)
+
+
+def _update_candidate_debug(debug: dict[str, str], candidates: list[Candidate]) -> None:
+    for c in candidates:
+        if c.source == "grobid" and not debug["grobid_title"]:
+            debug["grobid_title"] = c.title
+            debug["grobid_authors"] = "; ".join(c.authors)
+            debug["grobid_year"] = c.year
+    debug["candidate_sources"] = " | ".join(c.source for c in candidates)
+    local_best = choose_best_local(candidates)
+    if local_best is not None:
+        debug["local_best_source"] = local_best.source
+
+
+def _candidate_key(c: Candidate) -> tuple:
+    return (
+        c.source,
+        c.title,
+        tuple(c.authors),
+        c.year,
+        c.doi,
+        c.isbn,
+        c.arxiv,
+    )
+
+
+def _extend_unique_candidates(candidates: list[Candidate], additions: list[Candidate]) -> None:
+    seen = {_candidate_key(c) for c in candidates}
+    for cand in additions:
+        key = _candidate_key(cand)
+        if key in seen:
+            continue
+        candidates.append(cand)
+        seen.add(key)
+
+
+def _run_identifier_lookups(
+    extractor: Extractor,
+    path,
+    sanity_text: str,
+    dois: list[str],
+    isbns: list[str],
+    arxivs: list[str],
+    timing: TimingBreakdown,
+    tried: set[tuple[str, str]],
+) -> tuple[Metadata | None, float, str, bool]:
+    """Run authoritative identifier lookups, skipping values already tried."""
+    best_ident: Metadata | None = None
+    best_ident_score: float = -1.0
+    best_ident_note = ""
+    matched_any = False
+    t_ident = perf_counter()
+
+    for doi in dois:
+        key = ("doi", doi)
+        if key in tried:
+            continue
+        tried.add(key)
+        lookup_started = perf_counter()
+        error = ""
+        try:
+            meta = crossref_by_doi(extractor.http, doi)
+        except Exception as exc:
+            meta = None
+            error = str(exc)
+        elapsed = perf_counter() - lookup_started
+
+        item = IdentifierLookupTiming(
+            kind="doi",
+            value=doi,
+            resolver="crossref_by_doi",
+            elapsed_s=elapsed,
+            matched=meta is not None,
+            source=(meta.source if meta else ""),
+            error=error,
+        )
+        if meta:
+            matched_any = True
+            _apply_sanity(meta, sanity_text, path.name)
+            item.sanity_score = meta.sanity_score
+            if meta.sanity_score > best_ident_score:
+                best_ident = meta
+                best_ident_score = meta.sanity_score
+                best_ident_note = "resolved by DOI via Crossref"
+        timing.identifier_lookups.append(item)
+        if best_ident is not None and best_ident.sanity_passed:
+            timing.identifier_lookups_s += perf_counter() - t_ident
+            return best_ident, best_ident_score, best_ident_note, matched_any
+
+    if best_ident is None or not best_ident.sanity_passed:
+        for isbn in isbns:
+            key = ("isbn", isbn)
+            if key in tried:
+                continue
+            tried.add(key)
+            lookup_started = perf_counter()
+            error = ""
+            try:
+                meta = openlibrary_by_isbn(extractor.http, isbn)
+            except Exception as exc:
+                meta = None
+                error = str(exc)
+            elapsed = perf_counter() - lookup_started
+
+            item = IdentifierLookupTiming(
+                kind="isbn",
+                value=isbn,
+                resolver="openlibrary_by_isbn",
+                elapsed_s=elapsed,
+                matched=meta is not None,
+                source=(meta.source if meta else ""),
+                error=error,
+            )
+            if meta:
+                matched_any = True
+                _apply_sanity(meta, sanity_text, path.name)
+                item.sanity_score = meta.sanity_score
+                if meta.sanity_score > best_ident_score:
+                    best_ident = meta
+                    best_ident_score = meta.sanity_score
+                    best_ident_note = "resolved by ISBN via OpenLibrary"
+            timing.identifier_lookups.append(item)
+            if best_ident is not None and best_ident.sanity_passed:
+                timing.identifier_lookups_s += perf_counter() - t_ident
+                return best_ident, best_ident_score, best_ident_note, matched_any
+
+    if best_ident is None or not best_ident.sanity_passed:
+        for arx in arxivs:
+            key = ("arxiv", arx)
+            if key in tried:
+                continue
+            tried.add(key)
+            lookup_started = perf_counter()
+            error = ""
+            try:
+                meta = arxiv_by_id(extractor.http, arx)
+            except Exception as exc:
+                meta = None
+                error = str(exc)
+            elapsed = perf_counter() - lookup_started
+
+            item = IdentifierLookupTiming(
+                kind="arxiv",
+                value=arx,
+                resolver="arxiv_by_id",
+                elapsed_s=elapsed,
+                matched=meta is not None,
+                source=(meta.source if meta else ""),
+                error=error,
+            )
+            if meta:
+                matched_any = True
+                _apply_sanity(meta, sanity_text, path.name)
+                item.sanity_score = meta.sanity_score
+                if meta.sanity_score > best_ident_score:
+                    best_ident = meta
+                    best_ident_score = meta.sanity_score
+                    best_ident_note = "resolved by arXiv ID"
+            timing.identifier_lookups.append(item)
+            if best_ident is not None and best_ident.sanity_passed:
+                timing.identifier_lookups_s += perf_counter() - t_ident
+                return best_ident, best_ident_score, best_ident_note, matched_any
+
+    timing.identifier_lookups_s += perf_counter() - t_ident
+    return best_ident, best_ident_score, best_ident_note, matched_any
+
+
+def _finalize_identifier_match(
+    meta: Metadata,
+    candidates: list[Candidate],
+    note: str,
+    needs_ocr_flag: bool,
+    debug: dict[str, str],
+) -> Metadata:
+    meta.merge_missing(_local_fallback(candidates))
+    if note:
+        meta.notes.append(note)
+    meta.notes.append(f"sanity_score={meta.sanity_score:.3f} (passed)")
+    meta.needs_ocr = needs_ocr_flag
+    meta.auto_safe = (
+        meta.verified
+        and meta.sanity_passed
+        and meta.confidence == "high"
+    )
+    debug["final_source"] = meta.source
+    return meta
+
+
+# ---------------------------------------------------------------------------
+# Main resolution function
+# ---------------------------------------------------------------------------
+
+def resolve(
+    path,
+    extractor: Extractor,
+    *,
+    skip_vision: bool = False,
+) -> tuple[Metadata, list[Candidate], str, dict[str, str], TimingBreakdown]:
+    """Full pipeline: extract → verify → return (Metadata, all_candidates, raw_text).
+
+    The returned Metadata has `needs_ocr`, `sanity_passed`, `sanity_score`,
+    and `auto_safe` populated to drive CLI-level decisions (two-TSV split,
+    OCR retry).
+
+    Parameters
+    ----------
+    skip_vision : bool, default False
+        When True, the vision LLM candidate source is not called.  The CLI
+        sets this on OCR retries — vision works on the rendered PDF pages,
+        which barely change after OCR (OCR adds a text layer but the
+        images are the same), so re-running vision on the OCR'd file
+        would just pay for the same inference a second time.
+    """
+
+    timing = TimingBreakdown()
+    resolve_started = perf_counter()
+
+
+    t0 = perf_counter()
+    text            = extractor.get_text(path)
+    sanity_text     = extractor.get_sanity_text(path)
+    if not sanity_text:
+        sanity_text = text
+    filename_cands  = extractor.filename_candidate(path)
+    needs_ocr_flag  = is_unreadable_text(text)
+    timing.text_extract_s += perf_counter() - t0
+
+
+    debug: dict[str, str] = {
+        "vision_used": "no",
+        "vision_trigger": "",
+        "vision_status": "not_attempted",
+        "vision_error": "",
+        "final_source": "",
+        "grobid_used": "yes" if bool(getattr(extractor.args, "grobid_url", "")) else "no",
+        "grobid_title": "",
+        "grobid_authors": "",
+        "grobid_year": "",
+        "vision_model": getattr(extractor.args, "vision_llm_model", "") or "",
+        "vision_pages": str(getattr(extractor.args, "vision_pages", "") or ""),
+        "vision_dpi": str(getattr(extractor.args, "vision_dpi", "") or ""),
+        "vision_title": "",
+        "vision_authors": "",
+        "vision_year": "",
+        "local_best_source": "",
+        "candidate_sources": "",
+        "identifier_dois": "",
+        "identifier_isbns": "",
+        "identifier_arxivs": "",
+    }
+
+    # Phase 0: collect cheap local candidates before hitting external APIs.
+    t0 = perf_counter()
+    candidates: list[Candidate] = []
+    candidates.extend(extractor.embedded_metadata(path))
+    candidates.extend(extractor.pdfinfo_metadata(path))
+    timing.embedded_metadata_s = perf_counter() - t0
+
+
+    candidates.extend(filename_cands)
+
+    # text_header and LLM used to be gated on `not needs_ocr_flag`, but the
+    # detector is intentionally cautious and fires on math-heavy text.  For
+    # borderline-readable text the header extractor is cheap and often useful.
+    # Expensive candidate sources (GROBID, LLMs) are deferred until after
+    # authoritative identifier lookup has had a chance to answer.
+    t0 = perf_counter()
+    filename_best = choose_best_local(filename_cands)
+    timing.best_local_s = perf_counter() - t0
+    if text:
+        t0 = perf_counter()
+        candidates.extend(extractor.text_header_candidate(text))
+        timing.header_candidate_s = perf_counter() - t0
+
+    # Identifier pool — union of (text-extracted + filename + candidate-reported).
+    t0 = perf_counter()
+    ident_text = extractor.get_identifier_text(path)
+    timing.text_extract_s += perf_counter() - t0
+
+    _extend_unique_candidates(candidates, _synthesize(candidates))
+    dois, isbns, arxivs, stable_ids = _collect_identifier_pool(path, text, ident_text, candidates)
+    _update_identifier_debug(debug, dois, isbns, arxivs)
+
+    max_cands  = int(getattr(extractor.args, "max_search_candidates", 6))
+    google_key = getattr(extractor.args, "google_books_api_key", "")
+    use_ss     = not getattr(extractor.args, "no_semantic_scholar", False)
+
+    # ---- Phase 1: cheap authoritative identifier lookups (DOI / ISBN / arXiv) ----
+    # Each lookup is authoritative, but we still sanity-check the returned
+    # metadata against the PDF text.  If multiple identifiers are present,
+    # we pick the one with the highest sanity score.
+    tried_identifiers: set[tuple[str, str]] = set()
+    best_ident, best_ident_score, best_ident_note, identifier_matched_any = _run_identifier_lookups(
+        extractor, path, sanity_text, dois, isbns, arxivs, timing, tried_identifiers
+    )
+    any_identifier_matched = identifier_matched_any
+
+    # If an identifier match passed the sanity check, it's the answer.
+    if best_ident is not None and best_ident.sanity_passed:
+        _update_candidate_debug(debug, candidates)
+        best_ident = _finalize_identifier_match(
+            best_ident, candidates, best_ident_note, needs_ocr_flag, debug
+        )
+
+        timing.resolve_total_s = perf_counter() - resolve_started
+        return best_ident, candidates, text, debug, timing
+
+    # ---- Phase 2: expensive candidate sources, only after identifiers fail ----
+    t0 = perf_counter()
+    grobid_cands = extractor.grobid_candidate(path)
+    candidates.extend(grobid_cands)
+    timing.grobid_s = perf_counter() - t0
+
+    if text:
+        t0 = perf_counter()
+        candidates.extend(extractor.llm_candidate(path, text, filename_best))
+        timing.text_llm_s = perf_counter() - t0
+
+    # GROBID/text LLM may reveal new identifiers. Try them before vision,
+    # since identifier lookup is still cheaper and more authoritative.
+    _extend_unique_candidates(candidates, _synthesize(candidates))
+    dois, isbns, arxivs, stable_ids = _collect_identifier_pool(path, text, ident_text, candidates)
+    _update_identifier_debug(debug, dois, isbns, arxivs)
+    late_ident, late_ident_score, late_ident_note, late_matched_any = _run_identifier_lookups(
+        extractor, path, sanity_text, dois, isbns, arxivs, timing, tried_identifiers
+    )
+    any_identifier_matched = any_identifier_matched or late_matched_any
+    if late_ident is not None and late_ident_score > best_ident_score:
+        best_ident = late_ident
+        best_ident_score = late_ident_score
+        best_ident_note = late_ident_note
+
+    if best_ident is not None and best_ident.sanity_passed:
+        _update_candidate_debug(debug, candidates)
+        best_ident = _finalize_identifier_match(
+            best_ident, candidates, best_ident_note, needs_ocr_flag, debug
+        )
+
+        timing.resolve_total_s = perf_counter() - resolve_started
+        return best_ident, candidates, text, debug, timing
+
+    # Compute book signal once; reused for both the vision tier choice and the
+    # GROBID demotion below so we don't call is_book_signal twice.
+    _is_book = is_book_signal(path.name, text)
+
+    # Vision LLM is still optional, but now it runs after deep identifier
+    # passes so books with ISBNs on copyright pages can avoid the expensive call.
+    t0 = perf_counter()
+    if not skip_vision:
+        should_call_vision = True
+        trigger_reason = "configured"
+        if getattr(extractor.args, "vision_only_if_hard", False):
+            has_deep_ident = bool(dois or isbns or arxivs)
+            if has_deep_ident and any_identifier_matched:
+                should_call_vision = False
+                trigger_reason = "skipped: identifier lookup returned metadata"
+            elif not needs_ocr_flag and _has_strong_searchable_candidate(candidates):
+                should_call_vision = False
+                trigger_reason = "skipped: readable text with strong local candidate"
+            elif has_deep_ident:
+                trigger_reason = "hard-case: identifiers found but lookup failed"
+            else:
+                trigger_reason = "hard-case: no_identifier"
+        debug["vision_trigger"] = trigger_reason
+        if should_call_vision:
+            vision_cands, vision_dbg = extractor.vision_llm_candidate(
+                path, filename_best, is_book=_is_book
+            )
+            _extend_unique_candidates(candidates, vision_cands)
+            debug.update({k: str(v) for k, v in vision_dbg.items() if v is not None})
+            debug["vision_used"] = "yes" if debug.get("vision_status") not in {"not_configured", "skipped"} else "no"
+        else:
+            debug["vision_status"] = "skipped"
+    else:
+        debug["vision_trigger"] = "skip_vision flag"
+        debug["vision_status"] = "skipped"
+    timing.vision_llm_s += perf_counter() - t0
+    timing.vision_pacing_s = extractor.http.take_pacing_s("vision_llm")
+    rem = extractor.http.remaining_tokens("vision_llm")
+    if rem is not None:
+        debug["vision_tokens_remaining"] = str(rem)
+
+    _extend_unique_candidates(candidates, _synthesize(candidates))
+
+    # is_book signal: demote GROBID candidates on books. GROBID is trained on
+    # journal-article headers and picks up editor/affiliation noise on books.
+    if _is_book:
+        for c in candidates:
+            if c.source == "grobid":
+                c.priority = max(c.priority, 30)
+                c.notes.append("grobid demoted (is_book)")
+
+    # Vision may reveal new identifiers. Try only identifiers that were not
+    # already checked before falling back to title search.
+    dois, isbns, arxivs, stable_ids = _collect_identifier_pool(path, text, ident_text, candidates)
+    _update_identifier_debug(debug, dois, isbns, arxivs)
+    vision_ident, vision_ident_score, vision_ident_note, vision_matched_any = _run_identifier_lookups(
+        extractor, path, sanity_text, dois, isbns, arxivs, timing, tried_identifiers
+    )
+    any_identifier_matched = any_identifier_matched or vision_matched_any
+    if vision_ident is not None and vision_ident_score > best_ident_score:
+        best_ident = vision_ident
+        best_ident_score = vision_ident_score
+        best_ident_note = vision_ident_note
+
+    if best_ident is not None and best_ident.sanity_passed:
+        _update_candidate_debug(debug, candidates)
+        best_ident = _finalize_identifier_match(
+            best_ident, candidates, best_ident_note, needs_ocr_flag, debug
+        )
+
+        timing.resolve_total_s = perf_counter() - resolve_started
+        return best_ident, candidates, text, debug, timing
+
+    # Capture raw per-source candidates for debug TSVs after all candidate
+    # sources have run.
+    _update_candidate_debug(debug, candidates)
+
+    # ---- Phase 3: parallel title-search across all configured resolvers ----
+    t0 = perf_counter()
+    best_search, best_search_score, title_search_timings = _parallel_title_search(
+        candidates, extractor, sanity_text, max_cands, google_key, use_ss,
+        filename=path.name,
+        timeout_s=float(getattr(extractor.args, "title_search_timeout", 12.0) or 0.0),
+    )
+    timing.title_search_s += perf_counter() - t0
+    timing.title_searches.extend(title_search_timings)
+
+    # Pick the better of identifier-lookup (failed sanity) vs title-search.
+    # Prefer whichever has the higher sanity score if both are present.
+    winners: list[tuple[Metadata, float, str]] = []
+    if best_ident is not None:
+        winners.append((best_ident, best_ident_score, best_ident_note))
+    if best_search is not None:
+        winners.append((best_search, best_search_score, "title-search match"))
+
+    if winners:
+        winners.sort(key=lambda x: -x[1])
+        winner, _score, note = winners[0]
+        winner.merge_missing(_local_fallback(candidates))
+        winner.notes.append(note)
+        _rescue_locally_corroborated_match(winner, candidates, sanity_text)
+        _downgrade_if_sanity_failed(winner)
+        if not winner.sanity_passed:
+            winner = _prefer_local_when_external_conflicts(winner, candidates)
+        winner.needs_ocr = needs_ocr_flag
+        winner.auto_safe = (winner.verified
+                            and winner.sanity_passed
+                            and winner.confidence == "high")
+        debug["final_source"] = winner.source
+
+        timing.resolve_total_s = perf_counter() - resolve_started
+        return winner, candidates, text, debug, timing
+
+    # ---- Phase 4: no external verification — return local best ----
+    fallback = _local_fallback(candidates)
+    if stable_ids:
+        fallback.notes.append(f"JSTOR stable ID present (not an arXiv ID): {stable_ids[0]}")
+    if needs_ocr_flag:
+        fallback.notes.append("PDF text appears unreadable — OCR recommended")
+    fallback.needs_ocr = needs_ocr_flag
+    fallback.sanity_passed = False
+    fallback.sanity_score = 0.0
+    fallback.auto_safe = False
+    debug["final_source"] = fallback.source
+
+    timing.resolve_total_s = perf_counter() - resolve_started
+    return fallback, candidates, text, debug, timing
