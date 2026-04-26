@@ -90,6 +90,7 @@ class TitleSearchTiming:
     skipped: bool = False
     skip_reason: str = ""
     stopped_early: bool = False
+    query_traces: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -129,4 +130,3 @@ class Record:
     error: str = ""
     debug: dict[str, Any] = field(default_factory=dict)
     timing: TimingBreakdown = field(default_factory=TimingBreakdown)
-

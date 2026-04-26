@@ -109,6 +109,73 @@ class HttpClient:
         # Cumulative seconds slept in _wait_for_token_budget per bucket.
         # Read and reset with take_pacing_s() after each call site.
         self._pacing_sleep: dict[str, float] = {}
+        # Last HTTP trace per bucket.  This is intentionally compact and
+        # excludes query strings/headers so API keys are not persisted.
+        self._last_request_trace: dict[str, dict[str, Any]] = {}
+
+    @staticmethod
+    def _redacted_url(url: str) -> str:
+        parts = urllib.parse.urlsplit(url)
+        return urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+
+    @staticmethod
+    def _now_iso() -> str:
+        return time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime())
+
+    @staticmethod
+    def _retry_after(headers: Any) -> float:
+        if not headers:
+            return 0.0
+        try:
+            return float(headers.get("Retry-After", 0) or 0)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def _rate_limit_headers(headers: Any) -> dict[str, str]:
+        if not headers:
+            return {}
+        keys = [
+            "x-ratelimit-remaining-tokens",
+            "x-ratelimit-reset-tokens",
+            "x-ratelimit-remaining-requests",
+            "x-ratelimit-reset-requests",
+        ]
+        out: dict[str, str] = {}
+        for key in keys:
+            try:
+                value = headers.get(key)
+            except Exception:
+                value = None
+            if value is not None:
+                out[key] = str(value)
+        return out
+
+    def _start_trace(self, method: str, url: str, namespace: str, bucket: str) -> dict[str, Any]:
+        return {
+            "method": method,
+            "url": self._redacted_url(url),
+            "namespace": namespace,
+            "bucket": bucket,
+            "cache_hit": False,
+            "started_at": self._now_iso(),
+            "elapsed_s": 0.0,
+            "attempts": [],
+            "attempt_count": 0,
+            "retry_sleep_s": 0.0,
+            "pacing_sleep_s": 0.0,
+            "final_status": "",
+            "final_error": "",
+        }
+
+    def _finish_trace(self, bucket: str, trace: dict[str, Any], started: float) -> None:
+        trace["elapsed_s"] = max(0.0, time.monotonic() - started)
+        trace["attempt_count"] = len(trace.get("attempts") or [])
+        self._last_request_trace[bucket] = trace
+
+    def take_last_request_trace(self, bucket: str) -> dict[str, Any]:
+        """Return and clear the last compact HTTP trace for *bucket*."""
+        return self._last_request_trace.pop(bucket, {})
 
     def _throttle(self, bucket: str, min_interval: float) -> None:
         now   = time.time()
@@ -134,7 +201,7 @@ class HttpClient:
         except Exception:
             pass
 
-    def _wait_for_token_budget(self, bucket: str, min_remaining: int) -> None:
+    def _wait_for_token_budget(self, bucket: str, min_remaining: int) -> float:
         """Sleep proactively if the token budget is too low for another API call.
 
         Called before each attempt in the retry loop so that after a capped
@@ -143,13 +210,13 @@ class HttpClient:
         """
         entry = self._token_budget.get(bucket)
         if entry is None:
-            return
+            return 0.0
         remaining, reset_at = entry
         if remaining >= min_remaining:
-            return
+            return 0.0
         wait = reset_at - time.monotonic()
         if wait <= 0:
-            return
+            return 0.0
         eprint(
             f"[pacing] {bucket}: {remaining} tokens remaining "
             f"(need ≥{min_remaining}), sleeping {wait:.1f}s for quota reset"
@@ -157,6 +224,7 @@ class HttpClient:
         actual = wait + 1.0  # +1 s buffer so we don't race the window edge
         time.sleep(actual)
         self._pacing_sleep[bucket] = self._pacing_sleep.get(bucket, 0.0) + actual
+        return actual
 
     def take_pacing_s(self, bucket: str) -> float:
         """Return and reset the accumulated proactive-pacing sleep for *bucket*.
@@ -217,8 +285,13 @@ class HttpClient:
         min_interval: float = 0.2,
         max_retries: int = 3,
     ) -> Any | None:
+        trace_started = time.monotonic()
+        trace = self._start_trace("GET", url, namespace, bucket)
         cached = self.cache.load(namespace, cache_key)
         if cached is not None and self._json_is_cacheable(cached):
+            trace["cache_hit"] = True
+            trace["final_status"] = "cache_hit"
+            self._finish_trace(bucket, trace, trace_started)
             return cached
         req_headers = {"Accept": "application/json", "User-Agent": self._agent()}
         if headers:
@@ -227,15 +300,33 @@ class HttpClient:
         data: Any = None
         for attempt in range(max_retries):
             self._throttle(bucket, min_interval)
+            attempt_started = time.monotonic()
+            attempt_trace: dict[str, Any] = {
+                "attempt": attempt + 1,
+                "started_at": self._now_iso(),
+                "elapsed_s": 0.0,
+                "status": "",
+                "error": "",
+                "retry_after_s": 0.0,
+                "sleep_s": 0.0,
+                "rate_limit": {},
+            }
             req = urllib.request.Request(url, headers=req_headers)
             try:
                 with urllib.request.urlopen(req, timeout=25) as resp:
                     data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                    attempt_trace["status"] = getattr(resp, "status", 200)
+                    attempt_trace["rate_limit"] = self._rate_limit_headers(resp.headers)
                 break  # success
             except urllib.error.HTTPError as exc:
-                retry_after = int(exc.headers.get("Retry-After", 0)) if exc.headers else 0
+                retry_after = self._retry_after(exc.headers)
+                attempt_trace["status"] = exc.code
+                attempt_trace["retry_after_s"] = retry_after
+                attempt_trace["rate_limit"] = self._rate_limit_headers(exc.headers)
                 if exc.code in (429, 503) and attempt < max_retries - 1:
                     wait = max(retry_after, 2 ** (attempt + 2))
+                    attempt_trace["sleep_s"] = wait
+                    trace["retry_sleep_s"] += wait
                     if self.verbose:
                         eprint(f"[retry] GET {url} HTTP {exc.code}, waiting {wait}s (attempt {attempt+1}/{max_retries})")
                     time.sleep(wait)
@@ -245,18 +336,35 @@ class HttpClient:
                     eprint(f"[warn] GET {url} HTTP {exc.code}")
                 break
             except Exception as exc:
+                attempt_trace["error"] = f"{type(exc).__name__}: {exc}"
                 if attempt < max_retries - 1:
                     wait = 2 ** (attempt + 1)
+                    attempt_trace["sleep_s"] = wait
+                    trace["retry_sleep_s"] += wait
                     if self.verbose:
                         eprint(f"[retry] GET failed {url}: {exc}, waiting {wait}s (attempt {attempt+1}/{max_retries})")
                     time.sleep(wait)
                     continue
                 if self.verbose:
                     eprint(f"[warn] GET failed {url}: {exc}")
+                trace["final_status"] = "error"
+                trace["final_error"] = attempt_trace["error"]
+                self._finish_trace(bucket, trace, trace_started)
                 return None
+            finally:
+                attempt_trace["elapsed_s"] = max(0.0, time.monotonic() - attempt_started)
+                if attempt_trace not in trace["attempts"]:
+                    trace["attempts"].append(attempt_trace)
 
         if data is not None and self._json_is_cacheable(data):
             self.cache.save(namespace, cache_key, data)
+        if isinstance(data, dict) and "_http_error" in data:
+            trace["final_status"] = f"http_{data['_http_error']}"
+        elif data is None:
+            trace["final_status"] = "none"
+        else:
+            trace["final_status"] = "ok"
+        self._finish_trace(bucket, trace, trace_started)
         return data
 
     def get_xml(
@@ -269,13 +377,29 @@ class HttpClient:
         min_interval: float = 0.2,
         max_retries: int = 3,
     ) -> str:
+        trace_started = time.monotonic()
+        trace = self._start_trace("GET", url, namespace, bucket)
         cached = self.cache.load(namespace, cache_key)
         if isinstance(cached, dict) and "_text" in cached and cached["_text"]:
+            trace["cache_hit"] = True
+            trace["final_status"] = "cache_hit"
+            self._finish_trace(bucket, trace, trace_started)
             return str(cached["_text"])  # Only return non-empty cached text
 
         raw = ""
         for attempt in range(max_retries):
             self._throttle(bucket, min_interval)
+            attempt_started = time.monotonic()
+            attempt_trace: dict[str, Any] = {
+                "attempt": attempt + 1,
+                "started_at": self._now_iso(),
+                "elapsed_s": 0.0,
+                "status": "",
+                "error": "",
+                "retry_after_s": 0.0,
+                "sleep_s": 0.0,
+                "rate_limit": {},
+            }
             req = urllib.request.Request(
                 url,
                 headers={
@@ -286,31 +410,53 @@ class HttpClient:
             try:
                 with urllib.request.urlopen(req, timeout=25) as resp:
                     raw = resp.read().decode("utf-8", errors="replace")
+                    attempt_trace["status"] = getattr(resp, "status", 200)
+                    attempt_trace["rate_limit"] = self._rate_limit_headers(resp.headers)
                 break  # success
             except urllib.error.HTTPError as exc:
-                retry_after = int(exc.headers.get("Retry-After", 0)) if exc.headers else 0
+                retry_after = self._retry_after(exc.headers)
+                attempt_trace["status"] = exc.code
+                attempt_trace["retry_after_s"] = retry_after
+                attempt_trace["rate_limit"] = self._rate_limit_headers(exc.headers)
                 if exc.code in (429, 503) and attempt < max_retries - 1:
                     wait = max(retry_after, 2 ** (attempt + 2))
+                    attempt_trace["sleep_s"] = wait
+                    trace["retry_sleep_s"] += wait
                     if self.verbose:
                         eprint(f"[retry] GET xml {url} HTTP {exc.code}, waiting {wait}s (attempt {attempt+1}/{max_retries})")
                     time.sleep(wait)
                     continue
                 if self.verbose:
                     eprint(f"[warn] GET xml {url} HTTP {exc.code}")
+                trace["final_status"] = f"http_{exc.code}"
+                self._finish_trace(bucket, trace, trace_started)
                 return ""
             except Exception as exc:
+                attempt_trace["error"] = f"{type(exc).__name__}: {exc}"
                 if attempt < max_retries - 1:
                     wait = 2 ** (attempt + 1)
+                    attempt_trace["sleep_s"] = wait
+                    trace["retry_sleep_s"] += wait
                     if self.verbose:
                         eprint(f"[retry] GET xml failed {url}: {exc}, waiting {wait}s (attempt {attempt+1}/{max_retries})")
                     time.sleep(wait)
                     continue
                 if self.verbose:
                     eprint(f"[warn] GET xml failed {url}: {exc}")
+                trace["final_status"] = "error"
+                trace["final_error"] = attempt_trace["error"]
+                self._finish_trace(bucket, trace, trace_started)
                 return ""
+            finally:
+                attempt_trace["elapsed_s"] = max(0.0, time.monotonic() - attempt_started)
+                trace["attempts"].append(attempt_trace)
 
         if raw.strip():
             self.cache.save(namespace, cache_key, {"_text": raw})
+            trace["final_status"] = "ok"
+        else:
+            trace["final_status"] = "empty"
+        self._finish_trace(bucket, trace, trace_started)
         return raw
 
     def post_json(
@@ -327,8 +473,13 @@ class HttpClient:
         max_retry_wait: float = 0.0,
         min_remaining_tokens: int = 0,
     ) -> Any | None:
+        trace_started = time.monotonic()
+        trace = self._start_trace("POST", url, namespace, bucket)
         cached = self.cache.load(namespace, cache_key)
         if cached is not None and self._json_is_cacheable(cached):
+            trace["cache_hit"] = True
+            trace["final_status"] = "cache_hit"
+            self._finish_trace(bucket, trace, trace_started)
             return cached
         body = json.dumps(payload).encode("utf-8")
         hdrs: dict[str, str] = {
@@ -342,22 +493,43 @@ class HttpClient:
         data: Any = None
         for attempt in range(max_retries):
             self._throttle(bucket, min_interval)
+            attempt_started = time.monotonic()
+            attempt_trace: dict[str, Any] = {
+                "attempt": attempt + 1,
+                "started_at": self._now_iso(),
+                "elapsed_s": 0.0,
+                "status": "",
+                "error": "",
+                "retry_after_s": 0.0,
+                "sleep_s": 0.0,
+                "pacing_sleep_s": 0.0,
+                "rate_limit": {},
+            }
             if min_remaining_tokens > 0:
-                self._wait_for_token_budget(bucket, min_remaining_tokens)
+                slept = self._wait_for_token_budget(bucket, min_remaining_tokens)
+                attempt_trace["pacing_sleep_s"] = slept
+                trace["pacing_sleep_s"] += slept
             req = urllib.request.Request(url, data=body, headers=hdrs, method="POST")
             try:
                 with urllib.request.urlopen(req, timeout=90) as resp:
                     self._update_token_budget(bucket, resp.headers)
                     data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                    attempt_trace["status"] = getattr(resp, "status", 200)
+                    attempt_trace["rate_limit"] = self._rate_limit_headers(resp.headers)
                 break  # success
             except urllib.error.HTTPError as exc:
-                retry_after = int(exc.headers.get("Retry-After", 0)) if exc.headers else 0
+                retry_after = self._retry_after(exc.headers)
                 if exc.headers:
                     self._update_token_budget(bucket, exc.headers)
+                attempt_trace["status"] = exc.code
+                attempt_trace["retry_after_s"] = retry_after
+                attempt_trace["rate_limit"] = self._rate_limit_headers(exc.headers)
                 if exc.code in (429, 503) and attempt < max_retries - 1:
                     wait = max(retry_after, 2 ** (attempt + 2))
                     if max_retry_wait > 0:
                         wait = min(wait, max_retry_wait)
+                    attempt_trace["sleep_s"] = wait
+                    trace["retry_sleep_s"] += wait
                     if self.verbose:
                         eprint(f"[retry] POST {url} HTTP {exc.code}, waiting {wait}s (attempt {attempt+1}/{max_retries})")
                     time.sleep(wait)
@@ -371,18 +543,34 @@ class HttpClient:
                     eprint(f"[warn] POST {url} HTTP {exc.code}: {body_text[:200]}")
                 break
             except Exception as exc:
+                attempt_trace["error"] = f"{type(exc).__name__}: {exc}"
                 if attempt < max_retries - 1:
                     wait = 2 ** (attempt + 1)
+                    attempt_trace["sleep_s"] = wait
+                    trace["retry_sleep_s"] += wait
                     if self.verbose:
                         eprint(f"[retry] POST failed {url}: {exc}, waiting {wait}s (attempt {attempt+1}/{max_retries})")
                     time.sleep(wait)
                     continue
                 if self.verbose:
                     eprint(f"[warn] POST failed {url}: {exc}")
+                trace["final_status"] = "error"
+                trace["final_error"] = attempt_trace["error"]
+                self._finish_trace(bucket, trace, trace_started)
                 return None
+            finally:
+                attempt_trace["elapsed_s"] = max(0.0, time.monotonic() - attempt_started)
+                trace["attempts"].append(attempt_trace)
 
         if data is not None and self._json_is_cacheable(data):
             self.cache.save(namespace, cache_key, data)
+        if isinstance(data, dict) and "_http_error" in data:
+            trace["final_status"] = f"http_{data['_http_error']}"
+        elif data is None:
+            trace["final_status"] = "none"
+        else:
+            trace["final_status"] = "ok"
+        self._finish_trace(bucket, trace, trace_started)
         return data
 
     def post_multipart(

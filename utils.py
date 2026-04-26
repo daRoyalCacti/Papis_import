@@ -957,9 +957,13 @@ def is_book_signal(filename: str, text: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# GROBID-specific output filter (item 4)
+# Suspicious-title filter
 #
-# Catches the specific pathologies observed in the review TSV:
+# Originally a GROBID-output sanity filter; promoted to a general check after
+# the Maillard JMLR 2021 case where the text-LLM extractor produced an
+# affiliation string ("Université Paris-Saclay, CNRS, Inria, Laboratoire…")
+# that beat the correct title ("Aggregated Hold-Out") in _synthesize().
+# Catches the same pathologies regardless of which extractor produced them:
 #   - "Université Paris-Saclay, CNRS, Inria, Laboratoire..." (affiliation)
 #   - "CONVEX FUNCTIONS ... SPIN Springer's internal project num" (cut off)
 #   - "The area of stochastic programming was created..." (abstract first line)
@@ -975,7 +979,7 @@ _AFFILIATION_MARKERS = (
     "laboratory", "laboratoire", "laboratorio",
 )
 
-_GROBID_SENTENCE_STARTS = (
+_SUSPICIOUS_SENTENCE_STARTS = (
     "the area of", "the book", "this paper", "this book", "this chapter",
     "this electronic", "this article", "this volume",
     "in this paper", "in this book", "in this chapter",
@@ -985,12 +989,13 @@ _GROBID_SENTENCE_STARTS = (
 )
 
 
-def is_grobid_output_suspicious(title: str) -> bool:
-    """Return True if GROBID's extracted title looks like an affiliation,
-    abstract fragment, or publisher metadata rather than a real title.
+def is_suspicious_title(title: str) -> bool:
+    """Return True if the title looks like an affiliation, abstract fragment,
+    or publisher metadata rather than a real title.
 
-    More aggressive than the generic is_garbage_title — GROBID specifically
-    tends to pick up affiliations and project IDs on book-style PDFs.
+    More aggressive than is_garbage_title. Originally a GROBID-only filter;
+    now also applied inside _synthesize() so any extractor (text_header,
+    llm:*, vision_llm:*, …) producing the same pathologies is rejected.
     """
     if not title:
         return False
@@ -1011,10 +1016,14 @@ def is_grobid_output_suspicious(title: str) -> bool:
     if any(m in lower for m in _AFFILIATION_MARKERS):
         return True
     # Starts with a sentence pattern (abstract opener)
-    if any(lower.startswith(s) for s in _GROBID_SENTENCE_STARTS):
+    if any(lower.startswith(s) for s in _SUSPICIOUS_SENTENCE_STARTS):
         return True
     # Contains a postal-code-like pattern typical of affiliation strings
     # ("91405, Orsay, France")
     if re.search(r"\b\d{4,5},\s*[A-Z][a-zéöäü]+,\s*[A-Z][a-zA-Z]+", t):
         return True
     return False
+
+
+# Back-compat alias — prior name when this filter was GROBID-specific.
+is_grobid_output_suspicious = is_suspicious_title

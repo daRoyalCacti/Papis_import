@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import json
 import threading
 from typing import Callable
 
@@ -71,6 +72,7 @@ from papis_import.utils import (
     is_garbage_title,
     is_journal_abbrev_title,
     is_journal_header_title,
+    is_suspicious_title,
     is_unreadable_text,
     jstor_filename_doi,
     normalize_title,
@@ -162,8 +164,14 @@ def _synthesize(candidates: list[Candidate]) -> list[Candidate]:
     for c in candidates:
         if c.title:
             c.title = repair_title_ligatures(c.title)
+    # Maillard JMLR 2021: text-LLM extracted the first author's affiliation
+    # ("Université Paris-Saclay, CNRS, Inria, Laboratoire de mathématiques
+    # d'Orsay…") as the title and beat the correct "Aggregated Hold-Out" from
+    # GROBID/Vision in choose_best_local. is_suspicious_title rejects the
+    # affiliation regardless of which extractor emitted it.
     good_titles = [c for c in candidates if c.title and not is_garbage_title(c.title)
-                   and not is_journal_abbrev_title(c.title)]
+                   and not is_journal_abbrev_title(c.title)
+                   and not is_suspicious_title(c.title)]
     all_titles  = [c for c in candidates if c.title]
     titles  = good_titles or all_titles
     authors = [c for c in candidates if c.authors]
@@ -410,6 +418,14 @@ def _prefer_local_when_external_conflicts(meta: Metadata, candidates: list[Candi
 # One resolver function takes (HttpClient, Candidate) and returns Metadata|None
 _Resolver = Callable[[HttpClient, Candidate], "Metadata | None"]
 
+_TITLE_SEARCH_BUCKETS = {
+    "crossref": "crossref",
+    "openalex": "openalex",
+    "openlibrary": "openlibrary",
+    "semanticscholar": "semanticscholar",
+    "google_books": "googlebooks",
+}
+
 
 def _search_one_source(
     name: str,
@@ -431,7 +447,7 @@ def _search_one_source(
     timing = TitleSearchTiming(source=name, candidates_available=len(candidates))
     best: Metadata | None = None
     best_score: float = -1.0
-    for cand in candidates:
+    for cand_idx, cand in enumerate(candidates, start=1):
         if stop_event is not None and stop_event.is_set():
             timing.stopped_early = True
             if not timing.skip_reason:
@@ -443,23 +459,60 @@ def _search_one_source(
                 timing.skip_reason = "title search timeout"
             break
         timing.candidates_tried += 1
+        query_started = perf_counter()
+        query_trace: dict[str, object] = {
+            "source": name,
+            "candidate_index": cand_idx,
+            "candidate_source": cand.source,
+            "query_title": cand.title,
+            "query_authors": cand.authors,
+            "query_year": cand.year,
+            "elapsed_s": 0.0,
+            "status": "",
+            "error": "",
+            "matched": False,
+            "match_title": "",
+            "match_source": "",
+            "match_score": 0.0,
+            "sanity_score": 0.0,
+            "cache_hit": "",
+            "http": {},
+        }
         try:
             meta = resolver(extractor.http, cand)
         except Exception as exc:
             meta = None
             timing.errors += 1
+            query_trace["status"] = "exception"
+            query_trace["error"] = f"{type(exc).__name__}: {exc}"
             if len(timing.error_messages) < 5:
                 timing.error_messages.append(f"{cand.source}: {type(exc).__name__}: {exc}")
+        finally:
+            http_trace = extractor.http.take_last_request_trace(_TITLE_SEARCH_BUCKETS.get(name, name))
+            if http_trace:
+                query_trace["http"] = http_trace
+                query_trace["cache_hit"] = http_trace.get("cache_hit", "")
+                query_trace["status"] = query_trace["status"] or str(http_trace.get("final_status", ""))
+            query_trace["elapsed_s"] = perf_counter() - query_started
         if meta is None:
+            if not query_trace["status"]:
+                query_trace["status"] = "no_match"
+            timing.query_traces.append(query_trace)
             continue
         timing.matches_returned += 1
         _apply_sanity(meta, text, filename)
+        query_trace["matched"] = True
+        query_trace["status"] = query_trace["status"] or "matched"
+        query_trace["match_title"] = meta.title
+        query_trace["match_source"] = meta.source
+        query_trace["sanity_score"] = meta.sanity_score
         # Slight preference for results the API itself scored as high,
         # so that when sanity scores tie we prefer the higher-confidence
         # external match.
         score = meta.sanity_score
         if meta.confidence == "high":
             score += 0.05
+        query_trace["match_score"] = score
         if score > best_score:
             best_score = score
             best = meta
@@ -474,7 +527,9 @@ def _search_one_source(
             timing.skip_reason = "high-confidence sanity-passing match"
             if stop_event is not None:
                 stop_event.set()
+            timing.query_traces.append(query_trace)
             break
+        timing.query_traces.append(query_trace)
     timing.elapsed_s = perf_counter() - started
     return best, best_score, name, timing
 
@@ -646,6 +701,28 @@ def _update_identifier_debug(debug: dict[str, str], dois: list[str], isbns: list
     debug["identifier_arxivs"] = "; ".join(arxivs)
 
 
+def _candidates_json(candidates: list[Candidate]) -> str:
+    return json.dumps(
+        [
+            {
+                "source": c.source,
+                "title": c.title,
+                "authors": c.authors,
+                "year": c.year,
+                "doi": c.doi,
+                "isbn": c.isbn,
+                "arxiv": c.arxiv,
+                "priority": c.priority,
+                "notes": c.notes,
+            }
+            for c in candidates
+        ],
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
 def _update_candidate_debug(debug: dict[str, str], candidates: list[Candidate]) -> None:
     for c in candidates:
         if c.source == "grobid" and not debug["grobid_title"]:
@@ -653,6 +730,7 @@ def _update_candidate_debug(debug: dict[str, str], candidates: list[Candidate]) 
             debug["grobid_authors"] = "; ".join(c.authors)
             debug["grobid_year"] = c.year
     debug["candidate_sources"] = " | ".join(c.source for c in candidates)
+    debug["candidates_json"] = _candidates_json(candidates)
     local_best = choose_best_local(candidates)
     if local_best is not None:
         debug["local_best_source"] = local_best.source
@@ -888,11 +966,21 @@ def resolve(
         "vision_title": "",
         "vision_authors": "",
         "vision_year": "",
+        "text_llm_used": "no",
+        "text_llm_status": "not_attempted",
+        "text_llm_error": "",
+        "text_llm_model": getattr(extractor.args, "llm_model", "") or "",
+        "text_llm_http_json": "",
+        "text_llm_title": "",
+        "text_llm_authors": "",
+        "text_llm_year": "",
         "local_best_source": "",
         "candidate_sources": "",
         "identifier_dois": "",
         "identifier_isbns": "",
         "identifier_arxivs": "",
+        "candidates_json": "",
+        "title_search_queries_json": "",
     }
 
     # Phase 0: collect cheap local candidates before hitting external APIs.
@@ -959,8 +1047,10 @@ def resolve(
 
     if text:
         t0 = perf_counter()
-        candidates.extend(extractor.llm_candidate(path, text, filename_best))
+        llm_cands = extractor.llm_candidate(path, text, filename_best)
+        candidates.extend(llm_cands)
         timing.text_llm_s = perf_counter() - t0
+        debug.update({k: str(v) for k, v in getattr(extractor, "last_llm_debug", {}).items() if v is not None})
 
     # GROBID/text LLM may reveal new identifiers. Try them before vision,
     # since identifier lookup is still cheaper and more authoritative.
@@ -1022,6 +1112,7 @@ def resolve(
         debug["vision_status"] = "skipped"
     timing.vision_llm_s += perf_counter() - t0
     timing.vision_pacing_s = extractor.http.take_pacing_s("vision_llm")
+    debug["vision_pacing_s"] = f"{timing.vision_pacing_s:.6f}"
     rem = extractor.http.remaining_tokens("vision_llm")
     if rem is not None:
         debug["vision_tokens_remaining"] = str(rem)
@@ -1071,6 +1162,16 @@ def resolve(
     )
     timing.title_search_s += perf_counter() - t0
     timing.title_searches.extend(title_search_timings)
+    debug["title_search_queries_json"] = json.dumps(
+        [
+            query
+            for source_timing in title_search_timings
+            for query in source_timing.query_traces
+        ],
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
     # Pick the better of identifier-lookup (failed sanity) vs title-search.
     # Prefer whichever has the higher sanity score if both are present.
