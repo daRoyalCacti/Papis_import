@@ -3,19 +3,29 @@
 from __future__ import annotations
 
 import argparse
-import csv
-import json
-import os
 import statistics
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+from io_utils import (  # noqa: E402
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_PROFILE_TSV,
+    PROJECT_ROOT,
+    as_float,
+    as_int,
+    expand_path,
+    is_yes,
+    load_json_config,
+    parse_json_list_cell,
+    read_tsv_dicts,
+)
 
 
-CONFIG_PATH = "~/.config/papis-import/config.json"
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PROFILE_TSV = PROJECT_ROOT / "out" / "papis_import_profile.tsv"
 DEFAULT_DEST = PROJECT_ROOT / "out" / "profile_summary.md"
 
 PROVIDERS = [
@@ -40,47 +50,6 @@ KEY_SLOW_COLUMNS = [
 ]
 
 
-def expand_path(value: str | Path) -> Path:
-    return Path(os.path.expanduser(str(value))).resolve()
-
-
-def load_config(path: Path) -> dict[str, object]:
-    if not path.exists():
-        return {}
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except Exception as exc:
-        raise RuntimeError(f"failed to parse config JSON at {path}: {exc}") from exc
-    if not isinstance(data, dict):
-        raise RuntimeError(f"config at {path} must be a JSON object")
-    return data
-
-
-def load_tsv(path: Path) -> list[dict[str, str]]:
-    if not path.exists():
-        raise FileNotFoundError(path)
-    with path.open(encoding="utf-8", newline="") as f:
-        return list(csv.DictReader(f, delimiter="\t"))
-
-
-def as_float(value: str) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def as_int(value: str) -> int:
-    try:
-        return int(float(value))
-    except (TypeError, ValueError):
-        return 0
-
-
-def yes(value: str) -> bool:
-    return value.strip().lower() == "yes"
-
-
 def seconds(value: float) -> str:
     if value >= 3600:
         return f"{value / 3600:.2f}h"
@@ -93,18 +62,6 @@ def pct(part: float, whole: float) -> str:
     if whole <= 0:
         return "0.0%"
     return f"{100.0 * part / whole:.1f}%"
-
-
-def safe_json_list(value: str) -> list[dict[str, Any]]:
-    if not value.strip():
-        return []
-    try:
-        data = json.loads(value)
-    except Exception:
-        return []
-    if not isinstance(data, list):
-        return []
-    return [item for item in data if isinstance(item, dict)]
 
 
 def timing_columns(rows: list[dict[str, str]]) -> list[str]:
@@ -134,7 +91,7 @@ def summarize_identifier_json(rows: list[dict[str, str]]) -> tuple[dict[tuple[st
     resolver_stats: dict[tuple[str, str], Counter] = defaultdict(Counter)
     errors: Counter[str] = Counter()
     for row in rows:
-        for item in safe_json_list(row.get("Identifier Lookups JSON", "")):
+        for item in parse_json_list_cell(row.get("Identifier Lookups JSON", "")):
             resolver = str(item.get("resolver") or "(unknown)")
             kind = str(item.get("kind") or "(unknown)")
             key = (resolver, kind)
@@ -152,7 +109,7 @@ def summarize_title_search_json(rows: list[dict[str, str]]) -> tuple[Counter[str
     errors: Counter[str] = Counter()
     skip_reasons: Counter[str] = Counter()
     for row in rows:
-        for item in safe_json_list(row.get("Title Searches JSON", "")):
+        for item in parse_json_list_cell(row.get("Title Searches JSON", "")):
             for message in item.get("error_messages") or []:
                 message = str(message).strip()
                 if message:
@@ -183,7 +140,7 @@ def build_summary(rows: list[dict[str, str]], profile_tsv: Path, limit: int) -> 
     status_counts = Counter(row.get("Status", "") or "(blank)" for row in rows)
     confidence_counts = Counter((row.get("Confidence", "") or "(blank)").lower() for row in rows)
     final_source_counts = Counter(row.get("Final Source", "") or "(blank)" for row in rows)
-    verified = sum(1 for row in rows if yes(row.get("Verified", "")))
+    verified = sum(1 for row in rows if is_yes(row.get("Verified", "")))
     top_errors = Counter(row.get("Error", "").strip() for row in rows if row.get("Error", "").strip())
     rows_with_errors = sum(1 for row in rows if row.get("Error", "").strip())
 
@@ -406,7 +363,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Summarize a papis_import profile TSV.",
     )
-    parser.add_argument("--config", default=CONFIG_PATH, help="Config JSON path")
+    parser.add_argument("--config", default=DEFAULT_CONFIG_PATH, help="Config JSON path")
     parser.add_argument("--profile-tsv", default="", help="Profile TSV override")
     parser.add_argument("--dest", default="", help="Summary output path override")
     parser.add_argument("--top", type=int, default=10, help="Rows to show in top-N sections")
@@ -416,7 +373,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
     try:
-        cfg = load_config(expand_path(args.config))
+        cfg = load_json_config(args.config, missing_ok=True)
     except Exception as exc:
         print(f"[error] {exc}", file=sys.stderr)
         return 2
@@ -424,7 +381,7 @@ def main() -> int:
     profile_tsv = expand_path(args.profile_tsv or str(cfg.get("profile_tsv") or DEFAULT_PROFILE_TSV))
     dest = expand_path(args.dest or DEFAULT_DEST)
     try:
-        rows = load_tsv(profile_tsv)
+        rows = read_tsv_dicts(profile_tsv)
         summary = build_summary(rows, profile_tsv, max(1, args.top))
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(summary, encoding="utf-8")
@@ -433,7 +390,7 @@ def main() -> int:
         return 2
 
     file_wall_total = sum(as_float(row.get("File Wall s", "")) for row in rows)
-    verified = sum(1 for row in rows if yes(row.get("Verified", "")))
+    verified = sum(1 for row in rows if is_yes(row.get("Verified", "")))
     confidence_counts = Counter((row.get("Confidence", "") or "(blank)").lower() for row in rows)
     print(f"Wrote profile summary: {dest}")
     print(f"PDFs: {len(rows)}")

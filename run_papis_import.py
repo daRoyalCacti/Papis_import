@@ -36,14 +36,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import subprocess
 import sys
 from pathlib import Path
 
+from io_utils import DEFAULT_CONFIG_PATH, load_json_config
 
-_CONFIG_PATH = os.path.expanduser("~/.config/papis-import/config.json")
+_CONFIG_PATH = DEFAULT_CONFIG_PATH
 
 # Keys in config.json  →  CLI flag name (without leading --)
 _CONFIG_MAP = {
@@ -77,19 +77,6 @@ _CONFIG_MAP = {
 }
 
 
-def _load_config(path: str) -> dict:
-    p = Path(path)
-    if not p.exists():
-        raise FileNotFoundError(f"Config file not found: {p}")
-    try:
-        data = json.loads(p.read_text(encoding="utf-8"))
-    except Exception as exc:
-        raise RuntimeError(f"Failed to parse config JSON at {p}: {exc}") from exc
-    if not isinstance(data, dict):
-        raise RuntimeError(f"Config at {p} must be a JSON object")
-    return data
-
-
 def _has_flag(argv: list[str], flag: str) -> bool:
     """Check if *flag* (e.g. '--mailto') already appears in *argv*."""
     return flag in argv or any(a.startswith(flag + "=") for a in argv)
@@ -108,7 +95,7 @@ def main() -> int:
     known, rest = p.parse_known_args()
 
     try:
-        cfg = _load_config(known.config)
+        cfg = load_json_config(known.config)
     except FileNotFoundError as exc:
         if known.debug_config:
             print(f"[config] {exc}", file=sys.stderr)

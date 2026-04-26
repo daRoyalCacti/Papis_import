@@ -4,19 +4,29 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
-import os
 import re
 import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
-CONFIG_PATH = "~/.config/papis-import/config.json"
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_REVIEW_TSV = PROJECT_ROOT / "out" / "papis_import_review.tsv"
-DEFAULT_DEBUG_TSV = PROJECT_ROOT / "out" / "papis_import_debug.tsv"
+from io_utils import (  # noqa: E402
+    CONFIDENCE_RANK,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DEBUG_TSV,
+    DEFAULT_REVIEW_TSV,
+    PROJECT_ROOT,
+    expand_path,
+    is_yes,
+    load_json_config,
+    read_tsv_dicts,
+)
+
+
 DEFAULT_DEST = PROJECT_ROOT / "out" / "review_bundle"
 
 BAD_SOURCES = {"error", "none", "filename_title_only", "text_header", "synthesized"}
@@ -68,31 +78,6 @@ class BundleItem:
         return self.debug.get(key, "")
 
 
-def expand_path(value: str | Path) -> Path:
-    return Path(os.path.expanduser(str(value))).resolve()
-
-
-def load_config(path: Path) -> dict[str, object]:
-    if not path.exists():
-        return {}
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except Exception as exc:
-        raise RuntimeError(f"failed to parse config JSON at {path}: {exc}") from exc
-    if not isinstance(data, dict):
-        raise RuntimeError(f"config at {path} must be a JSON object")
-    return data
-
-
-def load_tsv(path: Path, required: bool = True) -> list[dict[str, str]]:
-    if not path.exists():
-        if required:
-            raise FileNotFoundError(path)
-        return []
-    with path.open(encoding="utf-8", newline="") as f:
-        return list(csv.DictReader(f, delimiter="\t"))
-
-
 def index_debug_rows(rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
     indexed: dict[str, dict[str, str]] = {}
     for row in rows:
@@ -102,12 +87,8 @@ def index_debug_rows(rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
     return indexed
 
 
-def truthy(value: str) -> bool:
-    return value.strip().lower() == "yes"
-
-
 def confidence_rank(value: str) -> int:
-    return {"low": 0, "medium": 1, "high": 2}.get(value.strip().lower(), 0)
+    return CONFIDENCE_RANK.get(value.strip().lower(), 0)
 
 
 def review_sort_key(item: BundleItem) -> tuple[int, int, int, int, int, int, int, int]:
@@ -116,9 +97,9 @@ def review_sort_key(item: BundleItem) -> tuple[int, int, int, int, int, int, int
     return (
         0 if not source_path.exists() else 1,
         0 if item.value("Error").strip() else 1,
-        0 if truthy(item.value("Needs OCR")) else 1,
-        0 if not truthy(item.value("Sanity Passed")) else 1,
-        0 if not truthy(item.value("Verified")) else 1,
+        0 if is_yes(item.value("Needs OCR")) else 1,
+        0 if not is_yes(item.value("Sanity Passed")) else 1,
+        0 if not is_yes(item.value("Verified")) else 1,
         confidence_rank(item.value("Confidence")),
         0 if source in BAD_SOURCES else 1,
         item.original_index,
@@ -198,9 +179,9 @@ def write_manifest(path: Path, items: list[BundleItem]) -> None:
 
 def write_report(path: Path, items: list[BundleItem], review_tsv: Path, debug_tsv: Path | None) -> None:
     copied = sum(1 for item in items if item.copied)
-    needs_ocr = sum(1 for item in items if truthy(item.value("Needs OCR")))
-    unverified = sum(1 for item in items if not truthy(item.value("Verified")))
-    sanity_failed = sum(1 for item in items if not truthy(item.value("Sanity Passed")))
+    needs_ocr = sum(1 for item in items if is_yes(item.value("Needs OCR")))
+    unverified = sum(1 for item in items if not is_yes(item.value("Verified")))
+    sanity_failed = sum(1 for item in items if not is_yes(item.value("Sanity Passed")))
 
     lines = [
         "# Review Bundle",
@@ -267,11 +248,11 @@ def copy_or_link_pdf(item: BundleItem, dest: Path, mode: str, used_names: set[st
 def compact_line(item: BundleItem) -> str:
     conf = (item.value("Confidence") or "?").upper()[:3]
     flags = []
-    if not truthy(item.value("Verified")):
+    if not is_yes(item.value("Verified")):
         flags.append("unverified")
-    if truthy(item.value("Needs OCR")):
+    if is_yes(item.value("Needs OCR")):
         flags.append("OCR")
-    if not truthy(item.value("Sanity Passed")):
+    if not is_yes(item.value("Sanity Passed")):
         flags.append("sanity-fail")
     flag_text = ", ".join(flags) if flags else "ok"
     title = item.value("Title") or "(no title)"
@@ -286,7 +267,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Copy review PDFs into a numbered bundle and write a review manifest.",
     )
-    parser.add_argument("--config", default=CONFIG_PATH, help="Config JSON path")
+    parser.add_argument("--config", default=DEFAULT_CONFIG_PATH, help="Config JSON path")
     parser.add_argument("--review-tsv", default="", help="Review TSV override")
     parser.add_argument("--debug-tsv", default="", help="Debug TSV override")
     parser.add_argument("--dest", default="", help="Bundle output directory override")
@@ -301,7 +282,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
     try:
-        cfg = load_config(expand_path(args.config))
+        cfg = load_json_config(args.config, missing_ok=True)
     except Exception as exc:
         print(f"[error] {exc}", file=sys.stderr)
         return 2
@@ -312,8 +293,8 @@ def main() -> int:
     dest = expand_path(args.dest or DEFAULT_DEST)
 
     try:
-        review_rows = load_tsv(review_tsv, required=True)
-        debug_rows = load_tsv(debug_tsv, required=False) if debug_tsv else []
+        review_rows = read_tsv_dicts(review_tsv, required=True)
+        debug_rows = read_tsv_dicts(debug_tsv, required=False) if debug_tsv else []
         prepare_dest(dest, force=args.force)
     except Exception as exc:
         print(f"[error] {exc}", file=sys.stderr)
