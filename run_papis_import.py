@@ -18,6 +18,7 @@ Example config.json:
     "vision_llm_model":     "meta-llama/llama-4-scout-17b-16e-instruct",
     "vision_only_if_hard":  true,
     "no_semantic_scholar":  false,
+    "semantic_scholar_api_key": "",
 
     "tsv":                 "~/Documents/papis_import.tsv",
     "review_tsv":          "~/Documents/papis_import_review.tsv",
@@ -73,6 +74,7 @@ _CONFIG_MAP = {
     "vision_dpi":           "vision-dpi",
     "vision_only_if_hard":  "vision-only-if-hard",
     "no_semantic_scholar":  "no-semantic-scholar",
+    "semantic_scholar_api_key": "semantic-scholar-api-key",
     "ollama_model":         "ollama-model",         # legacy
 }
 

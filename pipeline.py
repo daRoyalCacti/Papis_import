@@ -541,6 +541,7 @@ def _parallel_title_search(
     max_cands: int,
     google_key: str,
     use_ss: bool,
+    semantic_scholar_key: str = "",
     filename: str = "",
     timeout_s: float = 0.0,
 ) -> tuple[Metadata | None, float, list[TitleSearchTiming]]:
@@ -674,7 +675,10 @@ def _parallel_title_search(
                 skip_reason="title search timeout",
             ))
         else:
-            run_wave([("semanticscholar", semanticscholar_search)])
+            run_wave([(
+                "semanticscholar",
+                lambda http, c: semanticscholar_search(http, c, semantic_scholar_key),
+            )])
 
     return best, best_score, timings
 
@@ -1018,6 +1022,7 @@ def resolve(
     max_cands  = int(getattr(extractor.args, "max_search_candidates", 6))
     google_key = getattr(extractor.args, "google_books_api_key", "")
     use_ss     = not getattr(extractor.args, "no_semantic_scholar", False)
+    ss_key     = getattr(extractor.args, "semantic_scholar_api_key", "")
 
     # ---- Phase 1: cheap authoritative identifier lookups (DOI / ISBN / arXiv) ----
     # Each lookup is authoritative, but we still sanity-check the returned
@@ -1157,6 +1162,7 @@ def resolve(
     t0 = perf_counter()
     best_search, best_search_score, title_search_timings = _parallel_title_search(
         candidates, extractor, sanity_text, max_cands, google_key, use_ss,
+        semantic_scholar_key=ss_key,
         filename=path.name,
         timeout_s=float(getattr(extractor.args, "title_search_timeout", 12.0) or 0.0),
     )

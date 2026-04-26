@@ -231,14 +231,22 @@ def openlibrary_search(http: HttpClient, cand: Candidate) -> Metadata | None:
 # Semantic Scholar — excellent for maths/stats papers
 # ---------------------------------------------------------------------------
 
-def semanticscholar_search(http: HttpClient, cand: Candidate) -> Metadata | None:
+def semanticscholar_search(
+    http: HttpClient,
+    cand: Candidate,
+    api_key: str = "",
+) -> Metadata | None:
     if not cand.title:
         return None
     query  = f"{cand.title} {cand.authors[0]}" if cand.authors else cand.title
     params = {"query": query, "limit": "5", "fields": "title,authors,year,externalIds"}
     url    = f"{SEMANTIC_SCHOLAR_URL}/paper/search?{urllib.parse.urlencode(params)}"
+    headers = {"x-api-key": api_key.strip()} if api_key.strip() else None
     data   = http.get_json(url, "semanticscholar", json.dumps(params, sort_keys=True),
-                           bucket="semanticscholar", min_interval=0.5)
+                           headers=headers,
+                           bucket="semanticscholar",
+                           min_interval=1.05 if api_key.strip() else 0.5,
+                           max_retries=3 if api_key.strip() else 1)
     if not isinstance(data, dict):
         return None
     items = data.get("data") or []

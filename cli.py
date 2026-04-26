@@ -110,6 +110,8 @@ def parse_args() -> argparse.Namespace:
                         "(higher rate limits). Sent in the User-Agent header, not stored.")
     p.add_argument("--no-semantic-scholar", action="store_true",
                    help="Disable Semantic Scholar lookups")
+    p.add_argument("--semantic-scholar-api-key", default="",
+                   help="Optional Semantic Scholar API key (sent as x-api-key)")
     p.add_argument("--google-books-api-key", default="",
                    help="Optional Google Books API key (enables Google Books search)")
     p.add_argument("--grobid-url", default="",
