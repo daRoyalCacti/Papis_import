@@ -2,199 +2,60 @@
 from __future__ import annotations
 
 import difflib
-import os
 import re
 from pathlib import Path
 
+from papis_import.core.constants import (
+    ARXIV_API_URL,
+    CROSSREF_BASE,
+    DEFAULT_CACHE_DIR,
+    GOOGLE_BOOKS_URL,
+    OLLAMA_CHAT_URL,
+    OPENALEX_BASE,
+    OPENLIBRARY_BOOKS_URL,
+    OPENLIBRARY_SEARCH_URL,
+    SEMANTIC_SCHOLAR_URL,
+    USER_AGENT,
+)
+from papis_import.core.identifiers import (
+    ARXIV_RE,
+    DOI_RE,
+    ELSEVIER_PII_FMT_RE,
+    ELSEVIER_SCIDIR_RE,
+    ISBN_CANDIDATE_RE,
+    JSTOR_STABLE_RE,
+    extract_identifiers,
+    jstor_filename_doi,
+    numeric_filename_dois,
+    pii_to_doi,
+    validate_isbn,
+)
 from papis_import.core.process import command_exists, eprint, quote_shell, read_cmd
-
-# ---------------------------------------------------------------------------
-# API base URLs
-# ---------------------------------------------------------------------------
-
-CROSSREF_BASE          = "https://api.crossref.org"
-OPENLIBRARY_BOOKS_URL  = "https://openlibrary.org/api/books"
-OPENLIBRARY_SEARCH_URL = "https://openlibrary.org/search.json"
-ARXIV_API_URL          = "https://export.arxiv.org/api/query"
-SEMANTIC_SCHOLAR_URL   = "https://api.semanticscholar.org/graph/v1"
-GOOGLE_BOOKS_URL       = "https://www.googleapis.com/books/v1/volumes"
-OPENALEX_BASE          = "https://api.openalex.org"   # free, no key needed
-OLLAMA_CHAT_URL        = "http://localhost:11434/api/chat"
-
-USER_AGENT = "papis-import/2026.04 (https://github.com/)"
-
-DEFAULT_CACHE_DIR = os.path.expanduser("~/.cache/papis_import")
+from papis_import.core.text import (
+    CONTROL_RE,
+    MULTISPACE_RE,
+    YEAR_RE,
+    clean_filename_text,
+    clean_text,
+    decamelize,
+    first_year,
+    normalize_author_token,
+    normalize_title,
+    repair_ligature_splits,
+    repair_title_ligatures,
+    split_authors,
+    strip_footnote_markers,
+    strip_trailing_title_metadata,
+)
 
 # ---------------------------------------------------------------------------
 # Compiled regexes
 # ---------------------------------------------------------------------------
 
-DOI_RE = re.compile(r"\b(10\.\d{4,9}/[-._;()/:A-Z0-9]+)\b", re.I)
-
-# Exclude JSTOR stable/* paths from being matched as arXiv IDs
-ARXIV_RE = re.compile(
-    r"(?<!stable/)(?<![A-Za-z0-9])"
-    r"(?:arXiv\s*:?\s*)?"
-    r"((?:\d{4}\.\d{4,5}|[a-z\-]+(?:\.[A-Z]{2})?/\d{7})(?:v\d+)?)\b",
-    re.I,
-)
-ISBN_CANDIDATE_RE = re.compile(r"(?<!\d)(?:97[89][\-\s]?)?\d[\d\-\s]{8,20}[\dXx](?!\d)")
 HEX32_RE          = re.compile(r"^[0-9a-f]{32}$", re.I)
-YEAR_RE           = re.compile(r"\b(1[5-9]\d{2}|20\d{2}|2100)\b")
-JSTOR_STABLE_RE   = re.compile(r"\bstable/\d+\b", re.I)
-CONTROL_RE        = re.compile(r"[\x00-\x1f\x7f]")
-MULTISPACE_RE     = re.compile(r"\s+")
 LEADING_SERIES_RE = re.compile(r"^[\[(].{0,160}?[\])]\s*")
 ANNA_SPLIT_RE     = re.compile(r"\s+--\s+")
 ANNA_NAME_RE      = re.compile(r"^Anna['']?s Archive(?:-\d+)?$", re.I)
-
-# ---------------------------------------------------------------------------
-# Elsevier PII (Publisher Item Identifier) patterns
-#
-# Many journal articles downloaded from ScienceDirect have filenames like:
-#   1-s2.0-S0951832096000671-main.pdf
-# and Anna's Archive uses the formatted PII directly:
-#   s0049-237x(08)71107-8 -- hash -- Anna's Archive.pdf
-#
-# PIIs can be deterministically converted to Crossref DOIs of the form:
-#   10.1016/<PII>
-# ---------------------------------------------------------------------------
-
-# ScienceDirect download format: 1-s2.0-S<rawPII>-*.pdf
-# Raw PII: S + 4 digits + 4 chars (ISSN, may end in X) + 2 year + 5 seq + 1 check
-ELSEVIER_SCIDIR_RE = re.compile(
-    r"(?:^|[\\/\s])1-s2\.0-(S[\dA-Z]{14,18})(?:-\w+)?(?:\.pdf)?",
-    re.I,
-)
-
-# Formatted PII already contains hyphens and parentheses:  S0049-237X(08)71107-8
-ELSEVIER_PII_FMT_RE = re.compile(
-    r"\b(S\d{4}-\d{3}[\dX]\(\d{2}\)\d{5}-\d)\b",
-    re.I,
-)
-
-
-def pii_to_doi(pii: str) -> str:
-    """Convert an Elsevier PII to a DOI string, or '' if format is unrecognised."""
-    pii = pii.upper().strip()
-    # Already formatted: S0049-237X(08)71107-8  →  10.1016/S0049-237X(08)71107-8
-    if re.fullmatch(r"S\d{4}-\d{3}[\dX]\(\d{2}\)\d{5}-\d", pii):
-        return f"10.1016/{pii}"
-    # New-style raw ScienceDirect PII: S + 16 chars
-    m = re.fullmatch(r"S(\d{4})([\dX]{4})(\d{2})(\d{5})(\d)", pii)
-    if m:
-        issn = f"{m.group(1)}-{m.group(2)}"
-        return f"10.1016/S{issn}({m.group(3)}){m.group(4)}-{m.group(5)}"
-    # Old-style ScienceDirect PII: no S prefix, raw 16-char ISSN+year+seq+check
-    # e.g. 0047259X72900188  →  10.1016/0047-259X(72)90018-8
-    m2 = re.fullmatch(r"(\d{4})([\dX]{4})(\d{2})(\d{5})(\d)", pii)
-    if m2:
-        issn = f"{m2.group(1)}-{m2.group(2)}"
-        return f"10.1016/{issn}({m2.group(3)}){m2.group(4)}-{m2.group(5)}"
-    return ""
-
-
-def jstor_filename_doi(stem: str) -> str:
-    """If *stem* looks like a JSTOR stable ID (pure digits, 7-10 chars),
-    return the corresponding DOI, else ''."""
-    if re.fullmatch(r"\d{7,10}", stem):
-        return f"10.2307/{stem}"
-    return ""
-
-
-def numeric_filename_dois(stem: str) -> list[str]:
-    """For pure-numeric filenames (7-10 digits), return candidate DOIs to try.
-
-    Pure-numeric PDF filenames commonly come from:
-    - JSTOR stable IDs → 10.2307/NNNNN
-    - Project Euclid (Annals of Probability, Annals of Statistics, etc.)
-      → 10.1214/aop/NNNNN, 10.1214/aos/NNNNN, etc.
-    """
-    if not re.fullmatch(r"\d{7,10}", stem):
-        return []
-    candidates = [
-        f"10.2307/{stem}",
-        f"10.1214/aop/{stem}",
-        f"10.1214/aos/{stem}",
-        f"10.1214/aoms/{stem}",
-        f"10.1214/aoap/{stem}",
-        f"10.1214/ss/{stem}",
-        f"10.1214/lnms/{stem}",
-        f"10.1214/{stem}",
-    ]
-    return candidates
-
-
-def strip_footnote_markers(s: str) -> str:
-    """Remove footnote/affiliation markers from author strings.
-
-    Handles: ∗ † ‡ § ¶ * ASCII-star, and trailing/leading superscript digits
-    like "Smith1" or "Jones 1 2 3".
-    """
-    s = re.sub(r"[∗†‡§¶✝✦⋆]", "", s)
-    s = s.replace("*", "")
-    # Remove standalone digits that are clearly superscript markers:
-    # trailing digits after a name ("Cohen1"), or standalone digits between names
-    s = re.sub(r"(?<=[a-zA-Z])\d+", "", s)  # "Smith1" → "Smith"
-    s = re.sub(r"\s+\d+(?=\s|$)", " ", s)   # " 1 2" → " "
-    return s.strip()
-
-
-def repair_ligature_splits(text: str) -> str:
-    """Fix the PDF ligature-split artifact where words get spaces injected.
-
-    Some PDF renderers produce "G Radient D Escent" instead of "Gradient Descent"
-    because ligature glyph tables are missing.  The second fragment starts with an
-    uppercase letter (it's treated as a new word by the PDF renderer).
-
-    Pattern: a single uppercase letter (not A or I, which are real English words)
-    followed by a space and a word starting with uppercase then lowercase.
-
-    Only applied when ≥3 such splits are detected, indicating a systematic issue
-    rather than a coincidence.
-    """
-    pattern = re.compile(r"\b([B-HJ-Z])\s+([A-Z][a-z]{2,})\b")
-    matches = pattern.findall(text)
-    if len(matches) < 3:
-        return text
-    return pattern.sub(lambda m: m.group(1) + m.group(2).lower(), text)
-
-
-def repair_title_ligatures(title: str) -> str:
-    """Like repair_ligature_splits but with a lower threshold (≥2) for short
-    titles, and also handles multi-fragment splits like 'T Ypi Cally'.
-
-    Applied per-candidate-title rather than per-document.
-    """
-    # First pass: standard single-letter splits (lower threshold for titles)
-    pattern = re.compile(r"\b([B-HJ-Z])\s+([A-Z][a-z]{1,})\b")
-    matches = pattern.findall(title)
-    if len(matches) >= 2:
-        title = pattern.sub(lambda m: m.group(1) + m.group(2).lower(), title)
-    # Second pass: rejoin fragments — "Typi Cally" → "Typically" where a
-    # short word fragment (2-5 chars, likely not a real word) is followed by
-    # a capitalized fragment. Only triggered when the first pass found splits.
-    if len(matches) >= 2:
-        frag_pattern = re.compile(r"\b([A-Za-z][a-z]{1,4})\s+([A-Z][a-z]{2,})\b")
-        _COMMON = frozenset({"the", "and", "for", "with", "from", "that", "this",
-                             "are", "was", "were", "has", "have", "had", "but",
-                             "not", "can", "its", "our", "their", "via", "per",
-                             "on", "at", "in", "of", "to", "by", "an", "or",
-                             "as", "is", "it", "be", "do", "so", "no", "if",
-                             "edge", "rule", "loss", "deep", "data", "step",
-                             "new", "non", "all", "one", "two", "how", "why",})
-        def _rejoin(m: re.Match) -> str:
-            left = m.group(1)
-            if left.lower() in _COMMON:
-                return m.group(0)
-            return left + m.group(2).lower()
-        prev = title
-        for _ in range(5):
-            title = frag_pattern.sub(_rejoin, title)
-            if title == prev:
-                break
-            prev = title
-    return title
 
 
 def is_garbage_title(title: str) -> bool:
@@ -367,193 +228,6 @@ NOISE_LINE_PATTERNS = [
     re.compile(r"^(?:illinois|annals|bulletin|proceedings)\s+journal\b", re.I),
     re.compile(r"^institute of mathematical statistics\b", re.I),
 ]
-
-# ---------------------------------------------------------------------------
-# Text cleaning
-# ---------------------------------------------------------------------------
-
-def clean_text(s: str) -> str:
-    s = CONTROL_RE.sub(" ", s)
-    s = s.replace("\u00a0", " ")
-    s = MULTISPACE_RE.sub(" ", s)
-    return s.strip()
-
-
-def decamelize(s: str) -> str:
-    s = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", s)
-    s = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", " ", s)
-    s = re.sub(r"(?<=[A-Za-z])(?=\d)", " ", s)
-    s = re.sub(r"(?<=\d)(?=[A-Za-z])", " ", s)
-    return s
-
-
-def clean_filename_text(s: str) -> str:
-    s = clean_text(s)
-    s = decamelize(s)
-    s = s.replace("_", " ")
-    s = re.sub(r"^\[[^\]]{1,200}\]\s*", "", s)
-    s = re.sub(r"\s+", " ", s)
-    if s.count("-") >= 4 and " " not in s:
-        s = s.replace("-", " ")
-    s = re.sub(r"\b(?:paper|main|supplementary material|supplement|accepted|final draft)\b$", "", s, flags=re.I)
-    s = re.sub(r"^(?:nips|neurips|icml|aistats|jmlr|uai|aaai|cvpr|iclr)[-_ ]+\d{4}[-_ ]+", "", s, flags=re.I)
-    s = re.sub(r"^\d{4}[_ -]+book[_ -]+", "", s, flags=re.I)
-    s = re.sub(r"\s*\((\d+)\)$", "", s)
-    s = re.sub(r"\s+", " ", s).strip(" -_.")
-    return clean_text(s)
-
-
-def strip_trailing_title_metadata(title: str) -> tuple[str, str]:
-    """Remove trailing publisher/year junk like '(2020, Chapman & Hall…)'.
-    Returns (cleaned_title, extracted_year)."""
-    raw = clean_text(title)
-    year = first_year(raw)
-    trimmed = re.sub(r"\s*\((\d{4})(?:\s*,[^)]*)?\)?$", "", raw)
-    if trimmed != raw:
-        return clean_text(trimmed).strip(" -_.,;:"), year
-    m = re.match(r"^(.*?)(?:\s*[\[(](\d{4})(?:\s*,.*)?)$", raw)
-    if m:
-        return clean_text(m.group(1)).strip(" -_.,;:"), m.group(2)
-    return raw, year
-
-
-def normalize_title(s: str) -> str:
-    s = clean_text(s).lower()
-    s = s.replace("&", " and ")
-    s = re.sub(r"\b(edition|ed\.?|vol\.?|volume)\b", " ", s)
-    s = re.sub(r"[^a-z0-9]+", " ", s)
-    s = MULTISPACE_RE.sub(" ", s).strip()
-    return s
-
-
-def normalize_author_token(s: str) -> str:
-    s = clean_text(s).lower()
-    s = s.replace("author(s):", "")
-    s = re.sub(r"[^a-z\s,.-]", " ", s)
-    s = MULTISPACE_RE.sub(" ", s).strip(" ,.-")
-    return s
-
-
-def split_authors(text: str) -> list[str]:
-    text = clean_text(text)
-    text = text.replace("Author(s):", "").replace("author(s):", "")
-    text = text.replace("_", " ")
-    if not text:
-        return []
-    if ";" in text:
-        parts = [clean_text(p) for p in text.split(";")]
-    elif " and " in text.lower():
-        parts = [clean_text(p) for p in re.split(r"\band\b", text, flags=re.I)]
-    elif " · " in text:
-        parts = [clean_text(p) for p in text.split(" · ")]
-    elif text.count(",") >= 3:
-        # Surname, Given, Surname, Given … style
-        raw = [clean_text(p) for p in text.split(",") if clean_text(p)]
-        parts = []
-        i = 0
-        while i < len(raw):
-            if i + 1 < len(raw):
-                parts.append(clean_text(raw[i + 1] + " " + raw[i]))
-                i += 2
-            else:
-                parts.append(raw[i])
-                i += 1
-    else:
-        parts = [clean_text(p) for p in text.split(",") if len(text.split(",")) <= 4]
-        if len(parts) <= 1:
-            return [text]
-    return [p for p in parts if p]
-
-
-def first_year(*chunks: str) -> str:
-    for chunk in chunks:
-        if not chunk:
-            continue
-        m = YEAR_RE.search(chunk)
-        if m:
-            return m.group(1)
-    return ""
-
-
-# ---------------------------------------------------------------------------
-# ISBN validation
-# ---------------------------------------------------------------------------
-
-def validate_isbn(raw: str) -> str:
-    """Return a normalised ISBN-10 or ISBN-13 string, or '' if invalid."""
-    s = re.sub(r"[^0-9Xx]", "", raw)
-    if len(s) == 10:
-        total = 0
-        for i, ch in enumerate(s[:9], start=1):
-            if not ch.isdigit():
-                return ""
-            total += i * int(ch)
-        check = 10 if s[9] in "Xx" else (int(s[9]) if s[9].isdigit() else -1)
-        if check < 0:
-            return ""
-        total += 10 * check
-        return s.upper() if total % 11 == 0 else ""
-    if len(s) == 13 and s.isdigit():
-        total = 0
-        for i, ch in enumerate(s[:12]):
-            total += int(ch) * (1 if i % 2 == 0 else 3)
-        check = (10 - (total % 10)) % 10
-        return s if check == int(s[12]) else ""
-    return ""
-
-
-def extract_identifiers(
-    *chunks: str,
-) -> tuple[list[str], list[str], list[str], list[str]]:
-    """Return (dois, isbns, arxivs, jstor_stable_ids) found across all chunks.
-
-    Also detects Elsevier PIIs from ScienceDirect filenames and formatted
-    Anna's Archive names, converting them to 10.1016/... DOIs so they can
-    be resolved via Crossref like any other DOI.
-    """
-    dois: list[str] = []
-    isbns: list[str] = []
-    arxivs: list[str] = []
-    stable_ids: list[str] = []
-    for chunk in chunks:
-        if not chunk:
-            continue
-        for m in DOI_RE.finditer(chunk):
-            doi = m.group(1).rstrip(").,;:")
-            if doi not in dois:
-                dois.append(doi)
-        for m in ISBN_CANDIDATE_RE.finditer(chunk):
-            isbn = validate_isbn(m.group(0))
-            if isbn and isbn not in isbns:
-                isbns.append(isbn)
-        for m in JSTOR_STABLE_RE.finditer(chunk):
-            sid = m.group(0)
-            if sid not in stable_ids:
-                stable_ids.append(sid)
-        for m in ARXIV_RE.finditer(chunk):
-            arx = m.group(1)
-            if arx and not arx.lower().startswith("stable/") and arx not in arxivs:
-                arxivs.append(arx)
-        # Elsevier PII → DOI (ScienceDirect filenames: 1-s2.0-SPII-main.pdf)
-        for m in ELSEVIER_SCIDIR_RE.finditer(chunk):
-            doi = pii_to_doi(m.group(1))
-            if doi and doi not in dois:
-                dois.append(doi)
-        # Old-format ScienceDirect PII (no S prefix): 1-s2.0-0047259X72900188-main.pdf
-        for m in re.finditer(
-            r"(?:^|[\\/\s])1-s2\.0-(\d[\dA-X]{15})(?:-\w+)?(?:\.pdf)?",
-            chunk, re.I
-        ):
-            doi = pii_to_doi(m.group(1))
-            if doi and doi not in dois:
-                dois.append(doi)
-        # Elsevier formatted PII (Anna's Archive: s0049-237x(08)71107-8)
-        for m in ELSEVIER_PII_FMT_RE.finditer(chunk):
-            doi = pii_to_doi(m.group(1))
-            if doi and doi not in dois:
-                dois.append(doi)
-    return dois, isbns, arxivs, stable_ids
-
 
 # ---------------------------------------------------------------------------
 # Similarity
