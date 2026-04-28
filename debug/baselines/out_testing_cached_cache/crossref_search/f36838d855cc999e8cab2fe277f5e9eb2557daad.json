@@ -1,0 +1,256 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 220530,
+    "items": [
+      {
+        "DOI": "10.52202/068431-2023",
+        "title": [
+          "A Reparametrization-Invariant Sharpness Measure Based on Information Geometry"
+        ],
+        "author": [
+          {
+            "given": "Cheongjae",
+            "family": "Jang",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Sungyoon",
+            "family": "Lee",
+            "sequence": "additional",
+            "affiliation": []
+          },
+          {
+            "given": "Yung-Kyun",
+            "family": "Noh",
+            "sequence": "additional",
+            "affiliation": []
+          },
+          {
+            "given": "Frank",
+            "family": "Park",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2022
+            ]
+          ]
+        },
+        "publisher": "Neural Information Processing Systems Foundation, Inc. (NeurIPS)",
+        "score": 63.001625,
+        "type": "proceedings-article"
+      },
+      {
+        "DOI": "10.1109/tsg.2021.3136891",
+        "title": [
+          "Sensitivity Model-Based Optimal Decentralized Dispatching Strategy of Multi-Terminal DC Links for the Integration of Distributed Generations in Distribution Networks"
+        ],
+        "author": [
+          {
+            "ORCID": "https://orcid.org/0000-0002-7454-5148",
+            "authenticated-orcid": false,
+            "given": "Changhee",
+            "family": "Han",
+            "sequence": "first",
+            "affiliation": [
+              {
+                "name": "Department of Electrical Engineering, Korea University, Seoul, South Korea"
+              }
+            ]
+          },
+          {
+            "given": "Sungyoon",
+            "family": "Song",
+            "sequence": "additional",
+            "affiliation": [
+              {
+                "name": "Advanced Power Grid Research Department, Korea Electrotechnology Research Institute, Uiwang, South Korea"
+              }
+            ]
+          },
+          {
+            "ORCID": "https://orcid.org/0000-0003-0357-1776",
+            "authenticated-orcid": false,
+            "given": "Hansang",
+            "family": "Lee",
+            "sequence": "additional",
+            "affiliation": [
+              {
+                "name": "Department of Electrical Engineering, Semyung University, Jecheon, Chungcheongbuk-do, South Korea"
+              }
+            ]
+          },
+          {
+            "ORCID": "https://orcid.org/0000-0001-7590-8345",
+            "authenticated-orcid": false,
+            "given": "Gilsoo",
+            "family": "Jang",
+            "sequence": "additional",
+            "affiliation": [
+              {
+                "name": "School of Electrical Engineering, Korea University, Seoul, South Korea"
+              }
+            ]
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2022,
+              9
+            ]
+          ]
+        },
+        "publisher": "Institute of Electrical and Electronics Engineers (IEEE)",
+        "score": 30.949299,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.1109/apec.2010.5433509",
+        "title": [
+          "PMSM control based on edge field measurements by Hall sensors"
+        ],
+        "author": [
+          {
+            "given": "Sungyoon",
+            "family": "Jung",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Beomseok",
+            "family": "Lee",
+            "sequence": "additional",
+            "affiliation": []
+          },
+          {
+            "given": "Kwanghee",
+            "family": "Nam",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2010,
+              2
+            ]
+          ]
+        },
+        "publisher": "IEEE",
+        "score": 30.30997,
+        "type": "proceedings-article"
+      },
+      {
+        "DOI": "10.1109/access.2022.3163595",
+        "title": [
+          "Probabilistic Assessment of PV Hosting Capacity Under Coordinated Voltage Regulation in Unbalanced Active Distribution Networks"
+        ],
+        "author": [
+          {
+            "ORCID": "https://orcid.org/0000-0002-7454-5148",
+            "authenticated-orcid": false,
+            "given": "Changhee",
+            "family": "Han",
+            "sequence": "first",
+            "affiliation": [
+              {
+                "name": "Department of Electrical Engineering, Korea University, Seoul, South Korea"
+              }
+            ]
+          },
+          {
+            "given": "Dongwon",
+            "family": "Lee",
+            "sequence": "additional",
+            "affiliation": [
+              {
+                "name": "Department of Electrical Engineering, Korea University, Seoul, South Korea"
+              }
+            ]
+          },
+          {
+            "ORCID": "https://orcid.org/0000-0002-6501-1304",
+            "authenticated-orcid": false,
+            "given": "Sungyoon",
+            "family": "Song",
+            "sequence": "additional",
+            "affiliation": [
+              {
+                "name": "Advanced Power Grid Research Center, Korea Electrotechnology Research Institute, Uiwang-si, South Korea"
+              }
+            ]
+          },
+          {
+            "ORCID": "https://orcid.org/0000-0001-7590-8345",
+            "authenticated-orcid": false,
+            "given": "Gilsoo",
+            "family": "Jang",
+            "sequence": "additional",
+            "affiliation": [
+              {
+                "name": "Department of Electrical Engineering, Korea University, Seoul, South Korea"
+              }
+            ]
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2022
+            ]
+          ]
+        },
+        "publisher": "Institute of Electrical and Electronics Engineers (IEEE)",
+        "score": 30.05254,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.5909/jeb.2011.16.3.552",
+        "title": [
+          "Sharpness Measure Based on the Frequency Domain Information"
+        ],
+        "author": [
+          {
+            "given": "Hyun-Soo",
+            "family": "Choi",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Chul-Hee",
+            "family": "Lee",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2011,
+              5,
+              30
+            ]
+          ]
+        },
+        "publisher": "The Korean Institute of Broadcast and Media Engineers",
+        "score": 29.674406,
+        "type": "journal-article"
+      }
+    ],
+    "items-per-page": 5,
+    "query": {
+      "start-index": 0,
+      "search-terms": null
+    }
+  }
+}

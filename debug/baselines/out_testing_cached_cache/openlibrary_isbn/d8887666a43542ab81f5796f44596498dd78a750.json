@@ -1,0 +1,72 @@
+{
+  "ISBN:3540497307": {
+    "url": "http://openlibrary.org/books/OL35894896M/Algorithmic_Learning_Theory",
+    "key": "/books/OL35894896M",
+    "title": "Algorithmic Learning Theory",
+    "subtitle": "9th International Conference, ALT'98, Otzenhausen, Germany, October 8-10, 1998 Proceedings",
+    "authors": [
+      {
+        "url": "http://openlibrary.org/authors/OL7876873A/Naoki_Abe",
+        "name": "Naoki Abe"
+      },
+      {
+        "url": "http://openlibrary.org/authors/OL7876874A/Roni_Khardon",
+        "name": "Roni Khardon"
+      },
+      {
+        "url": "http://openlibrary.org/authors/OL7876875A/Thomas_Zeugmann",
+        "name": "Thomas Zeugmann"
+      }
+    ],
+    "pagination": "xi, 444",
+    "identifiers": {
+      "isbn_13": [
+        "9783540497301"
+      ],
+      "openlibrary": [
+        "OL35894896M"
+      ]
+    },
+    "classifications": {
+      "lc_classifications": [
+        "QA75.5-76.95"
+      ]
+    },
+    "publishers": [
+      {
+        "name": "Springer"
+      }
+    ],
+    "publish_date": "2003",
+    "subjects": [
+      {
+        "name": "Computer algorithms",
+        "url": "https://openlibrary.org/subjects/computer_algorithms"
+      },
+      {
+        "name": "Congresses",
+        "url": "https://openlibrary.org/subjects/congresses"
+      },
+      {
+        "name": "Machine learning",
+        "url": "https://openlibrary.org/subjects/machine_learning"
+      },
+      {
+        "name": "Computer science",
+        "url": "https://openlibrary.org/subjects/computer_science"
+      },
+      {
+        "name": "Computer software",
+        "url": "https://openlibrary.org/subjects/computer_software"
+      },
+      {
+        "name": "Artificial intelligence",
+        "url": "https://openlibrary.org/subjects/artificial_intelligence"
+      },
+      {
+        "name": "Text processing (Computer science",
+        "url": "https://openlibrary.org/subjects/text_processing_(computer_science"
+      }
+    ]
+  }
+}

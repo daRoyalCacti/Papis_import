@@ -1,0 +1,57 @@
+{
+  "total": 3,
+  "offset": 0,
+  "data": [
+    {
+      "paperId": "40cabde90f17d530e340b3f745cfc86b7a7ac140",
+      "externalIds": {
+        "MAG": "2885549115",
+        "DOI": "10.1090/MBK/107",
+        "CorpusId": 28640176
+      },
+      "title": "Markov Chains and Mixing Times: Second Edition",
+      "year": 2017,
+      "authors": [
+        {
+          "authorId": "32642675",
+          "name": "David A. Levin"
+        },
+        {
+          "authorId": "145613463",
+          "name": "Y. Peres"
+        }
+      ]
+    },
+    {
+      "paperId": "f401a17d73c3e1024e775bd3de589ceba9cddf48",
+      "externalIds": {
+        "MAG": "2900048801",
+        "DOI": "10.1007/S00283-018-9839-X",
+        "CorpusId": 125379648
+      },
+      "title": "Markov Chains and Mixing Times (Second Edition) by David A. Levin and Yuval Peres",
+      "year": 2018,
+      "authors": [
+        {
+          "authorId": "144990404",
+          "name": "D. Aldous"
+        }
+      ]
+    },
+    {
+      "paperId": "23277a84ded92878677270fce0825e9584decdd4",
+      "externalIds": {
+        "DOI": "10.1007/s00283-018-9839-x",
+        "CorpusId": 253819001
+      },
+      "title": "Markov Chains and Mixing Times (Second Edition) by David A. Levin and Yuval Peres",
+      "year": 2018,
+      "authors": [
+        {
+          "authorId": "144990404",
+          "name": "D. Aldous"
+        }
+      ]
+    }
+  ]
+}

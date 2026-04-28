@@ -1,0 +1,33 @@
+{
+  "id": "chatcmpl-f9dba3fd-834b-4a81-96cd-0fd1a927f9b1",
+  "object": "chat.completion",
+  "created": 1777361037,
+  "model": "llama-3.3-70b-versatile",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"title\": \"STAT3006: Statistical Learning\",\n   \"authors\": [\"Hien Nguyen\"],\n   \"year\": \"2022\",\n   \"doi\": \"\",\n   \"isbn\": \"\",\n   \"arxiv\": \"\",\n   \"notes\": \"Extracted from PDF text\"\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.023503545,
+    "prompt_tokens": 806,
+    "prompt_time": 0.039581078,
+    "completion_tokens": 58,
+    "completion_time": 0.119921695,
+    "total_tokens": 864,
+    "total_time": 0.159502773
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_45180df409",
+  "x_groq": {
+    "id": "req_01kq9fj9jdepfr05hat6sy0hv5",
+    "seed": 1437704288
+  },
+  "service_tier": "on_demand"
+}

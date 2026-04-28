@@ -1,0 +1,33 @@
+{
+  "id": "chatcmpl-51c4bf36-ca21-438c-90be-3707a2f17eea",
+  "object": "chat.completion",
+  "created": 1777360986,
+  "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n\"title\": \"Borel Spaces\",\n  \"authors\": [\"S. K. Berberian\"],\n  \"year\": \"\",\n  \"doi\": \"\",\n  \"isbn\": \"\",\n  \"arxiv\": \"\",\n  \"publisher\": \"\",\n  \"notes\": \"\"\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.074511014,
+    "prompt_tokens": 2159,
+    "prompt_time": 0.099239692,
+    "completion_tokens": 55,
+    "completion_time": 0.123963349,
+    "total_tokens": 2214,
+    "total_time": 0.223203041
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_f0bb21cb36",
+  "x_groq": {
+    "id": "req_01kq9fgr19fv2bj40pn65g95d6",
+    "seed": 1693323061
+  },
+  "service_tier": "on_demand"
+}

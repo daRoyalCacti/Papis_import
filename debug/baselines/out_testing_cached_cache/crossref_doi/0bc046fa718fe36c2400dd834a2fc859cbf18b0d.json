@@ -1,0 +1,154 @@
+{
+  "status": "ok",
+  "message-type": "work",
+  "message-version": "1.0.0",
+  "message": {
+    "indexed": {
+      "date-parts": [
+        [
+          2026,
+          4,
+          25
+        ]
+      ],
+      "date-time": "2026-04-25T06:55:54Z",
+      "timestamp": 1777100154264,
+      "version": "3.51.4"
+    },
+    "publisher-location": "Berlin, Heidelberg",
+    "reference-count": 0,
+    "publisher": "Springer Berlin Heidelberg",
+    "isbn-type": [
+      {
+        "value": "9783540422051",
+        "type": "print"
+      },
+      {
+        "value": "9783642564680",
+        "type": "electronic"
+      }
+    ],
+    "license": [
+      {
+        "start": {
+          "date-parts": [
+            [
+              2001,
+              1,
+              1
+            ]
+          ],
+          "date-time": "2001-01-01T00:00:00Z",
+          "timestamp": 978307200000
+        },
+        "content-version": "tdm",
+        "delay-in-days": 0,
+        "URL": "http://www.springer.com/tdm"
+      }
+    ],
+    "content-domain": {
+      "domain": [],
+      "crossmark-restriction": false
+    },
+    "short-container-title": [],
+    "published-print": {
+      "date-parts": [
+        [
+          2001
+        ]
+      ]
+    },
+    "DOI": "10.1007/978-3-642-56468-0",
+    "type": "book",
+    "created": {
+      "date-parts": [
+        [
+          2011,
+          7,
+          18
+        ]
+      ],
+      "date-time": "2011-07-18T18:01:27Z",
+      "timestamp": 1311012087000
+    },
+    "source": "Crossref",
+    "is-referenced-by-count": 650,
+    "title": [
+      "Fundamentals of Convex Analysis"
+    ],
+    "prefix": "10.1007",
+    "author": [
+      {
+        "given": "Jean-Baptiste",
+        "family": "Hiriart-Urruty",
+        "sequence": "first",
+        "affiliation": []
+      },
+      {
+        "given": "Claude",
+        "family": "Lemaréchal",
+        "sequence": "additional",
+        "affiliation": []
+      }
+    ],
+    "member": "297",
+    "container-title": [],
+    "original-title": [],
+    "language": "en",
+    "link": [
+      {
+        "URL": "http://link.springer.com/content/pdf/10.1007/978-3-642-56468-0.pdf",
+        "content-type": "application/pdf",
+        "content-version": "vor",
+        "intended-application": "text-mining"
+      },
+      {
+        "URL": "http://link.springer.com/content/pdf/10.1007/978-3-642-56468-0",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "deposited": {
+      "date-parts": [
+        [
+          2019,
+          5,
+          15
+        ]
+      ],
+      "date-time": "2019-05-15T10:11:46Z",
+      "timestamp": 1557915106000
+    },
+    "score": 1,
+    "resource": {
+      "primary": {
+        "URL": "http://link.springer.com/10.1007/978-3-642-56468-0"
+      }
+    },
+    "subtitle": [],
+    "short-title": [],
+    "issued": {
+      "date-parts": [
+        [
+          2001
+        ]
+      ]
+    },
+    "ISBN": [
+      "9783540422051",
+      "9783642564680"
+    ],
+    "references-count": 0,
+    "URL": "https://doi.org/10.1007/978-3-642-56468-0",
+    "relation": {},
+    "subject": [],
+    "published": {
+      "date-parts": [
+        [
+          2001
+        ]
+      ]
+    }
+  }
+}

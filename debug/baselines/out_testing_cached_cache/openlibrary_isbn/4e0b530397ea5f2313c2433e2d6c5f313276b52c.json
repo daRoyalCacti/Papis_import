@@ -1,0 +1,88 @@
+{
+  "ISBN:0387295704": {
+    "url": "http://openlibrary.org/books/OL7445187M/Convex_Analysis_and_Nonlinear_Optimization",
+    "key": "/books/OL7445187M",
+    "title": "Convex Analysis and Nonlinear Optimization",
+    "subtitle": "Theory and Examples (CMS Books in Mathematics)",
+    "authors": [
+      {
+        "url": "http://openlibrary.org/authors/OL1006664A/Jonathan_M._Borwein",
+        "name": "Jonathan M. Borwein"
+      }
+    ],
+    "number_of_pages": 310,
+    "identifiers": {
+      "goodreads": [
+        "2507149"
+      ],
+      "librarything": [
+        "1617780"
+      ],
+      "isbn_10": [
+        "0387295704"
+      ],
+      "isbn_13": [
+        "9780387295701"
+      ],
+      "lccn": [
+        "2005934031"
+      ],
+      "oclc": [
+        "63166869"
+      ],
+      "openlibrary": [
+        "OL7445187M"
+      ]
+    },
+    "classifications": {
+      "lc_classifications": [
+        "QA299.6-433QA402.5-4",
+        "QA331.5 .B65 2006"
+      ]
+    },
+    "publishers": [
+      {
+        "name": "Springer"
+      }
+    ],
+    "publish_date": "November 30, 2005",
+    "subjects": [
+      {
+        "name": "Mathematical optimization",
+        "url": "https://openlibrary.org/subjects/mathematical_optimization"
+      },
+      {
+        "name": "Nonlinear theories",
+        "url": "https://openlibrary.org/subjects/nonlinear_theories"
+      },
+      {
+        "name": "Convex functions",
+        "url": "https://openlibrary.org/subjects/convex_functions"
+      },
+      {
+        "name": "Mathematics",
+        "url": "https://openlibrary.org/subjects/mathematics"
+      },
+      {
+        "name": "Global analysis (Mathematics)",
+        "url": "https://openlibrary.org/subjects/global_analysis_(mathematics)"
+      },
+      {
+        "name": "Analysis",
+        "url": "https://openlibrary.org/subjects/analysis"
+      }
+    ],
+    "ebooks": [
+      {
+        "preview_url": "https://archive.org/details/convexanalysisno00borw_827",
+        "availability": "noview",
+        "formats": {}
+      }
+    ],
+    "cover": {
+      "small": "https://covers.openlibrary.org/b/id/245073-S.jpg",
+      "medium": "https://covers.openlibrary.org/b/id/245073-M.jpg",
+      "large": "https://covers.openlibrary.org/b/id/245073-L.jpg"
+    }
+  }
+}

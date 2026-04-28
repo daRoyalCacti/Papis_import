@@ -1,0 +1,75 @@
+{
+  "ISBN:0387242988": {
+    "url": "http://openlibrary.org/books/OL3480293M/Techniques_of_variational_analysis",
+    "key": "/books/OL3480293M",
+    "title": "Techniques of variational analysis",
+    "authors": [
+      {
+        "url": "http://openlibrary.org/authors/OL1006664A/Jonathan_M._Borwein",
+        "name": "Jonathan M. Borwein"
+      }
+    ],
+    "number_of_pages": 362,
+    "pagination": "vi, 362 p. :",
+    "by_statement": "Jonathan M. Borwein, Qiji J. Zhu.",
+    "identifiers": {
+      "goodreads": [
+        "1940773"
+      ],
+      "librarything": [
+        "1916788"
+      ],
+      "isbn_10": [
+        "0387242988"
+      ],
+      "lccn": [
+        "2005923774"
+      ],
+      "oclc": [
+        "61029300"
+      ],
+      "openlibrary": [
+        "OL3480293M"
+      ]
+    },
+    "classifications": {
+      "lc_classifications": [
+        "QA315 .B77 2005",
+        "QA402.5-402.6"
+      ],
+      "dewey_decimal_class": [
+        "515/.64"
+      ]
+    },
+    "publishers": [
+      {
+        "name": "Springer"
+      }
+    ],
+    "publish_places": [
+      {
+        "name": "New York"
+      }
+    ],
+    "publish_date": "2005",
+    "subjects": [
+      {
+        "name": "Calculus of variations",
+        "url": "https://openlibrary.org/subjects/calculus_of_variations"
+      }
+    ],
+    "notes": "Includes bibliographical references (p. [339]-352) and index.",
+    "ebooks": [
+      {
+        "preview_url": "https://archive.org/details/techniquesvariat00borw",
+        "availability": "noview",
+        "formats": {}
+      }
+    ],
+    "cover": {
+      "small": "https://covers.openlibrary.org/b/id/245013-S.jpg",
+      "medium": "https://covers.openlibrary.org/b/id/245013-M.jpg",
+      "large": "https://covers.openlibrary.org/b/id/245013-L.jpg"
+    }
+  }
+}

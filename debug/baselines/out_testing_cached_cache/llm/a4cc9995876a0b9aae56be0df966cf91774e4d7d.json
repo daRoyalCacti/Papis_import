@@ -1,0 +1,33 @@
+{
+  "id": "chatcmpl-ff669438-ad00-41c0-b633-9d5d443a04fc",
+  "object": "chat.completion",
+  "created": 1777361074,
+  "model": "llama-3.3-70b-versatile",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"title\": \"\",\n   \"authors\": [\"R. M. Dudley\"],\n   \"year\": \"\",\n   \"doi\": \"\",\n   \"isbn\": \"\",\n   \"arxiv\": \"\",\n   \"notes\": \"Insufficient information to determine title and other fields.\"\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.009721507,
+    "prompt_tokens": 507,
+    "prompt_time": 0.025616132,
+    "completion_tokens": 54,
+    "completion_time": 0.123492732,
+    "total_tokens": 561,
+    "total_time": 0.149108864
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_3272ea2d91",
+  "x_groq": {
+    "id": "req_01kq9fke95fvzswpj717rypn0c",
+    "seed": 1898587637
+  },
+  "service_tier": "on_demand"
+}

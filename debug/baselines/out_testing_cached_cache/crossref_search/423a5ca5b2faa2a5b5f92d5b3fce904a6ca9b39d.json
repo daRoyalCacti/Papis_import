@@ -1,0 +1,65 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 114,
+    "items": [
+      {
+        "DOI": "10.1090/conm/094/1012997",
+        "title": [
+          "Groups of measurable automorphisms for spaces of finite type"
+        ],
+        "author": [
+          {
+            "given": "R. M.",
+            "family": "Shortt",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1989
+            ]
+          ]
+        },
+        "publisher": "American Mathematical Society",
+        "score": 34.19991,
+        "type": "other"
+      },
+      {
+        "DOI": "10.1111/j.1749-6632.1989.tb22394.x",
+        "title": [
+          "Measurable and Topological Rigidity"
+        ],
+        "author": [
+          {
+            "given": "R. M.",
+            "family": "SHORTT",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1989,
+              3
+            ]
+          ]
+        },
+        "publisher": "Wiley",
+        "score": 29.508812,
+        "type": "journal-article"
+      }
+    ],
+    "items-per-page": 5,
+    "query": {
+      "start-index": 0,
+      "search-terms": null
+    }
+  }
+}

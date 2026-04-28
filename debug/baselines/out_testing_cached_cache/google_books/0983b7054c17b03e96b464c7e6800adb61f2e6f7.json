@@ -1,0 +1,454 @@
+{
+  "kind": "books#volumes",
+  "totalItems": 1000000,
+  "items": [
+    {
+      "kind": "books#volume",
+      "id": "6Cg5Nq5sSv4C",
+      "etag": "DTyehqegysU",
+      "selfLink": "https://www.googleapis.com/books/v1/volumes/6Cg5Nq5sSv4C",
+      "volumeInfo": {
+        "title": "Markov Chains and Mixing Times",
+        "authors": [
+          "David Asher Levin",
+          "Yuval Peres",
+          "Elizabeth Lee Wilmer"
+        ],
+        "publisher": "American Mathematical Soc.",
+        "description": "This book is an introduction to the modern approach to the theory of Markov chains. The main goal of this approach is to determine the rate of convergence of a Markov chain to the stationary distribution as a function of the size and geometry of the state space. The authors develop the key tools for estimating convergence times, including coupling, strong stationary times, and spectral methods. Whenever possible, probabilistic methods are emphasized. The book includes many examples and provides brief introductions to some central models of statistical mechanics. Also provided are accounts of random walks on networks, including hitting and cover times, and analyses of several methods of shuffling cards. As a prerequisite, the authors assume a modest understanding of probability theory and linear algebra at an undergraduate level. Markov Chains and Mixing Times is meant to bring the excitement of this active area of research to a wide audience.",
+        "industryIdentifiers": [
+          {
+            "type": "ISBN_10",
+            "identifier": "0821886274"
+          },
+          {
+            "type": "ISBN_13",
+            "identifier": "9780821886274"
+          }
+        ],
+        "readingModes": {
+          "text": false,
+          "image": true
+        },
+        "pageCount": 396,
+        "printType": "BOOK",
+        "categories": [
+          "Mathematics"
+        ],
+        "maturityRating": "NOT_MATURE",
+        "allowAnonLogging": false,
+        "contentVersion": "0.4.6.0.preview.1",
+        "panelizationSummary": {
+          "containsEpubBubbles": false,
+          "containsImageBubbles": false
+        },
+        "imageLinks": {
+          "smallThumbnail": "http://books.google.com/books/content?id=6Cg5Nq5sSv4C&printsec=frontcover&img=1&zoom=5&edge=curl&source=gbs_api",
+          "thumbnail": "http://books.google.com/books/content?id=6Cg5Nq5sSv4C&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+        },
+        "language": "en",
+        "previewLink": "http://books.google.com.au/books?id=6Cg5Nq5sSv4C&printsec=frontcover&dq=intitle:Markov+Chains+and+Mixing+Times,+second+edition+inauthor:David+A.+Levin&hl=&cd=1&source=gbs_api",
+        "infoLink": "https://play.google.com/store/books/details?id=6Cg5Nq5sSv4C&source=gbs_api",
+        "canonicalVolumeLink": "https://play.google.com/store/books/details?id=6Cg5Nq5sSv4C"
+      },
+      "saleInfo": {
+        "country": "AU",
+        "saleability": "FOR_SALE",
+        "isEbook": true,
+        "listPrice": {
+          "amount": 102.3,
+          "currencyCode": "AUD"
+        },
+        "retailPrice": {
+          "amount": 102.3,
+          "currencyCode": "AUD"
+        },
+        "buyLink": "https://play.google.com/store/books/details?id=6Cg5Nq5sSv4C&rdid=book-6Cg5Nq5sSv4C&rdot=1&source=gbs_api",
+        "offers": [
+          {
+            "finskyOfferType": 1,
+            "listPrice": {
+              "amountInMicros": 102300000,
+              "currencyCode": "AUD"
+            },
+            "retailPrice": {
+              "amountInMicros": 102300000,
+              "currencyCode": "AUD"
+            },
+            "giftable": true
+          }
+        ]
+      },
+      "accessInfo": {
+        "country": "AU",
+        "viewability": "PARTIAL",
+        "embeddable": true,
+        "publicDomain": false,
+        "textToSpeechPermission": "ALLOWED",
+        "epub": {
+          "isAvailable": false
+        },
+        "pdf": {
+          "isAvailable": true,
+          "acsTokenLink": "http://books.google.com.au/books/download/Markov_Chains_and_Mixing_Times-sample-pdf.acsm?id=6Cg5Nq5sSv4C&format=pdf&output=acs4_fulfillment_token&dl_type=sample&source=gbs_api"
+        },
+        "webReaderLink": "http://play.google.com/books/reader?id=6Cg5Nq5sSv4C&hl=&source=gbs_api",
+        "accessViewStatus": "SAMPLE",
+        "quoteSharingAllowed": false
+      },
+      "searchInfo": {
+        "textSnippet": "This book is an introduction to the modern approach to the theory of Markov chains."
+      }
+    },
+    {
+      "kind": "books#volume",
+      "id": "707n0QEACAAJ",
+      "etag": "tie/rr2STxc",
+      "selfLink": "https://www.googleapis.com/books/v1/volumes/707n0QEACAAJ",
+      "volumeInfo": {
+        "title": "Markov Chains and Mixing Times",
+        "subtitle": "Second Edition",
+        "authors": [
+          "David A. Levin",
+          "Yuval Peres"
+        ],
+        "publishedDate": "2026",
+        "description": "Markov Chains and Mixing Times is a magical book, managing to be both friendly and deep. It gently introduces probabilistic techniques so that an outsider can follow. At the same time, it is the first book covering the geometric theory of Markov chains and has much that will be new to experts. It is certainly THE book that I will use to teach from. I recommend it to all comers, an amazing achievement. -Persi Diaconis, Mary V. Sunseri Professor of Statistics and Mathematics, Stanford University Mixing times are an active research topic within many fields from statistical physics to the theory of algorithms, as well as having intrinsic interest within mathematical probability and exploiting discrete analogs of important geometry concepts. The first edition became an instant classic, being accessible to advanced undergraduates and yet bringing readers close to current research frontiers. This second edition adds chapters on monotone chains, the exclusion process and hitting time parameters. Having both exercises and citations to important research papers it makes an outstanding basis for either a lecture course or self-study. -David Aldous, University of California, Berkeley Mixing time is the key to Markov chain Monte Carlo, the queen of approximation techniques. With new chapters on monotone chains, exclusion processes, and set-hitting, Markov Chains and Mixing Times is more comprehensive and thus more indispensable than ever. Prepare for an eye-opening mathematical tour! -Peter Winkler, Dartmouth College The study of finite Markov chains has recently attracted increasing interest from a variety of researchers. This is the second edition of a very valuable book on the subject. The main focus is on the mixing time of Markov chains, but there is a lot of additional material. In this edition, the authors have taken the opportunity to add new material and bring the reader up to date on the latest research. I have used the first edition in a graduate course and I look forward to using this edition for the same purpose in the near future. -Alan Frieze, Carnegie Mellon University This book is an introduction to the modern theory of Markov chains, whose goal is to determine the rate of convergence to the stationary distribution, as a function of state space size and geometry. This topic has important connections to combinatorics, statistical physics, and theoretical computer science. Many of the techniques presented originate in these disciplines. The central tools for estimating convergence times, including coupling, strong stationary times, and spectral methods, are developed. The authors discuss many examples, including card shuffling and the Ising model, from statistical mechanics, and present the connection of random walks to electrical networks and apply it to estimate hitting and cover times. The first edition has been used in courses in mathematics and computer science departments of numerous universities. The second edition features three new chapters (on monotone chains, the exclusion process, and stationary times) and also includes smaller additions and corrections throughout. Updated notes at the end of each chapter inform the reader of recent research developments.",
+        "industryIdentifiers": [
+          {
+            "type": "ISBN_10",
+            "identifier": "1470485346"
+          },
+          {
+            "type": "ISBN_13",
+            "identifier": "9781470485344"
+          }
+        ],
+        "readingModes": {
+          "text": false,
+          "image": false
+        },
+        "pageCount": 0,
+        "printType": "BOOK",
+        "maturityRating": "NOT_MATURE",
+        "allowAnonLogging": false,
+        "contentVersion": "preview-1.0.0",
+        "panelizationSummary": {
+          "containsEpubBubbles": false,
+          "containsImageBubbles": false
+        },
+        "imageLinks": {
+          "smallThumbnail": "http://books.google.com/books/content?id=707n0QEACAAJ&printsec=frontcover&img=1&zoom=5&source=gbs_api",
+          "thumbnail": "http://books.google.com/books/content?id=707n0QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api"
+        },
+        "language": "en",
+        "previewLink": "http://books.google.com.au/books?id=707n0QEACAAJ&dq=intitle:Markov+Chains+and+Mixing+Times,+second+edition+inauthor:David+A.+Levin&hl=&cd=2&source=gbs_api",
+        "infoLink": "http://books.google.com.au/books?id=707n0QEACAAJ&dq=intitle:Markov+Chains+and+Mixing+Times,+second+edition+inauthor:David+A.+Levin&hl=&source=gbs_api",
+        "canonicalVolumeLink": "https://books.google.com/books/about/Markov_Chains_and_Mixing_Times.html?hl=&id=707n0QEACAAJ"
+      },
+      "saleInfo": {
+        "country": "AU",
+        "saleability": "NOT_FOR_SALE",
+        "isEbook": false
+      },
+      "accessInfo": {
+        "country": "AU",
+        "viewability": "NO_PAGES",
+        "embeddable": false,
+        "publicDomain": false,
+        "textToSpeechPermission": "ALLOWED",
+        "epub": {
+          "isAvailable": false
+        },
+        "pdf": {
+          "isAvailable": false
+        },
+        "webReaderLink": "http://play.google.com/books/reader?id=707n0QEACAAJ&hl=&source=gbs_api",
+        "accessViewStatus": "NONE",
+        "quoteSharingAllowed": false
+      },
+      "searchInfo": {
+        "textSnippet": "At the same time, it is the first book covering the geometric theory of Markov chains and has much that will be new to experts. It is certainly THE book that I will use to teach from. I recommend it to all comers, an amazing achievement."
+      }
+    },
+    {
+      "kind": "books#volume",
+      "id": "f208DwAAQBAJ",
+      "etag": "kZnETYTyb1Y",
+      "selfLink": "https://www.googleapis.com/books/v1/volumes/f208DwAAQBAJ",
+      "volumeInfo": {
+        "title": "Markov Chains and Mixing Times",
+        "authors": [
+          "David A. Levin",
+          "Yuval Peres"
+        ],
+        "publisher": "American Mathematical Soc.",
+        "publishedDate": "2017-10-31",
+        "description": "This book is an introduction to the modern theory of Markov chains, whose goal is to determine the rate of convergence to the stationary distribution, as a function of state space size and geometry. This topic has important connections to combinatorics, statistical physics, and theoretical computer science. Many of the techniques presented originate in these disciplines. The central tools for estimating convergence times, including coupling, strong stationary times, and spectral methods, are developed. The authors discuss many examples, including card shuffling and the Ising model, from statistical mechanics, and present the connection of random walks to electrical networks and apply it to estimate hitting and cover times. The first edition has been used in courses in mathematics and computer science departments of numerous universities. The second edition features three new chapters (on monotone chains, the exclusion process, and stationary times) and also includes smaller additions and corrections throughout. Updated notes at the end of each chapter inform the reader of recent research developments.",
+        "industryIdentifiers": [
+          {
+            "type": "ISBN_13",
+            "identifier": "9781470429621"
+          },
+          {
+            "type": "ISBN_10",
+            "identifier": "1470429624"
+          }
+        ],
+        "readingModes": {
+          "text": false,
+          "image": true
+        },
+        "pageCount": 465,
+        "printType": "BOOK",
+        "categories": [
+          "Mathematics"
+        ],
+        "maturityRating": "NOT_MATURE",
+        "allowAnonLogging": false,
+        "contentVersion": "0.1.0.0.preview.1",
+        "panelizationSummary": {
+          "containsEpubBubbles": false,
+          "containsImageBubbles": false
+        },
+        "imageLinks": {
+          "smallThumbnail": "http://books.google.com/books/content?id=f208DwAAQBAJ&printsec=frontcover&img=1&zoom=5&edge=curl&source=gbs_api",
+          "thumbnail": "http://books.google.com/books/content?id=f208DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+        },
+        "language": "en",
+        "previewLink": "http://books.google.com.au/books?id=f208DwAAQBAJ&pg=PR1&dq=intitle:Markov+Chains+and+Mixing+Times,+second+edition+inauthor:David+A.+Levin&hl=&cd=3&source=gbs_api",
+        "infoLink": "https://play.google.com/store/books/details?id=f208DwAAQBAJ&source=gbs_api",
+        "canonicalVolumeLink": "https://play.google.com/store/books/details?id=f208DwAAQBAJ"
+      },
+      "saleInfo": {
+        "country": "AU",
+        "saleability": "FOR_SALE",
+        "isEbook": true,
+        "listPrice": {
+          "amount": 133.1,
+          "currencyCode": "AUD"
+        },
+        "retailPrice": {
+          "amount": 133.1,
+          "currencyCode": "AUD"
+        },
+        "buyLink": "https://play.google.com/store/books/details?id=f208DwAAQBAJ&rdid=book-f208DwAAQBAJ&rdot=1&source=gbs_api",
+        "offers": [
+          {
+            "finskyOfferType": 1,
+            "listPrice": {
+              "amountInMicros": 133100000,
+              "currencyCode": "AUD"
+            },
+            "retailPrice": {
+              "amountInMicros": 133100000,
+              "currencyCode": "AUD"
+            },
+            "giftable": true
+          }
+        ]
+      },
+      "accessInfo": {
+        "country": "AU",
+        "viewability": "PARTIAL",
+        "embeddable": true,
+        "publicDomain": false,
+        "textToSpeechPermission": "ALLOWED",
+        "epub": {
+          "isAvailable": false
+        },
+        "pdf": {
+          "isAvailable": true,
+          "acsTokenLink": "http://books.google.com.au/books/download/Markov_Chains_and_Mixing_Times-sample-pdf.acsm?id=f208DwAAQBAJ&format=pdf&output=acs4_fulfillment_token&dl_type=sample&source=gbs_api"
+        },
+        "webReaderLink": "http://play.google.com/books/reader?id=f208DwAAQBAJ&hl=&source=gbs_api",
+        "accessViewStatus": "SAMPLE",
+        "quoteSharingAllowed": false
+      },
+      "searchInfo": {
+        "textSnippet": "David A. <b>Levin</b>, Yuval Peres. Markov <b>Chains and Mixing Times Second Edition</b> David A. <b>Levin</b> University of Oregon Yuval Peres Microsoft Research With contributions by Elizabeth L. Wilmer With a chapter on &quot; Coupling from the Past &quot; by James&nbsp;..."
+      }
+    },
+    {
+      "kind": "books#volume",
+      "id": "wKZWDwAAQBAJ",
+      "etag": "vQ3zIYVXdnY",
+      "selfLink": "https://www.googleapis.com/books/v1/volumes/wKZWDwAAQBAJ",
+      "volumeInfo": {
+        "title": "Approximate Quantum Markov Chains",
+        "authors": [
+          "David Sutter"
+        ],
+        "publisher": "Springer",
+        "publishedDate": "2018-04-20",
+        "description": "This book is an introduction to quantum Markov chains and explains how this concept is connected to the question of how well a lost quantum mechanical system can be recovered from a correlated subsystem. To achieve this goal, we strengthen the data-processing inequality such that it reveals a statement about the reconstruction of lost information. The main difficulty in order to understand the behavior of quantum Markov chains arises from the fact that quantum mechanical operators do not commute in general. As a result we start by explaining two techniques of how to deal with non-commuting matrices: the spectral pinching method and complex interpolation theory. Once the reader is familiar with these techniques a novel inequality is presented that extends the celebrated Golden-Thompson inequality to arbitrarily many matrices. This inequality is the key ingredient in understanding approximate quantum Markov chains and it answers a question from matrix analysis that was open since 1973, i.e., if Lieb's triple matrix inequality can be extended to more than three matrices. Finally, we carefully discuss the properties of approximate quantum Markov chains and their implications. The book is aimed to graduate students who want to learn about approximate quantum Markov chains as well as more experienced scientists who want to enter this field. Mathematical majority is necessary, but no prior knowledge of quantum mechanics is required.",
+        "industryIdentifiers": [
+          {
+            "type": "ISBN_13",
+            "identifier": "9783319787329"
+          },
+          {
+            "type": "ISBN_10",
+            "identifier": "3319787322"
+          }
+        ],
+        "readingModes": {
+          "text": true,
+          "image": true
+        },
+        "pageCount": 124,
+        "printType": "BOOK",
+        "categories": [
+          "Science"
+        ],
+        "maturityRating": "NOT_MATURE",
+        "allowAnonLogging": false,
+        "contentVersion": "1.2.3.0.preview.3",
+        "panelizationSummary": {
+          "containsEpubBubbles": false,
+          "containsImageBubbles": false
+        },
+        "imageLinks": {
+          "smallThumbnail": "http://books.google.com/books/content?id=wKZWDwAAQBAJ&printsec=frontcover&img=1&zoom=5&edge=curl&source=gbs_api",
+          "thumbnail": "http://books.google.com/books/content?id=wKZWDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+        },
+        "language": "en",
+        "previewLink": "http://books.google.com.au/books?id=wKZWDwAAQBAJ&pg=PA9&dq=intitle:Markov+Chains+and+Mixing+Times,+second+edition+inauthor:David+A.+Levin&hl=&cd=4&source=gbs_api",
+        "infoLink": "https://play.google.com/store/books/details?id=wKZWDwAAQBAJ&source=gbs_api",
+        "canonicalVolumeLink": "https://play.google.com/store/books/details?id=wKZWDwAAQBAJ"
+      },
+      "saleInfo": {
+        "country": "AU",
+        "saleability": "FOR_SALE_AND_RENTAL",
+        "isEbook": true,
+        "listPrice": {
+          "amount": 84.99,
+          "currencyCode": "AUD"
+        },
+        "retailPrice": {
+          "amount": 58.98,
+          "currencyCode": "AUD"
+        },
+        "buyLink": "https://play.google.com/store/books/details?id=wKZWDwAAQBAJ&rdid=book-wKZWDwAAQBAJ&rdot=1&source=gbs_api",
+        "offers": [
+          {
+            "finskyOfferType": 1,
+            "listPrice": {
+              "amountInMicros": 84990000,
+              "currencyCode": "AUD"
+            },
+            "retailPrice": {
+              "amountInMicros": 58980000,
+              "currencyCode": "AUD"
+            },
+            "giftable": true
+          },
+          {
+            "finskyOfferType": 3,
+            "listPrice": {
+              "amountInMicros": 29750000,
+              "currencyCode": "AUD"
+            },
+            "retailPrice": {
+              "amountInMicros": 26780000,
+              "currencyCode": "AUD"
+            },
+            "rentalDuration": {
+              "unit": "DAY",
+              "count": 90
+            }
+          }
+        ]
+      },
+      "accessInfo": {
+        "country": "AU",
+        "viewability": "PARTIAL",
+        "embeddable": true,
+        "publicDomain": false,
+        "textToSpeechPermission": "ALLOWED",
+        "epub": {
+          "isAvailable": true,
+          "acsTokenLink": "http://books.google.com.au/books/download/Approximate_Quantum_Markov_Chains-sample-epub.acsm?id=wKZWDwAAQBAJ&format=epub&output=acs4_fulfillment_token&dl_type=sample&source=gbs_api"
+        },
+        "pdf": {
+          "isAvailable": true,
+          "acsTokenLink": "http://books.google.com.au/books/download/Approximate_Quantum_Markov_Chains-sample-pdf.acsm?id=wKZWDwAAQBAJ&format=pdf&output=acs4_fulfillment_token&dl_type=sample&source=gbs_api"
+        },
+        "webReaderLink": "http://play.google.com/books/reader?id=wKZWDwAAQBAJ&hl=&source=gbs_api",
+        "accessViewStatus": "SAMPLE",
+        "quoteSharingAllowed": false
+      },
+      "searchInfo": {
+        "textSnippet": "... <b>chains</b> and stochastic ... <b>second edition</b>, 2009. https://doi.org/10.1017/CBO9780511626630 2. J. R. Norris. Markov <b>Chains</b>. Number 2. Cambridge University Press, 1998 3. D. A. <b>Levin</b>, Y. Peres, and E. L. Wilmer. Markov <b>Chains and Mixing Times</b>&nbsp;..."
+      }
+    },
+    {
+      "kind": "books#volume",
+      "id": "MnIIggmA19wC",
+      "etag": "7USVRARM0uI",
+      "selfLink": "https://www.googleapis.com/books/v1/volumes/MnIIggmA19wC",
+      "volumeInfo": {
+        "title": "Markov Chains",
+        "authors": [
+          "David Freedman"
+        ],
+        "publishedDate": "1971",
+        "description": "This book, part of a trilogy covering the field of Markov processes, provides a readable and constructive treatment of Markov chains. It contains some of the author's own research and many of the proofs are new. It includes material not usually available in textbooks, such as invariance principles for functionals of a Markov chain, Kolmogorov's inequality on the concentration function, the boundary, and the construction of a variety of continuous-time chains from their jump processes and holding times. (Author).",
+        "industryIdentifiers": [
+          {
+            "type": "OTHER",
+            "identifier": "MINN:31951000018664H"
+          }
+        ],
+        "readingModes": {
+          "text": false,
+          "image": false
+        },
+        "pageCount": 396,
+        "printType": "BOOK",
+        "categories": [
+          "Mathematics"
+        ],
+        "maturityRating": "NOT_MATURE",
+        "allowAnonLogging": false,
+        "contentVersion": "1.6.1.0.preview.0",
+        "panelizationSummary": {
+          "containsEpubBubbles": false,
+          "containsImageBubbles": false
+        },
+        "imageLinks": {
+          "smallThumbnail": "http://books.google.com/books/content?id=MnIIggmA19wC&printsec=frontcover&img=1&zoom=5&source=gbs_api",
+          "thumbnail": "http://books.google.com/books/content?id=MnIIggmA19wC&printsec=frontcover&img=1&zoom=1&source=gbs_api"
+        },
+        "language": "en",
+        "previewLink": "http://books.google.com.au/books?id=MnIIggmA19wC&q=intitle:Markov+Chains+and+Mixing+Times,+second+edition+inauthor:David+A.+Levin&dq=intitle:Markov+Chains+and+Mixing+Times,+second+edition+inauthor:David+A.+Levin&hl=&cd=5&source=gbs_api",
+        "infoLink": "http://books.google.com.au/books?id=MnIIggmA19wC&dq=intitle:Markov+Chains+and+Mixing+Times,+second+edition+inauthor:David+A.+Levin&hl=&source=gbs_api",
+        "canonicalVolumeLink": "https://books.google.com/books/about/Markov_Chains.html?hl=&id=MnIIggmA19wC"
+      },
+      "saleInfo": {
+        "country": "AU",
+        "saleability": "NOT_FOR_SALE",
+        "isEbook": false
+      },
+      "accessInfo": {
+        "country": "AU",
+        "viewability": "NO_PAGES",
+        "embeddable": false,
+        "publicDomain": false,
+        "textToSpeechPermission": "ALLOWED",
+        "epub": {
+          "isAvailable": false
+        },
+        "pdf": {
+          "isAvailable": false
+        },
+        "webReaderLink": "http://play.google.com/books/reader?id=MnIIggmA19wC&hl=&source=gbs_api",
+        "accessViewStatus": "NONE",
+        "quoteSharingAllowed": false
+      },
+      "searchInfo": {
+        "textSnippet": "This book, part of a trilogy covering the field of Markov processes, provides a readable and constructive treatment of Markov chains."
+      }
+    }
+  ]
+}

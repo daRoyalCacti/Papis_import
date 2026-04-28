@@ -1,0 +1,25 @@
+{
+  "total": 1,
+  "offset": 0,
+  "data": [
+    {
+      "paperId": "7db981dfaf7546e45947a65920ae756ea6cf239e",
+      "externalIds": {
+        "DBLP": "conf/iclr/LeeJ23",
+        "CorpusId": 259298833
+      },
+      "title": "A new characterization of the edge of stability based on a sharpness measure aware of batch gradient distribution",
+      "year": 2023,
+      "authors": [
+        {
+          "authorId": "2116981769",
+          "name": "Sungyoon Lee"
+        },
+        {
+          "authorId": "1831882",
+          "name": "Cheongjae Jang"
+        }
+      ]
+    }
+  ]
+}

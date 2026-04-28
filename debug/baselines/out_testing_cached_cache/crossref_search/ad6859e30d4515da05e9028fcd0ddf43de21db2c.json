@@ -1,0 +1,175 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 16584,
+    "items": [
+      {
+        "DOI": "10.1090/mbk/107",
+        "title": [
+          "Markov Chains and Mixing Times"
+        ],
+        "author": [
+          {
+            "given": "David",
+            "family": "Levin",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Yuval",
+            "family": "Peres",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2017,
+              10,
+              31
+            ]
+          ]
+        },
+        "publisher": "American Mathematical Society",
+        "score": 53.55901,
+        "type": "monograph"
+      },
+      {
+        "DOI": "10.1090/mbk/058",
+        "title": [
+          "Markov Chains and Mixing Times"
+        ],
+        "author": [
+          {
+            "given": "David",
+            "family": "Levin",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Yuval",
+            "family": "Peres",
+            "sequence": "additional",
+            "affiliation": []
+          },
+          {
+            "given": "Elizabeth",
+            "family": "Wilmer",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2008,
+              12,
+              9
+            ]
+          ]
+        },
+        "publisher": "American Mathematical Society",
+        "score": 52.107803,
+        "type": "monograph"
+      },
+      {
+        "DOI": "10.1007/s00283-018-9839-x",
+        "title": [
+          "Markov Chains and Mixing Times (Second Edition) by David A. Levin and Yuval Peres"
+        ],
+        "author": [
+          {
+            "given": "David",
+            "family": "Aldous",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2018,
+              11,
+              7
+            ]
+          ]
+        },
+        "publisher": "Springer Science and Business Media LLC",
+        "score": 45.538795,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.1016/s0304-4149(97)00037-9",
+        "title": [
+          "Mixing times for uniformly ergodic Markov chains"
+        ],
+        "author": [
+          {
+            "given": "David",
+            "family": "Aldous",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "László",
+            "family": "Lovász",
+            "sequence": "additional",
+            "affiliation": []
+          },
+          {
+            "given": "Peter",
+            "family": "Winkler",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1997,
+              11
+            ]
+          ]
+        },
+        "publisher": "Elsevier BV",
+        "score": 39.943977,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.1214/aoap/1075828054",
+        "title": [
+          "Mixing times of lozenge tiling and card shuffling Markov chains"
+        ],
+        "author": [
+          {
+            "given": "David Bruce",
+            "family": "Wilson",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2004,
+              2,
+              1
+            ]
+          ]
+        },
+        "publisher": "Institute of Mathematical Statistics",
+        "score": 36.68709,
+        "type": "journal-article"
+      }
+    ],
+    "items-per-page": 5,
+    "query": {
+      "start-index": 0,
+      "search-terms": null
+    }
+  }
+}

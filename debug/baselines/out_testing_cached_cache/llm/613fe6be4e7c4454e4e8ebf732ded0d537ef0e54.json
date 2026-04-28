@@ -1,0 +1,33 @@
+{
+  "id": "chatcmpl-87275f1b-ac3c-4888-b313-467b0feed547",
+  "object": "chat.completion",
+  "created": 1777361060,
+  "model": "llama-3.3-70b-versatile",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"title\": \"Universally measurable spaces an in\",\n   \"authors\": [],\n   \"year\": \"\",\n   \"doi\": \"\",\n   \"isbn\": \"\",\n   \"arxiv\": \"\",\n   \"notes\": \"Insufficient information to determine bibliographic metadata\"\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.009813535,
+    "prompt_tokens": 284,
+    "prompt_time": 0.01378768,
+    "completion_tokens": 54,
+    "completion_time": 0.102413255,
+    "total_tokens": 338,
+    "total_time": 0.116200935
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_45180df409",
+  "x_groq": {
+    "id": "req_01kq9fk05xephsz2fhtsapz5vy",
+    "seed": 1118036706
+  },
+  "service_tier": "on_demand"
+}

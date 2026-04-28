@@ -1,0 +1,223 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 218512,
+    "items": [
+      {
+        "DOI": "10.52202/068431-2023",
+        "title": [
+          "A Reparametrization-Invariant Sharpness Measure Based on Information Geometry"
+        ],
+        "author": [
+          {
+            "given": "Cheongjae",
+            "family": "Jang",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Sungyoon",
+            "family": "Lee",
+            "sequence": "additional",
+            "affiliation": []
+          },
+          {
+            "given": "Yung-Kyun",
+            "family": "Noh",
+            "sequence": "additional",
+            "affiliation": []
+          },
+          {
+            "given": "Frank",
+            "family": "Park",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2022
+            ]
+          ]
+        },
+        "publisher": "Neural Information Processing Systems Foundation, Inc. (NeurIPS)",
+        "score": 41.212837,
+        "type": "proceedings-article"
+      },
+      {
+        "DOI": "10.1109/apec.2010.5433509",
+        "title": [
+          "PMSM control based on edge field measurements by Hall sensors"
+        ],
+        "author": [
+          {
+            "given": "Sungyoon",
+            "family": "Jung",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Beomseok",
+            "family": "Lee",
+            "sequence": "additional",
+            "affiliation": []
+          },
+          {
+            "given": "Kwanghee",
+            "family": "Nam",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2010,
+              2
+            ]
+          ]
+        },
+        "publisher": "IEEE",
+        "score": 30.30997,
+        "type": "proceedings-article"
+      },
+      {
+        "DOI": "10.5909/jeb.2011.16.3.552",
+        "title": [
+          "Sharpness Measure Based on the Frequency Domain Information"
+        ],
+        "author": [
+          {
+            "given": "Hyun-Soo",
+            "family": "Choi",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Chul-Hee",
+            "family": "Lee",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2011,
+              5,
+              30
+            ]
+          ]
+        },
+        "publisher": "The Korean Institute of Broadcast and Media Engineers",
+        "score": 29.69234,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.24132/csrn.3401.40",
+        "title": [
+          "A Novel DWT-based Method for Image Sharpness Measure using Edge-related Frequency Components"
+        ],
+        "author": [
+          {
+            "given": "Yuan-Kang",
+            "family": "Lee",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "name": "Communication Engineering National Taiwan University",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Jian-Jiun",
+            "family": "Ding",
+            "sequence": "additional",
+            "affiliation": []
+          },
+          {
+            "name": "Communication Engineering National Taiwan University",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2024
+            ]
+          ]
+        },
+        "publisher": "University of West Bohemia, Czech Republic",
+        "score": 29.283943,
+        "type": "proceedings-article"
+      },
+      {
+        "DOI": "10.1109/tpami.2022.3169217",
+        "title": [
+          "GradDiv: Adversarial Robustness of Randomized Neural Networks via Gradient Diversity Regularization"
+        ],
+        "author": [
+          {
+            "ORCID": "https://orcid.org/0000-0002-6097-0565",
+            "authenticated-orcid": false,
+            "given": "Sungyoon",
+            "family": "Lee",
+            "sequence": "first",
+            "affiliation": [
+              {
+                "name": "Center for Artificial Intelligence and Natural Sciences, Korea Institute for Advanced Study (KIAS), Seoul, South Korea"
+              }
+            ]
+          },
+          {
+            "ORCID": "https://orcid.org/0000-0001-5361-459X",
+            "authenticated-orcid": false,
+            "given": "Hoki",
+            "family": "Kim",
+            "sequence": "additional",
+            "affiliation": [
+              {
+                "name": "Department of Industrial Engineering, Seoul National University, Seoul, South Korea"
+              }
+            ]
+          },
+          {
+            "ORCID": "https://orcid.org/0000-0001-5720-8337",
+            "authenticated-orcid": false,
+            "given": "Jaewook",
+            "family": "Lee",
+            "sequence": "additional",
+            "affiliation": [
+              {
+                "name": "Department of Industrial Engineering, Seoul National University, Seoul, South Korea"
+              }
+            ]
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2023,
+              2,
+              1
+            ]
+          ]
+        },
+        "publisher": "Institute of Electrical and Electronics Engineers (IEEE)",
+        "score": 27.976074,
+        "type": "journal-article"
+      }
+    ],
+    "items-per-page": 5,
+    "query": {
+      "start-index": 0,
+      "search-terms": null
+    }
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 12215,
+    "items": [
+      {
+        "DOI": "10.1002/widm.1198",
+        "title": [
+          "An introduction to<scp>Majorization‐Minimization</scp>algorithms for machine learning and statistical estimation"
+        ],
+        "author": [
+          {
+            "ORCID": "https://orcid.org/0000-0002-9958-432X",
+            "authenticated-orcid": false,
+            "given": "Hien D.",
+            "family": "Nguyen",
+            "sequence": "first",
+            "affiliation": [
+              {
+                "name": "Department of Mathematics and Statistics La Trobe University Melbourne Australia"
+              }
+            ]
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2017,
+              2,
+              9
+            ]
+          ]
+        },
+        "publisher": "Wiley",
+        "score": 30.292313,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.1109/msp.2025.3539827",
+        "title": [
+          "Massive Multiple-Input, Multiple-Output: Instantaneous versus statistical channel state information-based power allocation [Lecture Notes]"
+        ],
+        "author": [
+          {
+            "ORCID": "https://orcid.org/0000-0003-0955-108X",
+            "authenticated-orcid": false,
+            "given": "Zahra",
+            "family": "Mobini",
+            "sequence": "first",
+            "affiliation": [
+              {
+                "name": "Center for Wireless Innovation, Queen&#x2019;s University Belfast, Belfast, U.K."
+              }
+            ]
+          },
+          {
+            "ORCID": "https://orcid.org/0000-0002-3367-2220",
+            "authenticated-orcid": false,
+            "given": "Hien Quoc",
+            "family": "Ngo",
+            "sequence": "additional",
+            "affiliation": [
+              {
+                "name": "Center for Wireless Innovation, Queen&#x2019;s University Belfast, Belfast, U.K."
+              }
+            ]
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2025,
+              3
+            ]
+          ]
+        },
+        "publisher": "Institute of Electrical and Electronics Engineers (IEEE)",
+        "score": 28.70771,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.1109/cec.2012.6256577",
+        "title": [
+          "Variable selection in statistical models using population-based incremental learning with applications to genome-wide association studies"
+        ],
+        "author": [
+          {
+            "family": "Hien Duy Nguyen",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Ian A.",
+            "family": "Wood",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2012,
+              6
+            ]
+          ]
+        },
+        "publisher": "IEEE",
+        "score": 26.384436,
+        "type": "proceedings-article"
+      },
+      {
+        "DOI": "10.25148/etd.fidc000194",
+        "title": [
+          "Modeling, Designing, and Implementing an Ad-hoc M-Learning Platform that Integrates Sensory Data to Support Ubiquitous Learning"
+        ],
+        "author": [
+          {
+            "given": "Hien M.",
+            "family": "Nguyen",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              null
+            ]
+          ]
+        },
+        "publisher": "Florida International University",
+        "score": 25.441563,
+        "type": "dissertation"
+      }
+    ],
+    "items-per-page": 5,
+    "query": {
+      "start-index": 0,
+      "search-terms": null
+    }
+  }
+}

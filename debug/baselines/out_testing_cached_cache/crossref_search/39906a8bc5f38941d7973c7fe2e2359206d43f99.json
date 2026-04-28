@@ -1,0 +1,157 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 11847,
+    "items": [
+      {
+        "DOI": "10.1002/widm.1198",
+        "title": [
+          "An introduction to<scp>Majorization‐Minimization</scp>algorithms for machine learning and statistical estimation"
+        ],
+        "author": [
+          {
+            "ORCID": "https://orcid.org/0000-0002-9958-432X",
+            "authenticated-orcid": false,
+            "given": "Hien D.",
+            "family": "Nguyen",
+            "sequence": "first",
+            "affiliation": [
+              {
+                "name": "Department of Mathematics and Statistics La Trobe University Melbourne Australia"
+              }
+            ]
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2017,
+              2,
+              9
+            ]
+          ]
+        },
+        "publisher": "Wiley",
+        "score": 30.292313,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.1109/cec.2012.6256577",
+        "title": [
+          "Variable selection in statistical models using population-based incremental learning with applications to genome-wide association studies"
+        ],
+        "author": [
+          {
+            "family": "Hien Duy Nguyen",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Ian A.",
+            "family": "Wood",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2012,
+              6
+            ]
+          ]
+        },
+        "publisher": "IEEE",
+        "score": 26.384436,
+        "type": "proceedings-article"
+      },
+      {
+        "DOI": "10.1007/978-3-319-05939-6_36",
+        "title": [
+          "Combining Heuristics and Learning for Entity Linking"
+        ],
+        "author": [
+          {
+            "given": "Hien T.",
+            "family": "Nguyen",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2014
+            ]
+          ]
+        },
+        "publisher": "Springer International Publishing",
+        "score": 25.584366,
+        "type": "book-chapter"
+      },
+      {
+        "DOI": "10.25148/etd.fidc000194",
+        "title": [
+          "Modeling, Designing, and Implementing an Ad-hoc M-Learning Platform that Integrates Sensory Data to Support Ubiquitous Learning"
+        ],
+        "author": [
+          {
+            "given": "Hien M.",
+            "family": "Nguyen",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              null
+            ]
+          ]
+        },
+        "publisher": "Florida International University",
+        "score": 25.441563,
+        "type": "dissertation"
+      },
+      {
+        "DOI": "10.1109/rivf.2012.6169838",
+        "title": [
+          "Learning in Stages: A Layered Learning Approach for Genetic Programming"
+        ],
+        "author": [
+          {
+            "given": "Thi Hien",
+            "family": "Nguyen",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Xuan Hoai",
+            "family": "Nguyen",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2012,
+              2
+            ]
+          ]
+        },
+        "publisher": "IEEE",
+        "score": 25.420784,
+        "type": "proceedings-article"
+      }
+    ],
+    "items-per-page": 5,
+    "query": {
+      "start-index": 0,
+      "search-terms": null
+    }
+  }
+}

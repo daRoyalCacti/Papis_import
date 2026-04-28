@@ -1,0 +1,178 @@
+{
+  "ISBN:9780521833783": {
+    "url": "http://openlibrary.org/books/OL18266581M/Convex_optimization",
+    "key": "/books/OL18266581M",
+    "title": "Convex optimization",
+    "authors": [
+      {
+        "url": "http://openlibrary.org/authors/OL891973A/Stephen_P._Boyd",
+        "name": "Stephen P. Boyd"
+      }
+    ],
+    "number_of_pages": 716,
+    "pagination": "xiii, 716 p. :",
+    "by_statement": "Stephen Boyd, Lieven Vandenberghe.",
+    "identifiers": {
+      "goodreads": [
+        "148030"
+      ],
+      "librarything": [
+        "151618"
+      ],
+      "isbn_10": [
+        "0521833787"
+      ],
+      "lccn": [
+        "2003063284"
+      ],
+      "oclc": [
+        "53331084"
+      ],
+      "openlibrary": [
+        "OL18266581M"
+      ]
+    },
+    "classifications": {
+      "lc_classifications": [
+        "QA402.5 .B69 2006",
+        "QA402.5 .B69 2006",
+        "QA402.5 .B69 2004"
+      ]
+    },
+    "publishers": [
+      {
+        "name": "Cambridge University Press"
+      }
+    ],
+    "publish_places": [
+      {
+        "name": "Cambridge, UK"
+      },
+      {
+        "name": "New York"
+      }
+    ],
+    "publish_date": "2006",
+    "subjects": [
+      {
+        "name": "Convex functions",
+        "url": "https://openlibrary.org/subjects/convex_functions"
+      },
+      {
+        "name": "Convex sets",
+        "url": "https://openlibrary.org/subjects/convex_sets"
+      },
+      {
+        "name": "Mathematical optimization",
+        "url": "https://openlibrary.org/subjects/mathematical_optimization"
+      },
+      {
+        "name": "Optimisation mathematique",
+        "url": "https://openlibrary.org/subjects/optimisation_mathematique"
+      },
+      {
+        "name": "Fonctions convexes",
+        "url": "https://openlibrary.org/subjects/fonctions_convexes"
+      }
+    ],
+    "notes": "Includes bibliographical references (p. [685]-696) and index.",
+    "table_of_contents": [
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory:",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory:",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory:",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory:",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory: -- II Applications:",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory: -- II Applications:",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory: -- II Applications:",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory: -- II Applications: -- III Algorithms:",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory: -- II Applications: -- III Algorithms:",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory: -- II Applications: -- III Algorithms:",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory: -- II Applications: -- III Algorithms: -- Appendices: A.",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory: -- II Applications: -- III Algorithms: -- Appendices: A. -- B.",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction -- I Theory: -- II Applications: -- III Algorithms: -- Appendices: A. -- B. -- C.",
+        "pagenum": ""
+      },
+      {
+        "level": 0,
+        "label": "",
+        "title": "Introduction-- I Theory:-- II Applications:-- III Algorithms:-- Appendices: A.-- B.-- C.",
+        "pagenum": ""
+      }
+    ],
+    "ebooks": [
+      {
+        "preview_url": "https://archive.org/details/convexoptimizati00boyd",
+        "availability": "noview",
+        "formats": {}
+      }
+    ],
+    "cover": {
+      "small": "https://covers.openlibrary.org/b/id/8633062-S.jpg",
+      "medium": "https://covers.openlibrary.org/b/id/8633062-M.jpg",
+      "large": "https://covers.openlibrary.org/b/id/8633062-L.jpg"
+    }
+  }
+}

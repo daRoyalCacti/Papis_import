@@ -1,0 +1,33 @@
+{
+  "id": "chatcmpl-86255ce0-a109-4be4-8f4c-32acd53a7a18",
+  "object": "chat.completion",
+  "created": 1777361056,
+  "model": "llama-3.3-70b-versatile",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"title\": \"Convex Analysis\",\n   \"authors\": [\"R. Tyrrell Rockafellar\"],\n   \"year\": \"1970\",\n   \"doi\": \"\",\n   \"isbn\": \"0-691-08069-0\",\n   \"arxiv\": \"\",\n   \"notes\": \"Copyright 1970, second printing 1972\"\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.010182582,
+    "prompt_tokens": 471,
+    "prompt_time": 0.024138326,
+    "completion_tokens": 73,
+    "completion_time": 0.140841754,
+    "total_tokens": 544,
+    "total_time": 0.16498008
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_4f6d808339",
+  "x_groq": {
+    "id": "req_01kq9fjw6mepha7mc070hvzqq4",
+    "seed": 142840150
+  },
+  "service_tier": "on_demand"
+}

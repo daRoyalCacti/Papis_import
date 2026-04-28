@@ -1,0 +1,33 @@
+{
+  "id": "chatcmpl-ab9949c7-28cf-4535-9970-c07ffd0bfff7",
+  "object": "chat.completion",
+  "created": 1777361016,
+  "model": "llama-3.3-70b-versatile",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"title\": \"A New Characterization of the Edge of Stability Based on a Sharpness Measure Aware of Batch Gradient Distribution\",\n   \"authors\": [\"Sungyoon Lee\", \"Cheongjae Jang\"],\n   \"year\": \"2023\",\n   \"doi\": \"\",\n   \"isbn\": \"\",\n   \"arxiv\": \"\",\n   \"notes\": \"Published as a conference paper at ICLR 2023\"\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.009813102,
+    "prompt_tokens": 1262,
+    "prompt_time": 0.068371384,
+    "completion_tokens": 88,
+    "completion_time": 0.166202414,
+    "total_tokens": 1350,
+    "total_time": 0.234573798
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_3272ea2d91",
+  "x_groq": {
+    "id": "req_01kq9fhnk3egqsj1qr24kwbeq2",
+    "seed": 1265310427
+  },
+  "service_tier": "on_demand"
+}

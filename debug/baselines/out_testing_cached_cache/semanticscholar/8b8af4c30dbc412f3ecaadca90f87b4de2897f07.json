@@ -1,0 +1,22 @@
+{
+  "total": 1,
+  "offset": 0,
+  "data": [
+    {
+      "paperId": "ac0c3ba0946f2dbf111c54a83d834531e6c456eb",
+      "externalIds": {
+        "MAG": "764093590",
+        "DOI": "10.4064/FM-121-2-169-176",
+        "CorpusId": 118627974
+      },
+      "title": "Universally measurable spaces: an invariance theorem and diverse characterizations",
+      "year": 1984,
+      "authors": [
+        {
+          "authorId": "102434052",
+          "name": "Rae M. Shrott"
+        }
+      ]
+    }
+  ]
+}

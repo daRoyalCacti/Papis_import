@@ -1,0 +1,70 @@
+{
+  "kind": "books#volumes",
+  "totalItems": 1,
+  "items": [
+    {
+      "kind": "books#volume",
+      "id": "kSzFm3h6rY4C",
+      "etag": "FVIbL1COphw",
+      "selfLink": "https://www.googleapis.com/books/v1/volumes/kSzFm3h6rY4C",
+      "volumeInfo": {
+        "title": "Measurable Spaces with C.c.c",
+        "authors": [
+          "Rae Michael Shortt"
+        ],
+        "publishedDate": "1989",
+        "industryIdentifiers": [
+          {
+            "type": "OTHER",
+            "identifier": "UCR:31210012616460"
+          }
+        ],
+        "readingModes": {
+          "text": false,
+          "image": false
+        },
+        "pageCount": 52,
+        "printType": "BOOK",
+        "categories": [
+          "Borel subgroups"
+        ],
+        "maturityRating": "NOT_MATURE",
+        "allowAnonLogging": false,
+        "contentVersion": "1.4.1.0.preview.0",
+        "panelizationSummary": {
+          "containsEpubBubbles": false,
+          "containsImageBubbles": false
+        },
+        "imageLinks": {
+          "smallThumbnail": "http://books.google.com/books/content?id=kSzFm3h6rY4C&printsec=frontcover&img=1&zoom=5&source=gbs_api",
+          "thumbnail": "http://books.google.com/books/content?id=kSzFm3h6rY4C&printsec=frontcover&img=1&zoom=1&source=gbs_api"
+        },
+        "language": "en",
+        "previewLink": "http://books.google.com.au/books?id=kSzFm3h6rY4C&q=intitle:Universally+measurable+spaces:+an+invariance+theorem+and+diverse+characterizations+inauthor:Rae+M.+Shortt&dq=intitle:Universally+measurable+spaces:+an+invariance+theorem+and+diverse+characterizations+inauthor:Rae+M.+Shortt&hl=&cd=1&source=gbs_api",
+        "infoLink": "http://books.google.com.au/books?id=kSzFm3h6rY4C&dq=intitle:Universally+measurable+spaces:+an+invariance+theorem+and+diverse+characterizations+inauthor:Rae+M.+Shortt&hl=&source=gbs_api",
+        "canonicalVolumeLink": "https://books.google.com/books/about/Measurable_Spaces_with_C_c_c.html?hl=&id=kSzFm3h6rY4C"
+      },
+      "saleInfo": {
+        "country": "AU",
+        "saleability": "NOT_FOR_SALE",
+        "isEbook": false
+      },
+      "accessInfo": {
+        "country": "AU",
+        "viewability": "NO_PAGES",
+        "embeddable": false,
+        "publicDomain": false,
+        "textToSpeechPermission": "ALLOWED",
+        "epub": {
+          "isAvailable": false
+        },
+        "pdf": {
+          "isAvailable": false
+        },
+        "webReaderLink": "http://play.google.com/books/reader?id=kSzFm3h6rY4C&hl=&source=gbs_api",
+        "accessViewStatus": "NONE",
+        "quoteSharingAllowed": false
+      }
+    }
+  ]
+}

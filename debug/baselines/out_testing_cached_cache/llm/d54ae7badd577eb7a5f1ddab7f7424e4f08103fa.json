@@ -1,0 +1,33 @@
+{
+  "id": "chatcmpl-35139fb9-5fd6-4ff1-a8f6-ec9b8f76b6c9",
+  "object": "chat.completion",
+  "created": 1777361077,
+  "model": "llama-3.3-70b-versatile",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"title\": \"Markov Chains and Mixing Times, second edition\",\n   \"authors\": [\n      \"David A. Levin\",\n      \"Yuval Peres\"\n   ],\n   \"year\": \"\",\n   \"doi\": \"\",\n   \"isbn\": \"\",\n   \"arxiv\": \"\",\n   \"notes\": \"Contains contributions by Elizabeth L. Wilmer\"\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.009821143,
+    "prompt_tokens": 400,
+    "prompt_time": 0.020142991,
+    "completion_tokens": 73,
+    "completion_time": 0.103437599,
+    "total_tokens": 473,
+    "total_time": 0.12358059
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_3272ea2d91",
+  "x_groq": {
+    "id": "req_01kq9fkhdxfw3tjfav0t2h5gkh",
+    "seed": 2038005427
+  },
+  "service_tier": "on_demand"
+}

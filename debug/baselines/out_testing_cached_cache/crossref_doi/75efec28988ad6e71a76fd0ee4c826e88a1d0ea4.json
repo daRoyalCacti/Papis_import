@@ -1,0 +1,186 @@
+{
+  "status": "ok",
+  "message-type": "work",
+  "message-version": "1.0.0",
+  "message": {
+    "indexed": {
+      "date-parts": [
+        [
+          2026,
+          4,
+          15
+        ]
+      ],
+      "date-time": "2026-04-15T20:27:03Z",
+      "timestamp": 1776284823027,
+      "version": "3.50.1"
+    },
+    "publisher-location": "Cham",
+    "reference-count": 0,
+    "publisher": "Springer International Publishing",
+    "isbn-type": [
+      {
+        "value": "9783030762742",
+        "type": "print"
+      },
+      {
+        "value": "9783030762759",
+        "type": "electronic"
+      }
+    ],
+    "license": [
+      {
+        "start": {
+          "date-parts": [
+            [
+              2021,
+              1,
+              1
+            ]
+          ],
+          "date-time": "2021-01-01T00:00:00Z",
+          "timestamp": 1609459200000
+        },
+        "content-version": "tdm",
+        "delay-in-days": 0,
+        "URL": "https://www.springer.com/tdm"
+      },
+      {
+        "start": {
+          "date-parts": [
+            [
+              2021,
+              1,
+              1
+            ]
+          ],
+          "date-time": "2021-01-01T00:00:00Z",
+          "timestamp": 1609459200000
+        },
+        "content-version": "vor",
+        "delay-in-days": 0,
+        "URL": "https://www.springer.com/tdm"
+      }
+    ],
+    "content-domain": {
+      "domain": [],
+      "crossmark-restriction": false
+    },
+    "short-container-title": [],
+    "published-print": {
+      "date-parts": [
+        [
+          2021
+        ]
+      ]
+    },
+    "DOI": "10.1007/978-3-030-76275-9",
+    "type": "book",
+    "created": {
+      "date-parts": [
+        [
+          2022,
+          3,
+          28
+        ]
+      ],
+      "date-time": "2022-03-28T09:45:51Z",
+      "timestamp": 1648460751000
+    },
+    "source": "Crossref",
+    "is-referenced-by-count": 37,
+    "title": [
+      "An Optimization Primer"
+    ],
+    "prefix": "10.1007",
+    "author": [
+      {
+        "given": "Johannes O.",
+        "family": "Royset",
+        "sequence": "first",
+        "affiliation": []
+      },
+      {
+        "given": "Roger J-B",
+        "family": "Wets",
+        "sequence": "additional",
+        "affiliation": []
+      }
+    ],
+    "member": "297",
+    "container-title": [
+      "Springer Series in Operations Research and Financial Engineering"
+    ],
+    "original-title": [],
+    "language": "en",
+    "link": [
+      {
+        "URL": "https://link.springer.com/content/pdf/10.1007/978-3-030-76275-9.pdf",
+        "content-type": "application/pdf",
+        "content-version": "vor",
+        "intended-application": "text-mining"
+      },
+      {
+        "URL": "https://link.springer.com/content/pdf/10.1007/978-3-030-76275-9",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "deposited": {
+      "date-parts": [
+        [
+          2022,
+          6,
+          10
+        ]
+      ],
+      "date-time": "2022-06-10T04:29:59Z",
+      "timestamp": 1654835399000
+    },
+    "score": 1,
+    "resource": {
+      "primary": {
+        "URL": "https://link.springer.com/10.1007/978-3-030-76275-9"
+      }
+    },
+    "subtitle": [],
+    "short-title": [],
+    "issued": {
+      "date-parts": [
+        [
+          2021
+        ]
+      ]
+    },
+    "ISBN": [
+      "9783030762742",
+      "9783030762759"
+    ],
+    "references-count": 0,
+    "URL": "https://doi.org/10.1007/978-3-030-76275-9",
+    "relation": {},
+    "ISSN": [
+      "1431-8598",
+      "2197-1773"
+    ],
+    "issn-type": [
+      {
+        "value": "1431-8598",
+        "type": "print"
+      },
+      {
+        "value": "2197-1773",
+        "type": "electronic"
+      }
+    ],
+    "subject": [],
+    "published": {
+      "date-parts": [
+        [
+          2021
+        ]
+      ]
+    }
+  }
+}

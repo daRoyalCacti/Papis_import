@@ -1,0 +1,144 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 12,
+    "items": [
+      {
+        "DOI": "10.1090/s0002-9939-1965-0176022-4",
+        "title": [
+          "On the extension of Borel measures"
+        ],
+        "author": [
+          {
+            "given": "S. K.",
+            "family": "Berberian",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1965,
+              6
+            ]
+          ]
+        },
+        "publisher": "American Mathematical Society (AMS)",
+        "score": 29.590855,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.1007/978-1-4757-4090-5_5",
+        "title": [
+          "Normed Spaces, Banach Spaces, Hilbert Spaces"
+        ],
+        "author": [
+          {
+            "given": "Sterling K.",
+            "family": "Berberian",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1974
+            ]
+          ]
+        },
+        "publisher": "Springer New York",
+        "score": 28.904964,
+        "type": "book-chapter"
+      },
+      {
+        "DOI": "10.2307/2312786",
+        "title": [
+          "A Note on Borel Sets"
+        ],
+        "author": [
+          {
+            "given": "S. K.",
+            "family": "Berberian",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "J. F.",
+            "family": "Jakobsen",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1963,
+              1
+            ]
+          ]
+        },
+        "publisher": "JSTOR",
+        "score": 28.095642,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.1007/978-1-4612-0549-4_6",
+        "title": [
+          "Function Spaces"
+        ],
+        "author": [
+          {
+            "given": "Sterling K.",
+            "family": "Berberian",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1999
+            ]
+          ]
+        },
+        "publisher": "Springer New York",
+        "score": 26.531988,
+        "type": "book-chapter"
+      },
+      {
+        "DOI": "10.1007/978-1-4757-4090-5_3",
+        "title": [
+          "Topological Vector Spaces"
+        ],
+        "author": [
+          {
+            "given": "Sterling K.",
+            "family": "Berberian",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1974
+            ]
+          ]
+        },
+        "publisher": "Springer New York",
+        "score": 26.198496,
+        "type": "book-chapter"
+      }
+    ],
+    "items-per-page": 5,
+    "query": {
+      "start-index": 0,
+      "search-terms": null
+    }
+  }
+}

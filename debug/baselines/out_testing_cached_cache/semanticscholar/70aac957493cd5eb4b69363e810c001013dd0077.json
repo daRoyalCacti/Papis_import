@@ -1,0 +1,92 @@
+{
+  "total": 507,
+  "offset": 0,
+  "next": 5,
+  "data": [
+    {
+      "paperId": "1c16c84e6046152e49a79465de7190492dfad6fb",
+      "externalIds": {
+        "MAG": "2081427729",
+        "DOI": "10.1137/1005048",
+        "CorpusId": 122478961
+      },
+      "title": "Introduction to Hilbert Space (S. K. Berberian)",
+      "year": 1963,
+      "authors": [
+        {
+          "authorId": "123438060",
+          "name": "R. Gilbert"
+        }
+      ]
+    },
+    {
+      "paperId": "d010a9fdcbc95508fc2c1bafff7f87e02793734e",
+      "externalIds": {
+        "MAG": "2110686242",
+        "DOI": "10.1017/S0013091500014802",
+        "CorpusId": 123532086
+      },
+      "title": "S. K. Berberian, Introduction to Hilbert Space (Oxford University Press, 1961), 206 pp., 52s.",
+      "year": 1962,
+      "authors": [
+        {
+          "authorId": "93835905",
+          "name": "F. Bonsall"
+        }
+      ]
+    },
+    {
+      "paperId": "51b5c510046fd1b9d42250ccc98a881b0e59b96c",
+      "externalIds": {
+        "DOI": "10.1007/s11785-024-01642-x",
+        "CorpusId": 275697114
+      },
+      "title": "Cesàro-like Operator on Bergman–Morrey Spaces",
+      "year": 2025,
+      "authors": [
+        {
+          "authorId": "2179224047",
+          "name": "Pengcheng Tang"
+        }
+      ]
+    },
+    {
+      "paperId": "baff77761cecc68fda36f866ac6d5ddd9d0aa3e4",
+      "externalIds": {
+        "DOI": "10.4153/S0008439525000402",
+        "CorpusId": 277709130
+      },
+      "title": "A Cesàro-like operator from a class of analytic function spaces to analytic Besov spaces",
+      "year": 2025,
+      "authors": [
+        {
+          "authorId": "2179224047",
+          "name": "Pengcheng Tang"
+        }
+      ]
+    },
+    {
+      "paperId": "b78d1163ec1850ee97b8ea4ea08b4c45c39552af",
+      "externalIds": {
+        "DOI": "10.1007/s40315-024-00560-5",
+        "CorpusId": 272362459
+      },
+      "title": "Hilbert-Type Operators Acting on Bergman Spaces",
+      "year": 2024,
+      "authors": [
+        {
+          "authorId": "1460384473",
+          "name": "Tanausú Aguilar-Hernández"
+        },
+        {
+          "authorId": "100801098",
+          "name": "P. Galanopoulos"
+        },
+        {
+          "authorId": "76918814",
+          "name": "D. Girela"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,205 @@
+{
+  "kind": "books#volumes",
+  "totalItems": 3,
+  "items": [
+    {
+      "kind": "books#volume",
+      "id": "-1nvoQEACAAJ",
+      "etag": "0NA9F1aPnrg",
+      "selfLink": "https://www.googleapis.com/books/v1/volumes/-1nvoQEACAAJ",
+      "volumeInfo": {
+        "title": "Absolute Measurable Spaces",
+        "authors": [
+          "Togo Nishiura"
+        ],
+        "publishedDate": "2014-05-14",
+        "description": "Emphasizes topological, geometrical and analytical properties of absolute measurable spaces; of interest for real analysis, set theory and measure theory.",
+        "industryIdentifiers": [
+          {
+            "type": "ISBN_10",
+            "identifier": "1107398908"
+          },
+          {
+            "type": "ISBN_13",
+            "identifier": "9781107398900"
+          }
+        ],
+        "readingModes": {
+          "text": false,
+          "image": false
+        },
+        "pageCount": 289,
+        "printType": "BOOK",
+        "maturityRating": "NOT_MATURE",
+        "allowAnonLogging": false,
+        "contentVersion": "preview-1.0.0",
+        "language": "en",
+        "previewLink": "http://books.google.com.au/books?id=-1nvoQEACAAJ&dq=intitle:Universally+measurable+spaces+an+in&hl=&cd=1&source=gbs_api",
+        "infoLink": "http://books.google.com.au/books?id=-1nvoQEACAAJ&dq=intitle:Universally+measurable+spaces+an+in&hl=&source=gbs_api",
+        "canonicalVolumeLink": "https://books.google.com/books/about/Absolute_Measurable_Spaces.html?hl=&id=-1nvoQEACAAJ"
+      },
+      "saleInfo": {
+        "country": "AU",
+        "saleability": "NOT_FOR_SALE",
+        "isEbook": false
+      },
+      "accessInfo": {
+        "country": "AU",
+        "viewability": "NO_PAGES",
+        "embeddable": false,
+        "publicDomain": false,
+        "textToSpeechPermission": "ALLOWED",
+        "epub": {
+          "isAvailable": false
+        },
+        "pdf": {
+          "isAvailable": false
+        },
+        "webReaderLink": "http://play.google.com/books/reader?id=-1nvoQEACAAJ&hl=&source=gbs_api",
+        "accessViewStatus": "NONE",
+        "quoteSharingAllowed": false
+      },
+      "searchInfo": {
+        "textSnippet": "Emphasizes topological, geometrical and analytical properties of absolute measurable spaces; of interest for real analysis, set theory and measure theory."
+      }
+    },
+    {
+      "kind": "books#volume",
+      "id": "F243SflQYbQC",
+      "etag": "H/gZlZl01hY",
+      "selfLink": "https://www.googleapis.com/books/v1/volumes/F243SflQYbQC",
+      "volumeInfo": {
+        "title": "Measures on Infinite Dimensional Spaces",
+        "authors": [
+          "Yasuo Yamasaki"
+        ],
+        "publisher": "World Scientific",
+        "publishedDate": "1985",
+        "description": "This book is based on lectures given at Yale and Kyoto Universities and provides a self-contained detailed exposition of the following subjects: 1) The construction of infinite dimensional measures, 2) Invariance and quasi-invariance of measures under translations. This book furnishes an important tool for the analysis of physical systems with infinite degrees of freedom (such as field theory, statistical physics and field dynamics) by providing material on the foundations of these problems.",
+        "industryIdentifiers": [
+          {
+            "type": "ISBN_10",
+            "identifier": "9971978520"
+          },
+          {
+            "type": "ISBN_13",
+            "identifier": "9789971978525"
+          }
+        ],
+        "readingModes": {
+          "text": false,
+          "image": true
+        },
+        "pageCount": 276,
+        "printType": "BOOK",
+        "categories": [
+          "Science"
+        ],
+        "maturityRating": "NOT_MATURE",
+        "allowAnonLogging": false,
+        "contentVersion": "0.16.17.0.preview.1",
+        "panelizationSummary": {
+          "containsEpubBubbles": false,
+          "containsImageBubbles": false
+        },
+        "imageLinks": {
+          "smallThumbnail": "http://books.google.com/books/content?id=F243SflQYbQC&printsec=frontcover&img=1&zoom=5&edge=curl&source=gbs_api",
+          "thumbnail": "http://books.google.com/books/content?id=F243SflQYbQC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+        },
+        "language": "en",
+        "previewLink": "http://books.google.com.au/books?id=F243SflQYbQC&printsec=frontcover&dq=intitle:Universally+measurable+spaces+an+in&hl=&cd=2&source=gbs_api",
+        "infoLink": "http://books.google.com.au/books?id=F243SflQYbQC&dq=intitle:Universally+measurable+spaces+an+in&hl=&source=gbs_api",
+        "canonicalVolumeLink": "https://books.google.com/books/about/Measures_on_Infinite_Dimensional_Spaces.html?hl=&id=F243SflQYbQC"
+      },
+      "saleInfo": {
+        "country": "AU",
+        "saleability": "NOT_FOR_SALE",
+        "isEbook": false
+      },
+      "accessInfo": {
+        "country": "AU",
+        "viewability": "PARTIAL",
+        "embeddable": true,
+        "publicDomain": false,
+        "textToSpeechPermission": "ALLOWED",
+        "epub": {
+          "isAvailable": false
+        },
+        "pdf": {
+          "isAvailable": true,
+          "acsTokenLink": "http://books.google.com.au/books/download/Measures_on_Infinite_Dimensional_Spaces-sample-pdf.acsm?id=F243SflQYbQC&format=pdf&output=acs4_fulfillment_token&dl_type=sample&source=gbs_api"
+        },
+        "webReaderLink": "http://play.google.com/books/reader?id=F243SflQYbQC&hl=&source=gbs_api",
+        "accessViewStatus": "SAMPLE",
+        "quoteSharingAllowed": false
+      },
+      "searchInfo": {
+        "textSnippet": "This book is based on lectures given at Yale and Kyoto Universities and provides a self-contained detailed exposition of the following subjects: 1) The construction of infinite dimensional measures, 2) Invariance and quasi-invariance of ..."
+      }
+    },
+    {
+      "kind": "books#volume",
+      "id": "kSzFm3h6rY4C",
+      "etag": "5QomtX6nCRg",
+      "selfLink": "https://www.googleapis.com/books/v1/volumes/kSzFm3h6rY4C",
+      "volumeInfo": {
+        "title": "Measurable Spaces with C.c.c",
+        "authors": [
+          "Rae Michael Shortt"
+        ],
+        "publishedDate": "1989",
+        "industryIdentifiers": [
+          {
+            "type": "OTHER",
+            "identifier": "UCR:31210012616460"
+          }
+        ],
+        "readingModes": {
+          "text": false,
+          "image": false
+        },
+        "pageCount": 52,
+        "printType": "BOOK",
+        "categories": [
+          "Borel subgroups"
+        ],
+        "maturityRating": "NOT_MATURE",
+        "allowAnonLogging": false,
+        "contentVersion": "1.4.1.0.preview.0",
+        "panelizationSummary": {
+          "containsEpubBubbles": false,
+          "containsImageBubbles": false
+        },
+        "imageLinks": {
+          "smallThumbnail": "http://books.google.com/books/content?id=kSzFm3h6rY4C&printsec=frontcover&img=1&zoom=5&source=gbs_api",
+          "thumbnail": "http://books.google.com/books/content?id=kSzFm3h6rY4C&printsec=frontcover&img=1&zoom=1&source=gbs_api"
+        },
+        "language": "en",
+        "previewLink": "http://books.google.com.au/books?id=kSzFm3h6rY4C&q=intitle:Universally+measurable+spaces+an+in&dq=intitle:Universally+measurable+spaces+an+in&hl=&cd=3&source=gbs_api",
+        "infoLink": "http://books.google.com.au/books?id=kSzFm3h6rY4C&dq=intitle:Universally+measurable+spaces+an+in&hl=&source=gbs_api",
+        "canonicalVolumeLink": "https://books.google.com/books/about/Measurable_Spaces_with_C_c_c.html?hl=&id=kSzFm3h6rY4C"
+      },
+      "saleInfo": {
+        "country": "AU",
+        "saleability": "NOT_FOR_SALE",
+        "isEbook": false
+      },
+      "accessInfo": {
+        "country": "AU",
+        "viewability": "NO_PAGES",
+        "embeddable": false,
+        "publicDomain": false,
+        "textToSpeechPermission": "ALLOWED",
+        "epub": {
+          "isAvailable": false
+        },
+        "pdf": {
+          "isAvailable": false
+        },
+        "webReaderLink": "http://play.google.com/books/reader?id=kSzFm3h6rY4C&hl=&source=gbs_api",
+        "accessViewStatus": "NONE",
+        "quoteSharingAllowed": false
+      }
+    }
+  ]
+}

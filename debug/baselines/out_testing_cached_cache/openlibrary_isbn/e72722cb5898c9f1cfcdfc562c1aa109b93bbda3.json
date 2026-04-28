@@ -1,0 +1,78 @@
+{
+  "ISBN:0521411467": {
+    "url": "http://openlibrary.org/books/OL1004208M/Time_series_and_dynamic_models",
+    "key": "/books/OL1004208M",
+    "title": "Time series and dynamic models",
+    "authors": [
+      {
+        "url": "http://openlibrary.org/authors/OL73770A/Christian_Gourieroux",
+        "name": "Christian Gourieroux"
+      }
+    ],
+    "number_of_pages": 668,
+    "pagination": "p. cm.",
+    "by_statement": "Christian Gourieroux, Alain Monfort ; translated and edited by Giampiero M. Gallo.",
+    "identifiers": {
+      "goodreads": [
+        "3715639",
+        "3504537"
+      ],
+      "librarything": [
+        "2218096"
+      ],
+      "isbn_10": [
+        "0521411467",
+        "0521423082"
+      ],
+      "lccn": [
+        "96043916"
+      ],
+      "oclc": [
+        "504894114",
+        "35646491"
+      ],
+      "openlibrary": [
+        "OL1004208M"
+      ]
+    },
+    "classifications": {
+      "lc_classifications": [
+        "HB135 .G6813 1997"
+      ],
+      "dewey_decimal_class": [
+        "330/.01/51955"
+      ]
+    },
+    "publishers": [
+      {
+        "name": "Cambridge University Press"
+      }
+    ],
+    "publish_places": [
+      {
+        "name": "New York"
+      }
+    ],
+    "publish_date": "1997",
+    "subjects": [
+      {
+        "name": "Econometrics",
+        "url": "https://openlibrary.org/subjects/econometrics"
+      },
+      {
+        "name": "Mathematical Economics",
+        "url": "https://openlibrary.org/subjects/mathematical_economics"
+      },
+      {
+        "name": "Time-series analysis",
+        "url": "https://openlibrary.org/subjects/time-series_analysis"
+      }
+    ],
+    "notes": "Includes bibliographical references and index.\nTranslation of the 2nd French edition, revised and updated",
+    "cover": {
+      "small": "https://covers.openlibrary.org/b/id/338223-S.jpg",
+      "medium": "https://covers.openlibrary.org/b/id/338223-M.jpg",
+      "large": "https://covers.openlibrary.org/b/id/338223-L.jpg"
+    }
+  }
+}

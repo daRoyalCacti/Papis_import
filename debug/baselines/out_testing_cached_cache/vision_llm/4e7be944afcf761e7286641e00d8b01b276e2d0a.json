@@ -1,0 +1,33 @@
+{
+  "id": "chatcmpl-8ed6f347-a562-4cff-9509-6928038d9091",
+  "object": "chat.completion",
+  "created": 1777361060,
+  "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n\"title\": \"Universally measurable spaces: an invariance theorem and diverse characterizations\",\n  \"authors\": [\n    \"Rae M. Shortt\"\n  ],\n  \"year\": \"\",\n  \"doi\": \"\",\n  \"isbn\": \"\",\n  \"arxiv\": \"\",\n  \"publisher\": \"\",\n  \"notes\": \"\"\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.088858795,
+    "prompt_tokens": 2166,
+    "prompt_time": 0.076195231,
+    "completion_tokens": 67,
+    "completion_time": 0.151346036,
+    "total_tokens": 2233,
+    "total_time": 0.227541267
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_f0bb21cb36",
+  "x_groq": {
+    "id": "req_01kq9fk0e2fvw83qdneaxwzxym",
+    "seed": 621808813
+  },
+  "service_tier": "on_demand"
+}

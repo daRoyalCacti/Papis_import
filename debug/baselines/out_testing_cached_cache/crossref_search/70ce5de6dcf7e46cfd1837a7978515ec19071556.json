@@ -1,0 +1,145 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 199150,
+    "items": [
+      {
+        "DOI": "10.4064/fm-121-2-169-176",
+        "title": [
+          "Universally measurable spaces: an invariance theorem and diverse characterizations"
+        ],
+        "author": [
+          {
+            "given": "Rae",
+            "family": "Shrott",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1984
+            ]
+          ]
+        },
+        "publisher": "Institute of Mathematics, Polish Academy of Sciences",
+        "score": 30.674152,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.2991/978-94-91216-36-7_18",
+        "title": [
+          "Universally measurable additive functionals"
+        ],
+        "author": [
+          {
+            "given": "Alexander B.",
+            "family": "Kharazishvili",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2009
+            ]
+          ]
+        },
+        "publisher": "Atlantis Press",
+        "score": 29.454897,
+        "type": "book-chapter"
+      },
+      {
+        "DOI": "10.1017/cbo9780511721380.003",
+        "title": [
+          "The universally measurable property"
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2008,
+              5,
+              8
+            ]
+          ]
+        },
+        "publisher": "Cambridge University Press",
+        "score": 29.002956,
+        "type": "book-chapter"
+      },
+      {
+        "DOI": "10.1017/fmp.2019.5",
+        "title": [
+          "CONTINUITY OF UNIVERSALLY MEASURABLE HOMOMORPHISMS"
+        ],
+        "author": [
+          {
+            "given": "CHRISTIAN",
+            "family": "ROSENDAL",
+            "sequence": "first",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2019
+            ]
+          ]
+        },
+        "publisher": "Cambridge University Press (CUP)",
+        "score": 28.00315,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.1287/moor.4.1.15",
+        "title": [
+          "Universally Measurable Policies in Dynamic Programming"
+        ],
+        "author": [
+          {
+            "given": "Steven E.",
+            "family": "Shreve",
+            "sequence": "first",
+            "affiliation": [
+              {
+                "name": "Department of Mathematical Sciences, University of Delaware, Newark, Delaware 19711"
+              }
+            ]
+          },
+          {
+            "given": "Dimitri P.",
+            "family": "Bertsekas",
+            "sequence": "additional",
+            "affiliation": [
+              {
+                "name": "Department of Electrical Engineering and Computer Science, Massachusetts Institute of Technology, Cambridge, Massachusetts 02139"
+              }
+            ]
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1979,
+              2
+            ]
+          ]
+        },
+        "publisher": "Institute for Operations Research and the Management Sciences (INFORMS)",
+        "score": 26.793102,
+        "type": "journal-article"
+      }
+    ],
+    "items-per-page": 5,
+    "query": {
+      "start-index": 0,
+      "search-terms": null
+    }
+  }
+}

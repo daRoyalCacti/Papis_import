@@ -1,0 +1,137 @@
+{
+  "total": 5,
+  "offset": 0,
+  "data": [
+    {
+      "paperId": "4333a38b2287f718ea0f47f3f6004c529b7b1ab7",
+      "externalIds": {
+        "MAG": "1574118339",
+        "CorpusId": 19440431
+      },
+      "title": "Rough Sets and Current Trends in Computing: 5th International Conference, RSCTC 2006, Kobe, Japan, November 6-8, 2006, Proceedings (Lecture Notes in Computer Science)",
+      "year": 2006,
+      "authors": [
+        {
+          "authorId": "1710715",
+          "name": "S. Greco"
+        },
+        {
+          "authorId": "148391998",
+          "name": "Y. Hata"
+        },
+        {
+          "authorId": "1732173",
+          "name": "S. Hirano"
+        },
+        {
+          "authorId": "1681731",
+          "name": "M. Inuiguchi"
+        },
+        {
+          "authorId": "1722061",
+          "name": "S. Miyamoto"
+        },
+        {
+          "authorId": "1680346",
+          "name": "H. Nguyen"
+        },
+        {
+          "authorId": "1754252",
+          "name": "R. Słowiński"
+        }
+      ]
+    },
+    {
+      "paperId": "25c961e190ff20d6fda8ac8c320d678932587464",
+      "externalIds": {
+        "MAG": "2794910032",
+        "CorpusId": 55389906
+      },
+      "title": "Evaluating an Adaptive Equity-Oriented Pedagogy: A Study of Its Impacts in Higher Education.",
+      "year": 2017,
+      "authors": [
+        {
+          "authorId": "119689806",
+          "name": "Andrew Phuong"
+        },
+        {
+          "authorId": "48493523",
+          "name": "Judy Nguyen"
+        },
+        {
+          "authorId": "2073631371",
+          "name": "Dena Marie"
+        }
+      ]
+    },
+    {
+      "paperId": "a7bbbd779ac5819a84243468f4eea6fd54db974f",
+      "externalIds": {
+        "MAG": "2018981774",
+        "DOI": "10.1002/j.2168-9830.2002.tb00704.x",
+        "CorpusId": 109290975
+      },
+      "title": "Development of Online Ultrasound Instructional Module and Comparison to Traditional Teaching Methods",
+      "year": 2002,
+      "authors": [
+        {
+          "authorId": "2253408462",
+          "name": "Jimmy Nguyen"
+        },
+        {
+          "authorId": "3349219",
+          "name": "C. Paschal"
+        }
+      ]
+    },
+    {
+      "paperId": "5971b5f0cf5d3833414359958ee1fd35e3627678",
+      "externalIds": {
+        "PubMedCentral": "4563619",
+        "MAG": "1613549236",
+        "DOI": "10.36834/CMEJ.36681",
+        "CorpusId": 8197808,
+        "PubMed": "26451225"
+      },
+      "title": "Whence cometh the revolution",
+      "year": 2015,
+      "authors": [
+        {
+          "authorId": "1401164915",
+          "name": "M. D'Eon"
+        }
+      ]
+    },
+    {
+      "paperId": "7b5ee9929bcc8563d211a98f8a93f6f904adec2d",
+      "externalIds": {
+        "MAG": "237406099",
+        "CorpusId": 142495407
+      },
+      "title": "The POSITIVES Scale: Development and Validation of a Measure of How Well the Information and Communication Technology Needs of Students with Disabilities Are Being Met.",
+      "year": 2010,
+      "authors": [
+        {
+          "authorId": "3142214",
+          "name": "C. Fichten"
+        },
+        {
+          "authorId": "39710768",
+          "name": "Jennison V. Asuncion"
+        },
+        {
+          "authorId": "145921844",
+          "name": "Mai N. Nguyen"
+        },
+        {
+          "authorId": "46405866",
+          "name": "J. Budd"
+        },
+        {
+          "authorId": "145276860",
+          "name": "R. Amsel"
+        }
+      ]
+    }
+  ]
+}

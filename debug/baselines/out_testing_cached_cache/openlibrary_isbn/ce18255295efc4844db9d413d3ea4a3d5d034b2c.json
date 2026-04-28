@@ -1,0 +1,69 @@
+{
+  "ISBN:0691080690": {
+    "url": "http://openlibrary.org/books/OL49220515M/Convex_Analysis",
+    "key": "/books/OL49220515M",
+    "title": "Convex Analysis",
+    "authors": [
+      {
+        "url": "http://openlibrary.org/authors/OL7617486A/Ralph_Tyrrell_Rockafellar",
+        "name": "Ralph Tyrrell Rockafellar"
+      }
+    ],
+    "number_of_pages": 451,
+    "identifiers": {
+      "isbn_10": [
+        "0691080690"
+      ],
+      "lccn": [
+        "68056318"
+      ],
+      "oclc": [
+        "64619"
+      ],
+      "openlibrary": [
+        "OL49220515M"
+      ]
+    },
+    "classifications": {
+      "lc_classifications": [
+        "QA300 .R573"
+      ]
+    },
+    "publishers": [
+      {
+        "name": "Princeton University Press"
+      }
+    ],
+    "publish_date": "1972",
+    "subjects": [
+      {
+        "name": "Convex domains",
+        "url": "https://openlibrary.org/subjects/convex_domains"
+      },
+      {
+        "name": "Mathematical analysis",
+        "url": "https://openlibrary.org/subjects/mathematical_analysis"
+      },
+      {
+        "name": "Convex functions",
+        "url": "https://openlibrary.org/subjects/convex_functions"
+      },
+      {
+        "name": "Konvexe Analysis",
+        "url": "https://openlibrary.org/subjects/konvexe_analysis"
+      }
+    ],
+    "ebooks": [
+      {
+        "preview_url": "https://archive.org/details/convexanalysis0000rock",
+        "availability": "restricted",
+        "formats": {}
+      }
+    ],
+    "cover": {
+      "small": "https://covers.openlibrary.org/b/id/14399109-S.jpg",
+      "medium": "https://covers.openlibrary.org/b/id/14399109-M.jpg",
+      "large": "https://covers.openlibrary.org/b/id/14399109-L.jpg"
+    }
+  }
+}

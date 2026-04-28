@@ -1,0 +1,121 @@
+{
+  "status": "ok",
+  "message-type": "work-list",
+  "message-version": "1.0.0",
+  "message": {
+    "facets": {},
+    "total-results": 4342119,
+    "items": [
+      {
+        "DOI": "10.2307/2317299",
+        "title": [
+          "5576"
+        ],
+        "author": [
+          {
+            "given": "F. L.",
+            "family": "Sandomierski",
+            "sequence": "first",
+            "affiliation": []
+          },
+          {
+            "given": "Peter",
+            "family": "Csontos",
+            "sequence": "additional",
+            "affiliation": []
+          },
+          {
+            "given": "B. M.",
+            "family": "Schreiber",
+            "sequence": "additional",
+            "affiliation": []
+          }
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              1969,
+              2,
+              1
+            ]
+          ]
+        },
+        "publisher": "JSTOR",
+        "score": 23.500624,
+        "type": "journal-article"
+      },
+      {
+        "DOI": "10.1007/978-3-540-29925-7_5302",
+        "title": [
+          "(5576) Albanese"
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2003
+            ]
+          ]
+        },
+        "publisher": "Springer Berlin Heidelberg",
+        "score": 22.251818,
+        "type": "book-chapter"
+      },
+      {
+        "DOI": "10.3998/gabii.1.5576",
+        "title": [
+          "Stratigraphic Unit 5576"
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2021,
+              10
+            ]
+          ]
+        },
+        "publisher": "University of Michigan Press",
+        "score": 21.884712,
+        "type": "dataset"
+      },
+      {
+        "DOI": "10.5194/egusphere-2025-5576-rc2",
+        "title": [
+          "Comment on egusphere-2025-5576"
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2026,
+              4,
+              13
+            ]
+          ]
+        },
+        "publisher": "Copernicus GmbH",
+        "score": 19.226614,
+        "type": "peer-review"
+      },
+      {
+        "DOI": "10.1007/978-3-540-76435-9_12756",
+        "title": [
+          "5576 short-stay campground [n] [US]"
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2010
+            ]
+          ]
+        },
+        "publisher": "Springer Berlin Heidelberg",
+        "score": 18.975931,
+        "type": "book-chapter"
+      }
+    ],
+    "items-per-page": 5,
+    "query": {
+      "start-index": 0,
+      "search-terms": null
+    }
+  }
+}

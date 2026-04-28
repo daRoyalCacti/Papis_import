@@ -1,0 +1,33 @@
+{
+  "id": "chatcmpl-1d6eb616-f6e4-4af5-9041-607b24b1f8f1",
+  "object": "chat.completion",
+  "created": 1777361075,
+  "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n\"title\": \"\",\n  \"authors\": [],\n  \"year\": \"\",\n  \"doi\": \"\",\n  \"isbn\": \"\",\n  \"arxiv\": \"\",\n  \"publisher\": \"\",\n  \"notes\": \"\"\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "queue_time": 0.08569375,
+    "prompt_tokens": 2154,
+    "prompt_time": 0.075470831,
+    "completion_tokens": 43,
+    "completion_time": 0.096982594,
+    "total_tokens": 2197,
+    "total_time": 0.172453425
+  },
+  "usage_breakdown": null,
+  "system_fingerprint": "fp_f0bb21cb36",
+  "x_groq": {
+    "id": "req_01kq9fkf1kfw09tmzm7rdzh231",
+    "seed": 16414931
+  },
+  "service_tier": "on_demand"
+}

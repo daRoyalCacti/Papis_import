@@ -1,0 +1,123 @@
+{
+  "total": 46,
+  "offset": 0,
+  "next": 5,
+  "data": [
+    {
+      "paperId": "71c67dd687a22f84eb86599cfb3ae54cdbe382e9",
+      "externalIds": {
+        "DOI": "10.64024/upes13863",
+        "CorpusId": 285035306
+      },
+      "title": "Thực trạng công tác giảng dạy và hiệu quả thực hiện kỹ thuật đánh bóng gậy sắt dài của sinh viên chuyê ngành Golf Trường Đại học TDTT Bắc Ninh",
+      "year": 2025,
+      "authors": [
+        {
+          "authorId": "2392595168",
+          "name": "H. Nguyễn"
+        }
+      ]
+    },
+    {
+      "paperId": "9dd4275576579758cde0ea0efcdcc3b419810e4c",
+      "externalIds": {
+        "DBLP": "journals/widm/Nguyen17",
+        "MAG": "2586091103",
+        "DOI": "10.1002/widm.1198",
+        "CorpusId": 12585438
+      },
+      "title": "An introduction to Majorization‐Minimization algorithms for machine learning and statistical estimation",
+      "year": 2017,
+      "authors": [
+        {
+          "authorId": "153609534",
+          "name": "H. Nguyen"
+        }
+      ]
+    },
+    {
+      "paperId": "20bc8749d8007562c0c734991e37fa5d68083fe7",
+      "externalIds": {
+        "DOI": "10.25073/2588-1094/vnuees.4872",
+        "CorpusId": 254816272
+      },
+      "title": "Large-scale Mapping of Landslide and Debris Flow using Flowr Model with Statistical and Machine Learning Methods",
+      "year": 2022,
+      "authors": [
+        {
+          "authorId": "144559549",
+          "name": "D. M. Hien"
+        },
+        {
+          "authorId": "8528525",
+          "name": "Nguyen Van Hoang"
+        },
+        {
+          "authorId": "1750947415",
+          "name": "M. Le Dung"
+        },
+        {
+          "authorId": "2197392725",
+          "name": "Luong Huu Dung"
+        },
+        {
+          "authorId": "2187347830",
+          "name": "Ngo Thi Thuy"
+        },
+        {
+          "authorId": "2197397249",
+          "name": "Van Thi Hang"
+        }
+      ]
+    },
+    {
+      "paperId": "343e931ef3f1485a104837cc2d7b6937e6e8ad69",
+      "externalIds": {
+        "DOI": "10.70374/amccr.2025.1702",
+        "CorpusId": 281293140
+      },
+      "title": "Exploring The Relationship Between Clinical Learning Environments, Stress Perception, And Coping Behaviors In Nursing Students",
+      "year": 2025,
+      "authors": [
+        {
+          "authorId": "2380284398",
+          "name": "Le Thi Thao Hien"
+        },
+        {
+          "authorId": "2388239205",
+          "name": "L. Phuong"
+        },
+        {
+          "authorId": "153567854",
+          "name": "L. Phung"
+        },
+        {
+          "authorId": "2380287229",
+          "name": "Le Thi Hoang Tho"
+        },
+        {
+          "authorId": "2278706675",
+          "name": "Nguyen VAN CANH"
+        }
+      ]
+    },
+    {
+      "paperId": "12b406050e31637a06269c1a6d9ce6166b4ca875",
+      "externalIds": {
+        "DBLP": "journals/corr/Nguyen16c",
+        "ArXiv": "1611.03969",
+        "MAG": "2571456692",
+        "DOI": "10.1002/widm.1205",
+        "CorpusId": 3115495
+      },
+      "title": "An introduction to MM algorithms for machine learning and statistical estimation",
+      "year": 2016,
+      "authors": [
+        {
+          "authorId": "153609534",
+          "name": "H. Nguyen"
+        }
+      ]
+    }
+  ]
+}

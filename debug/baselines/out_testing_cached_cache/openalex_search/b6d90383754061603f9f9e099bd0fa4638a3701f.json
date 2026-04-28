@@ -1,0 +1,3593 @@
+{
+  "meta": {
+    "count": 36899,
+    "db_response_time_ms": 89,
+    "page": 1,
+    "per_page": 5,
+    "groups_count": null,
+    "cost_usd": 0.001
+  },
+  "results": [
+    {
+      "id": "https://openalex.org/W764093590",
+      "doi": "https://doi.org/10.4064/fm-121-2-169-176",
+      "title": "Universally measurable spaces: an invariance theorem and diverse characterizations",
+      "display_name": "Universally measurable spaces: an invariance theorem and diverse characterizations",
+      "relevance_score": 687.9784,
+      "publication_year": 1984,
+      "publication_date": "1984-01-01",
+      "ids": {
+        "openalex": "https://openalex.org/W764093590",
+        "doi": "https://doi.org/10.4064/fm-121-2-169-176",
+        "mag": "764093590"
+      },
+      "language": "en",
+      "primary_location": {
+        "id": "doi:10.4064/fm-121-2-169-176",
+        "is_oa": true,
+        "landing_page_url": "https://doi.org/10.4064/fm-121-2-169-176",
+        "pdf_url": "https://www.impan.pl/shop/publication/transaction/download/product/104236?download.pdf",
+        "source": {
+          "id": "https://openalex.org/S92430692",
+          "display_name": "Fundamenta Mathematicae",
+          "issn_l": "0016-2736",
+          "issn": [
+            "0016-2736",
+            "1730-6329"
+          ],
+          "is_oa": false,
+          "is_in_doaj": false,
+          "is_core": true,
+          "host_organization": "https://openalex.org/P4310317485",
+          "host_organization_name": "Polish Academy of Sciences",
+          "host_organization_lineage": [
+            "https://openalex.org/P4310317485"
+          ],
+          "host_organization_lineage_names": [
+            "Polish Academy of Sciences"
+          ],
+          "type": "journal"
+        },
+        "license": "cc-by",
+        "license_id": "https://openalex.org/licenses/cc-by",
+        "version": "publishedVersion",
+        "is_accepted": true,
+        "is_published": true,
+        "raw_source_name": "Fundamenta Mathematicae",
+        "raw_type": "journal-article"
+      },
+      "type": "article",
+      "indexed_in": [
+        "crossref"
+      ],
+      "open_access": {
+        "is_oa": true,
+        "oa_status": "hybrid",
+        "oa_url": "https://www.impan.pl/shop/publication/transaction/download/product/104236?download.pdf",
+        "any_repository_has_fulltext": false
+      },
+      "authorships": [
+        {
+          "author_position": "first",
+          "author": {
+            "id": "https://openalex.org/A5097168277",
+            "display_name": "Rae Shrott",
+            "orcid": null
+          },
+          "institutions": [
+            {
+              "id": "https://openalex.org/I175392734",
+              "display_name": "Houghton University",
+              "ror": "https://ror.org/04vjs1b18",
+              "country_code": "US",
+              "type": "education",
+              "lineage": [
+                "https://openalex.org/I175392734"
+              ]
+            }
+          ],
+          "countries": [
+            "US"
+          ],
+          "is_corresponding": true,
+          "raw_author_name": "Rae Shrott",
+          "raw_affiliation_strings": [
+            "Houghton, Mich., U.S.A"
+          ],
+          "affiliations": [
+            {
+              "raw_affiliation_string": "Houghton, Mich., U.S.A",
+              "institution_ids": [
+                "https://openalex.org/I175392734"
+              ]
+            }
+          ]
+        }
+      ],
+      "institutions": [],
+      "countries_distinct_count": 1,
+      "institutions_distinct_count": 1,
+      "corresponding_author_ids": [
+        "https://openalex.org/A5097168277"
+      ],
+      "corresponding_institution_ids": [
+        "https://openalex.org/I175392734"
+      ],
+      "apc_list": null,
+      "apc_paid": null,
+      "fwci": 1.1116,
+      "has_fulltext": false,
+      "cited_by_count": 16,
+      "citation_normalized_percentile": {
+        "value": 0.68618267,
+        "is_in_top_1_percent": false,
+        "is_in_top_10_percent": false
+      },
+      "cited_by_percentile_year": {
+        "min": 89,
+        "max": 96
+      },
+      "biblio": {
+        "volume": "121",
+        "issue": "2",
+        "first_page": "169",
+        "last_page": "176"
+      },
+      "is_retracted": false,
+      "is_paratext": false,
+      "is_xpac": false,
+      "primary_topic": {
+        "id": "https://openalex.org/T11545",
+        "display_name": "Advanced Banach Space Theory",
+        "score": 0.930400013923645,
+        "subfield": {
+          "id": "https://openalex.org/subfields/2610",
+          "display_name": "Mathematical Physics"
+        },
+        "field": {
+          "id": "https://openalex.org/fields/26",
+          "display_name": "Mathematics"
+        },
+        "domain": {
+          "id": "https://openalex.org/domains/3",
+          "display_name": "Physical Sciences"
+        }
+      },
+      "topics": [
+        {
+          "id": "https://openalex.org/T11545",
+          "display_name": "Advanced Banach Space Theory",
+          "score": 0.930400013923645,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2610",
+            "display_name": "Mathematical Physics"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/26",
+            "display_name": "Mathematics"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/3",
+            "display_name": "Physical Sciences"
+          }
+        }
+      ],
+      "keywords": [
+        {
+          "id": "https://openalex.org/keywords/mathematics",
+          "display_name": "Mathematics",
+          "score": 0.8336687088012695
+        },
+        {
+          "id": "https://openalex.org/keywords/pure-mathematics",
+          "display_name": "Pure mathematics",
+          "score": 0.5314029455184937
+        },
+        {
+          "id": "https://openalex.org/keywords/discrete-mathematics",
+          "display_name": "Discrete mathematics",
+          "score": 0.41262632608413696
+        },
+        {
+          "id": "https://openalex.org/keywords/calculus",
+          "display_name": "Calculus (dental)",
+          "score": 0.3250429332256317
+        }
+      ],
+      "concepts": [
+        {
+          "id": "https://openalex.org/C33923547",
+          "wikidata": "https://www.wikidata.org/wiki/Q395",
+          "display_name": "Mathematics",
+          "level": 0,
+          "score": 0.8336687088012695
+        },
+        {
+          "id": "https://openalex.org/C202444582",
+          "wikidata": "https://www.wikidata.org/wiki/Q837863",
+          "display_name": "Pure mathematics",
+          "level": 1,
+          "score": 0.5314029455184937
+        },
+        {
+          "id": "https://openalex.org/C118615104",
+          "wikidata": "https://www.wikidata.org/wiki/Q121416",
+          "display_name": "Discrete mathematics",
+          "level": 1,
+          "score": 0.41262632608413696
+        },
+        {
+          "id": "https://openalex.org/C2777686260",
+          "wikidata": "https://www.wikidata.org/wiki/Q144037",
+          "display_name": "Calculus (dental)",
+          "level": 2,
+          "score": 0.3250429332256317
+        },
+        {
+          "id": "https://openalex.org/C71924100",
+          "wikidata": "https://www.wikidata.org/wiki/Q11190",
+          "display_name": "Medicine",
+          "level": 0,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C199343813",
+          "wikidata": "https://www.wikidata.org/wiki/Q12128",
+          "display_name": "Dentistry",
+          "level": 1,
+          "score": 0.0
+        }
+      ],
+      "mesh": [],
+      "locations_count": 1,
+      "locations": [
+        {
+          "id": "doi:10.4064/fm-121-2-169-176",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.4064/fm-121-2-169-176",
+          "pdf_url": "https://www.impan.pl/shop/publication/transaction/download/product/104236?download.pdf",
+          "source": {
+            "id": "https://openalex.org/S92430692",
+            "display_name": "Fundamenta Mathematicae",
+            "issn_l": "0016-2736",
+            "issn": [
+              "0016-2736",
+              "1730-6329"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "host_organization": "https://openalex.org/P4310317485",
+            "host_organization_name": "Polish Academy of Sciences",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310317485"
+            ],
+            "host_organization_lineage_names": [
+              "Polish Academy of Sciences"
+            ],
+            "type": "journal"
+          },
+          "license": "cc-by",
+          "license_id": "https://openalex.org/licenses/cc-by",
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Fundamenta Mathematicae",
+          "raw_type": "journal-article"
+        }
+      ],
+      "best_oa_location": {
+        "id": "doi:10.4064/fm-121-2-169-176",
+        "is_oa": true,
+        "landing_page_url": "https://doi.org/10.4064/fm-121-2-169-176",
+        "pdf_url": "https://www.impan.pl/shop/publication/transaction/download/product/104236?download.pdf",
+        "source": {
+          "id": "https://openalex.org/S92430692",
+          "display_name": "Fundamenta Mathematicae",
+          "issn_l": "0016-2736",
+          "issn": [
+            "0016-2736",
+            "1730-6329"
+          ],
+          "is_oa": false,
+          "is_in_doaj": false,
+          "is_core": true,
+          "host_organization": "https://openalex.org/P4310317485",
+          "host_organization_name": "Polish Academy of Sciences",
+          "host_organization_lineage": [
+            "https://openalex.org/P4310317485"
+          ],
+          "host_organization_lineage_names": [
+            "Polish Academy of Sciences"
+          ],
+          "type": "journal"
+        },
+        "license": "cc-by",
+        "license_id": "https://openalex.org/licenses/cc-by",
+        "version": "publishedVersion",
+        "is_accepted": true,
+        "is_published": true,
+        "raw_source_name": "Fundamenta Mathematicae",
+        "raw_type": "journal-article"
+      },
+      "sustainable_development_goals": [],
+      "awards": [],
+      "funders": [],
+      "has_content": {
+        "pdf": true,
+        "grobid_xml": true
+      },
+      "content_urls": {
+        "pdf": "https://content.openalex.org/works/W764093590.pdf",
+        "grobid_xml": "https://content.openalex.org/works/W764093590.grobid-xml"
+      },
+      "referenced_works_count": 0,
+      "referenced_works": [],
+      "related_works": [
+        "https://openalex.org/W1979597421",
+        "https://openalex.org/W2007980826",
+        "https://openalex.org/W4245490552",
+        "https://openalex.org/W4225152035",
+        "https://openalex.org/W2061531152",
+        "https://openalex.org/W3002753104",
+        "https://openalex.org/W2077600819",
+        "https://openalex.org/W1587224694",
+        "https://openalex.org/W2911598644",
+        "https://openalex.org/W2042127053"
+      ],
+      "abstract_inverted_index": null,
+      "counts_by_year": [
+        {
+          "year": 2022,
+          "cited_by_count": 1
+        },
+        {
+          "year": 2021,
+          "cited_by_count": 1
+        },
+        {
+          "year": 2017,
+          "cited_by_count": 2
+        },
+        {
+          "year": 2016,
+          "cited_by_count": 1
+        }
+      ],
+      "updated_date": "2025-11-06T03:46:38.306776",
+      "created_date": "2025-10-10T00:00:00"
+    },
+    {
+      "id": "https://openalex.org/W2998022140",
+      "doi": "https://doi.org/10.1137/19m1239507",
+      "title": "Average Cost Optimality Inequality for Markov Decision Processes with Borel Spaces and Universally Measurable Policies",
+      "display_name": "Average Cost Optimality Inequality for Markov Decision Processes with Borel Spaces and Universally Measurable Policies",
+      "relevance_score": 163.04471,
+      "publication_year": 2020,
+      "publication_date": "2020-01-01",
+      "ids": {
+        "openalex": "https://openalex.org/W2998022140",
+        "doi": "https://doi.org/10.1137/19m1239507",
+        "mag": "2998022140"
+      },
+      "language": "en",
+      "primary_location": {
+        "id": "doi:10.1137/19m1239507",
+        "is_oa": false,
+        "landing_page_url": "https://doi.org/10.1137/19m1239507",
+        "pdf_url": null,
+        "source": {
+          "id": "https://openalex.org/S897311980",
+          "display_name": "SIAM Journal on Control and Optimization",
+          "issn_l": "0363-0129",
+          "issn": [
+            "0363-0129",
+            "1095-7138"
+          ],
+          "is_oa": false,
+          "is_in_doaj": false,
+          "is_core": true,
+          "host_organization": "https://openalex.org/P4310320508",
+          "host_organization_name": "Society for Industrial and Applied Mathematics",
+          "host_organization_lineage": [
+            "https://openalex.org/P4310320508"
+          ],
+          "host_organization_lineage_names": [
+            "Society for Industrial and Applied Mathematics"
+          ],
+          "type": "journal"
+        },
+        "license": null,
+        "license_id": null,
+        "version": "publishedVersion",
+        "is_accepted": true,
+        "is_published": true,
+        "raw_source_name": "SIAM Journal on Control and Optimization",
+        "raw_type": "journal-article"
+      },
+      "type": "article",
+      "indexed_in": [
+        "arxiv",
+        "crossref"
+      ],
+      "open_access": {
+        "is_oa": true,
+        "oa_status": "green",
+        "oa_url": "https://arxiv.org/pdf/2001.01357",
+        "any_repository_has_fulltext": true
+      },
+      "authorships": [
+        {
+          "author_position": "first",
+          "author": {
+            "id": "https://openalex.org/A5014937312",
+            "display_name": "Huizhen Yu",
+            "orcid": "https://orcid.org/0000-0002-3673-0094"
+          },
+          "institutions": [
+            {
+              "id": "https://openalex.org/I154425047",
+              "display_name": "University of Alberta",
+              "ror": "https://ror.org/0160cpw27",
+              "country_code": "CA",
+              "type": "education",
+              "lineage": [
+                "https://openalex.org/I154425047"
+              ]
+            }
+          ],
+          "countries": [
+            "CA"
+          ],
+          "is_corresponding": true,
+          "raw_author_name": "Huizhen Yu",
+          "raw_affiliation_strings": [
+            "RLAI Lab, Department of Computing Science, University of Alberta, Canada"
+          ],
+          "affiliations": [
+            {
+              "raw_affiliation_string": "RLAI Lab, Department of Computing Science, University of Alberta, Canada",
+              "institution_ids": [
+                "https://openalex.org/I154425047"
+              ]
+            }
+          ]
+        }
+      ],
+      "institutions": [],
+      "countries_distinct_count": 1,
+      "institutions_distinct_count": 1,
+      "corresponding_author_ids": [
+        "https://openalex.org/A5014937312"
+      ],
+      "corresponding_institution_ids": [
+        "https://openalex.org/I154425047"
+      ],
+      "apc_list": null,
+      "apc_paid": null,
+      "fwci": 1.2968,
+      "has_fulltext": false,
+      "cited_by_count": 8,
+      "citation_normalized_percentile": {
+        "value": 0.81651877,
+        "is_in_top_1_percent": false,
+        "is_in_top_10_percent": false
+      },
+      "cited_by_percentile_year": {
+        "min": 89,
+        "max": 97
+      },
+      "biblio": {
+        "volume": "58",
+        "issue": "4",
+        "first_page": "2469",
+        "last_page": "2502"
+      },
+      "is_retracted": false,
+      "is_paratext": false,
+      "is_xpac": false,
+      "primary_topic": {
+        "id": "https://openalex.org/T11413",
+        "display_name": "Risk and Portfolio Optimization",
+        "score": 0.9879999756813049,
+        "subfield": {
+          "id": "https://openalex.org/subfields/1803",
+          "display_name": "Management Science and Operations Research"
+        },
+        "field": {
+          "id": "https://openalex.org/fields/18",
+          "display_name": "Decision Sciences"
+        },
+        "domain": {
+          "id": "https://openalex.org/domains/2",
+          "display_name": "Social Sciences"
+        }
+      },
+      "topics": [
+        {
+          "id": "https://openalex.org/T11413",
+          "display_name": "Risk and Portfolio Optimization",
+          "score": 0.9879999756813049,
+          "subfield": {
+            "id": "https://openalex.org/subfields/1803",
+            "display_name": "Management Science and Operations Research"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/18",
+            "display_name": "Decision Sciences"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/2",
+            "display_name": "Social Sciences"
+          }
+        },
+        {
+          "id": "https://openalex.org/T12056",
+          "display_name": "Markov Chains and Monte Carlo Methods",
+          "score": 0.9771000146865845,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2613",
+            "display_name": "Statistics and Probability"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/26",
+            "display_name": "Mathematics"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/3",
+            "display_name": "Physical Sciences"
+          }
+        },
+        {
+          "id": "https://openalex.org/T12137",
+          "display_name": "Economic theories and models",
+          "score": 0.9681000113487244,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2002",
+            "display_name": "Economics and Econometrics"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/20",
+            "display_name": "Economics, Econometrics and Finance"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/2",
+            "display_name": "Social Sciences"
+          }
+        }
+      ],
+      "keywords": [
+        {
+          "id": "https://openalex.org/keywords/mathematics",
+          "display_name": "Mathematics",
+          "score": 0.8449746370315552
+        },
+        {
+          "id": "https://openalex.org/keywords/compact-space",
+          "display_name": "Compact space",
+          "score": 0.6603171825408936
+        },
+        {
+          "id": "https://openalex.org/keywords/markov-decision-process",
+          "display_name": "Markov decision process",
+          "score": 0.5734708309173584
+        },
+        {
+          "id": "https://openalex.org/keywords/markov-chain",
+          "display_name": "Markov chain",
+          "score": 0.44708895683288574
+        },
+        {
+          "id": "https://openalex.org/keywords/pointwise",
+          "display_name": "Pointwise",
+          "score": 0.43246689438819885
+        },
+        {
+          "id": "https://openalex.org/keywords/mathematical-economics",
+          "display_name": "Mathematical economics",
+          "score": 0.3764386475086212
+        },
+        {
+          "id": "https://openalex.org/keywords/mathematical-optimization",
+          "display_name": "Mathematical optimization",
+          "score": 0.3355022072792053
+        },
+        {
+          "id": "https://openalex.org/keywords/markov-process",
+          "display_name": "Markov process",
+          "score": 0.31693243980407715
+        },
+        {
+          "id": "https://openalex.org/keywords/pure-mathematics",
+          "display_name": "Pure mathematics",
+          "score": 0.21661242842674255
+        }
+      ],
+      "concepts": [
+        {
+          "id": "https://openalex.org/C33923547",
+          "wikidata": "https://www.wikidata.org/wiki/Q395",
+          "display_name": "Mathematics",
+          "level": 0,
+          "score": 0.8449746370315552
+        },
+        {
+          "id": "https://openalex.org/C18648836",
+          "wikidata": "https://www.wikidata.org/wiki/Q381892",
+          "display_name": "Compact space",
+          "level": 2,
+          "score": 0.6603171825408936
+        },
+        {
+          "id": "https://openalex.org/C106189395",
+          "wikidata": "https://www.wikidata.org/wiki/Q176789",
+          "display_name": "Markov decision process",
+          "level": 3,
+          "score": 0.5734708309173584
+        },
+        {
+          "id": "https://openalex.org/C98763669",
+          "wikidata": "https://www.wikidata.org/wiki/Q176645",
+          "display_name": "Markov chain",
+          "level": 2,
+          "score": 0.44708895683288574
+        },
+        {
+          "id": "https://openalex.org/C2777984123",
+          "wikidata": "https://www.wikidata.org/wiki/Q9248237",
+          "display_name": "Pointwise",
+          "level": 2,
+          "score": 0.43246689438819885
+        },
+        {
+          "id": "https://openalex.org/C144237770",
+          "wikidata": "https://www.wikidata.org/wiki/Q747534",
+          "display_name": "Mathematical economics",
+          "level": 1,
+          "score": 0.3764386475086212
+        },
+        {
+          "id": "https://openalex.org/C126255220",
+          "wikidata": "https://www.wikidata.org/wiki/Q141495",
+          "display_name": "Mathematical optimization",
+          "level": 1,
+          "score": 0.3355022072792053
+        },
+        {
+          "id": "https://openalex.org/C159886148",
+          "wikidata": "https://www.wikidata.org/wiki/Q176645",
+          "display_name": "Markov process",
+          "level": 2,
+          "score": 0.31693243980407715
+        },
+        {
+          "id": "https://openalex.org/C202444582",
+          "wikidata": "https://www.wikidata.org/wiki/Q837863",
+          "display_name": "Pure mathematics",
+          "level": 1,
+          "score": 0.21661242842674255
+        },
+        {
+          "id": "https://openalex.org/C105795698",
+          "wikidata": "https://www.wikidata.org/wiki/Q12483",
+          "display_name": "Statistics",
+          "level": 1,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C134306372",
+          "wikidata": "https://www.wikidata.org/wiki/Q7754",
+          "display_name": "Mathematical analysis",
+          "level": 1,
+          "score": 0.0
+        }
+      ],
+      "mesh": [],
+      "locations_count": 2,
+      "locations": [
+        {
+          "id": "doi:10.1137/19m1239507",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1137/19m1239507",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S897311980",
+            "display_name": "SIAM Journal on Control and Optimization",
+            "issn_l": "0363-0129",
+            "issn": [
+              "0363-0129",
+              "1095-7138"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "host_organization": "https://openalex.org/P4310320508",
+            "host_organization_name": "Society for Industrial and Applied Mathematics",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320508"
+            ],
+            "host_organization_lineage_names": [
+              "Society for Industrial and Applied Mathematics"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "SIAM Journal on Control and Optimization",
+          "raw_type": "journal-article"
+        },
+        {
+          "id": "pmh:oai:arXiv.org:2001.01357",
+          "is_oa": true,
+          "landing_page_url": "http://arxiv.org/abs/2001.01357",
+          "pdf_url": "https://arxiv.org/pdf/2001.01357",
+          "source": {
+            "id": "https://openalex.org/S4306400194",
+            "display_name": "arXiv (Cornell University)",
+            "issn_l": null,
+            "issn": null,
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": false,
+            "host_organization": "https://openalex.org/I205783295",
+            "host_organization_name": "Cornell University",
+            "host_organization_lineage": [
+              "https://openalex.org/I205783295"
+            ],
+            "host_organization_lineage_names": [],
+            "type": "repository"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "acceptedVersion",
+          "is_accepted": true,
+          "is_published": false,
+          "raw_source_name": null,
+          "raw_type": "text"
+        }
+      ],
+      "best_oa_location": {
+        "id": "pmh:oai:arXiv.org:2001.01357",
+        "is_oa": true,
+        "landing_page_url": "http://arxiv.org/abs/2001.01357",
+        "pdf_url": "https://arxiv.org/pdf/2001.01357",
+        "source": {
+          "id": "https://openalex.org/S4306400194",
+          "display_name": "arXiv (Cornell University)",
+          "issn_l": null,
+          "issn": null,
+          "is_oa": true,
+          "is_in_doaj": false,
+          "is_core": false,
+          "host_organization": "https://openalex.org/I205783295",
+          "host_organization_name": "Cornell University",
+          "host_organization_lineage": [
+            "https://openalex.org/I205783295"
+          ],
+          "host_organization_lineage_names": [],
+          "type": "repository"
+        },
+        "license": null,
+        "license_id": null,
+        "version": "acceptedVersion",
+        "is_accepted": true,
+        "is_published": false,
+        "raw_source_name": null,
+        "raw_type": "text"
+      },
+      "sustainable_development_goals": [
+        {
+          "score": 0.5799999833106995,
+          "display_name": "Peace, Justice and strong institutions",
+          "id": "https://metadata.un.org/sdg/16"
+        }
+      ],
+      "awards": [],
+      "funders": [
+        {
+          "id": "https://openalex.org/F4320314212",
+          "display_name": "Alberta Machine Intelligence Institute",
+          "ror": null
+        },
+        {
+          "id": "https://openalex.org/F4320325651",
+          "display_name": "Alberta Innovates",
+          "ror": null
+        }
+      ],
+      "has_content": {
+        "pdf": false,
+        "grobid_xml": false
+      },
+      "content_urls": null,
+      "referenced_works_count": 66,
+      "referenced_works": [
+        "https://openalex.org/W30697952",
+        "https://openalex.org/W58923787",
+        "https://openalex.org/W261814290",
+        "https://openalex.org/W323116121",
+        "https://openalex.org/W891486198",
+        "https://openalex.org/W1529558080",
+        "https://openalex.org/W1535681442",
+        "https://openalex.org/W1545549932",
+        "https://openalex.org/W1578233523",
+        "https://openalex.org/W1752208072",
+        "https://openalex.org/W1966208686",
+        "https://openalex.org/W1967037758",
+        "https://openalex.org/W1973080471",
+        "https://openalex.org/W1975828588",
+        "https://openalex.org/W1978010605",
+        "https://openalex.org/W1995713768",
+        "https://openalex.org/W2001015965",
+        "https://openalex.org/W2003480407",
+        "https://openalex.org/W2010463048",
+        "https://openalex.org/W2010654234",
+        "https://openalex.org/W2018546408",
+        "https://openalex.org/W2025643969",
+        "https://openalex.org/W2028232213",
+        "https://openalex.org/W2028920933",
+        "https://openalex.org/W2029948024",
+        "https://openalex.org/W2030544250",
+        "https://openalex.org/W2038591787",
+        "https://openalex.org/W2062796590",
+        "https://openalex.org/W2065284701",
+        "https://openalex.org/W2067145091",
+        "https://openalex.org/W2085775487",
+        "https://openalex.org/W2095267417",
+        "https://openalex.org/W2097093465",
+        "https://openalex.org/W2115558605",
+        "https://openalex.org/W2126905415",
+        "https://openalex.org/W2134689196",
+        "https://openalex.org/W2134961363",
+        "https://openalex.org/W2150153095",
+        "https://openalex.org/W2163872159",
+        "https://openalex.org/W2175602944",
+        "https://openalex.org/W2191508049",
+        "https://openalex.org/W2317531417",
+        "https://openalex.org/W2414837766",
+        "https://openalex.org/W2567438301",
+        "https://openalex.org/W2736207102",
+        "https://openalex.org/W2796202694",
+        "https://openalex.org/W2910298858",
+        "https://openalex.org/W2949448959",
+        "https://openalex.org/W2963231728",
+        "https://openalex.org/W2963393762",
+        "https://openalex.org/W3000090869",
+        "https://openalex.org/W3047196850",
+        "https://openalex.org/W3102915138",
+        "https://openalex.org/W3104213626",
+        "https://openalex.org/W3150304496",
+        "https://openalex.org/W4206126191",
+        "https://openalex.org/W4210545817",
+        "https://openalex.org/W4230050935",
+        "https://openalex.org/W4251666803",
+        "https://openalex.org/W4253201987",
+        "https://openalex.org/W4291195062",
+        "https://openalex.org/W4292913013",
+        "https://openalex.org/W4300093168",
+        "https://openalex.org/W4302097244",
+        "https://openalex.org/W4302617909",
+        "https://openalex.org/W4385797290"
+      ],
+      "related_works": [
+        "https://openalex.org/W143502885",
+        "https://openalex.org/W42113618",
+        "https://openalex.org/W2379651310",
+        "https://openalex.org/W2113019827",
+        "https://openalex.org/W1541249122",
+        "https://openalex.org/W2413828414",
+        "https://openalex.org/W2367222340",
+        "https://openalex.org/W187740018",
+        "https://openalex.org/W2162286586",
+        "https://openalex.org/W4255368532"
+      ],
+      "abstract_inverted_index": {
+        "We": [
+          0,
+          134
+        ],
+        "consider": [
+          1
+        ],
+        "average-cost": [
+          2
+        ],
+        "Markov": [
+          3
+        ],
+        "decision": [
+          4
+        ],
+        "processes": [
+          5
+        ],
+        "(MDPs)": [
+          6
+        ],
+        "with": [
+          7,
+          27,
+          143
+        ],
+        "Borel": [
+          8
+        ],
+        "state": [
+          9,
+          125
+        ],
+        "and": [
+          10,
+          13,
+          22,
+          69
+        ],
+        "action": [
+          11
+        ],
+        "spaces": [
+          12
+        ],
+        "universally": [
+          14
+        ],
+        "measurable": [
+          15,
+          91
+        ],
+        "policies.": [
+          16
+        ],
+        "For": [
+          17
+        ],
+        "the": [
+          18,
+          43,
+          50,
+          60,
+          73,
+          76,
+          82,
+          124,
+          140,
+          148
+        ],
+        "nonnegative": [
+          19
+        ],
+        "cost": [
+          20,
+          25,
+          45
+        ],
+        "model": [
+          21,
+          26
+        ],
+        "an": [
+          23
+        ],
+        "unbounded": [
+          24
+        ],
+        "a": [
+          28,
+          34,
+          86
+        ],
+        "Lyapunov-type": [
+          29
+        ],
+        "stability": [
+          30
+        ],
+        "character,": [
+          31
+        ],
+        "we": [
+          32,
+          41,
+          110
+        ],
+        "introduce": [
+          33
+        ],
+        "set": [
+          35
+        ],
+        "of": [
+          36,
+          85,
+          90,
+          119,
+          139
+        ],
+        "new": [
+          37
+        ],
+        "conditions": [
+          38,
+          71,
+          99
+        ],
+        "under": [
+          39
+        ],
+        "which": [
+          40
+        ],
+        "prove": [
+          42,
+          147
+        ],
+        "average": [
+          44
+        ],
+        "optimality": [
+          46
+        ],
+        "inequality": [
+          47
+        ],
+        "(ACOI)": [
+          48
+        ],
+        "via": [
+          49
+        ],
+        "vanishing": [
+          51
+        ],
+        "discount": [
+          52
+        ],
+        "factor": [
+          53
+        ],
+        "approach.": [
+          54
+        ],
+        "Unlike": [
+          55
+        ],
+        "most": [
+          56
+        ],
+        "existing": [
+          57
+        ],
+        "results": [
+          58
+        ],
+        "on": [
+          59,
+          72,
+          116
+        ],
+        "ACOI,": [
+          61
+        ],
+        "our": [
+          62
+        ],
+        "result": [
+          63
+        ],
+        "does": [
+          64
+        ],
+        "not": [
+          65
+        ],
+        "require": [
+          66,
+          111
+        ],
+        "any": [
+          67
+        ],
+        "compactness": [
+          68
+        ],
+        "continuity": [
+          70
+        ],
+        "MDPs.": [
+          74
+        ],
+        "Instead,": [
+          75
+        ],
+        "main": [
+          77
+        ],
+        "idea": [
+          78
+        ],
+        "is": [
+          79,
+          129
+        ],
+        "to": [
+          80,
+          104,
+          146
+        ],
+        "use": [
+          81
+        ],
+        "almost-uniform-convergence": [
+          83
+        ],
+        "property": [
+          84,
+          138
+        ],
+        "pointwise": [
+          87
+        ],
+        "convergent": [
+          88
+        ],
+        "sequence": [
+          89
+        ],
+        "functions": [
+          92
+        ],
+        "as": [
+          93
+        ],
+        "asserted": [
+          94
+        ],
+        "in": [
+          95,
+          102
+        ],
+        "Egoroff's": [
+          96,
+          144
+        ],
+        "theorem.": [
+          97
+        ],
+        "Our": [
+          98
+        ],
+        "are": [
+          100
+        ],
+        "formulated": [
+          101
+        ],
+        "order": [
+          103
+        ],
+        "exploit": [
+          105
+        ],
+        "this": [
+          106,
+          136
+        ],
+        "property.": [
+          107
+        ],
+        "Among": [
+          108
+        ],
+        "others,": [
+          109
+        ],
+        "that": [
+          112,
+          122
+        ],
+        "for": [
+          113
+        ],
+        "each": [
+          114
+        ],
+        "state,": [
+          115,
+          123
+        ],
+        "selected": [
+          117
+        ],
+        "subsets": [
+          118
+        ],
+        "actions": [
+          120
+        ],
+        "at": [
+          121
+        ],
+        "transition": [
+          126,
+          141
+        ],
+        "stochastic": [
+          127
+        ],
+        "kernel": [
+          128,
+          142
+        ],
+        "majorized": [
+          130
+        ],
+        "by": [
+          131
+        ],
+        "finite": [
+          132
+        ],
+        "measures.": [
+          133
+        ],
+        "combine": [
+          135
+        ],
+        "majorization": [
+          137
+        ],
+        "theorem": [
+          145
+        ],
+        "ACOI.": [
+          149
+        ]
+      },
+      "counts_by_year": [
+        {
+          "year": 2024,
+          "cited_by_count": 1
+        },
+        {
+          "year": 2023,
+          "cited_by_count": 1
+        },
+        {
+          "year": 2022,
+          "cited_by_count": 2
+        },
+        {
+          "year": 2021,
+          "cited_by_count": 4
+        }
+      ],
+      "updated_date": "2026-03-20T23:20:44.827607",
+      "created_date": "2020-01-10T00:00:00"
+    },
+    {
+      "id": "https://openalex.org/W2319566871",
+      "doi": "https://doi.org/10.3934/dcds.2012.32.2565",
+      "title": "Conditional measures and conditional expectation; Rohlin's Disintegration Theorem",
+      "display_name": "Conditional measures and conditional expectation; Rohlin's Disintegration Theorem",
+      "relevance_score": 137.33217,
+      "publication_year": 2012,
+      "publication_date": "2012-01-01",
+      "ids": {
+        "openalex": "https://openalex.org/W2319566871",
+        "doi": "https://doi.org/10.3934/dcds.2012.32.2565",
+        "mag": "2319566871"
+      },
+      "language": "en",
+      "primary_location": {
+        "id": "doi:10.3934/dcds.2012.32.2565",
+        "is_oa": false,
+        "landing_page_url": "https://doi.org/10.3934/dcds.2012.32.2565",
+        "pdf_url": null,
+        "source": {
+          "id": "https://openalex.org/S19392275",
+          "display_name": "Discrete and Continuous Dynamical Systems",
+          "issn_l": "1078-0947",
+          "issn": [
+            "1078-0947",
+            "1553-5231"
+          ],
+          "is_oa": false,
+          "is_in_doaj": false,
+          "is_core": true,
+          "host_organization": "https://openalex.org/P4310315844",
+          "host_organization_name": "American Institute of Mathematical Sciences",
+          "host_organization_lineage": [
+            "https://openalex.org/P4310315844"
+          ],
+          "host_organization_lineage_names": [
+            "American Institute of Mathematical Sciences"
+          ],
+          "type": "journal"
+        },
+        "license": null,
+        "license_id": null,
+        "version": "publishedVersion",
+        "is_accepted": true,
+        "is_published": true,
+        "raw_source_name": "Discrete and Continuous Dynamical Systems",
+        "raw_type": "journal-article"
+      },
+      "type": "article",
+      "indexed_in": [
+        "crossref"
+      ],
+      "open_access": {
+        "is_oa": false,
+        "oa_status": "closed",
+        "oa_url": null,
+        "any_repository_has_fulltext": false
+      },
+      "authorships": [
+        {
+          "author_position": "first",
+          "author": {
+            "id": "https://openalex.org/A5090428395",
+            "display_name": "David Simmons",
+            "orcid": "https://orcid.org/0000-0002-1436-9269"
+          },
+          "institutions": [],
+          "countries": [],
+          "is_corresponding": true,
+          "raw_author_name": "David Simmons",
+          "raw_affiliation_strings": [],
+          "affiliations": []
+        }
+      ],
+      "institutions": [],
+      "countries_distinct_count": 0,
+      "institutions_distinct_count": 1,
+      "corresponding_author_ids": [
+        "https://openalex.org/A5090428395"
+      ],
+      "corresponding_institution_ids": [],
+      "apc_list": null,
+      "apc_paid": null,
+      "fwci": 2.515,
+      "has_fulltext": false,
+      "cited_by_count": 59,
+      "citation_normalized_percentile": {
+        "value": 0.8873773,
+        "is_in_top_1_percent": false,
+        "is_in_top_10_percent": false
+      },
+      "cited_by_percentile_year": {
+        "min": 89,
+        "max": 99
+      },
+      "biblio": {
+        "volume": "32",
+        "issue": "7",
+        "first_page": "2565",
+        "last_page": "2582"
+      },
+      "is_retracted": false,
+      "is_paratext": false,
+      "is_xpac": false,
+      "primary_topic": {
+        "id": "https://openalex.org/T10588",
+        "display_name": "Mathematical Dynamics and Fractals",
+        "score": 0.9962999820709229,
+        "subfield": {
+          "id": "https://openalex.org/subfields/2610",
+          "display_name": "Mathematical Physics"
+        },
+        "field": {
+          "id": "https://openalex.org/fields/26",
+          "display_name": "Mathematics"
+        },
+        "domain": {
+          "id": "https://openalex.org/domains/3",
+          "display_name": "Physical Sciences"
+        }
+      },
+      "topics": [
+        {
+          "id": "https://openalex.org/T10588",
+          "display_name": "Mathematical Dynamics and Fractals",
+          "score": 0.9962999820709229,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2610",
+            "display_name": "Mathematical Physics"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/26",
+            "display_name": "Mathematics"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/3",
+            "display_name": "Physical Sciences"
+          }
+        },
+        {
+          "id": "https://openalex.org/T11151",
+          "display_name": "Advanced Topology and Set Theory",
+          "score": 0.995199978351593,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2608",
+            "display_name": "Geometry and Topology"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/26",
+            "display_name": "Mathematics"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/3",
+            "display_name": "Physical Sciences"
+          }
+        },
+        {
+          "id": "https://openalex.org/T10304",
+          "display_name": "Geometric and Algebraic Topology",
+          "score": 0.9940999746322632,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2608",
+            "display_name": "Geometry and Topology"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/26",
+            "display_name": "Mathematics"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/3",
+            "display_name": "Physical Sciences"
+          }
+        }
+      ],
+      "keywords": [
+        {
+          "id": "https://openalex.org/keywords/mathematical-proof",
+          "display_name": "Mathematical proof",
+          "score": 0.6409104466438293
+        },
+        {
+          "id": "https://openalex.org/keywords/statement",
+          "display_name": "Statement (logic)",
+          "score": 0.6261929273605347
+        },
+        {
+          "id": "https://openalex.org/keywords/generalization",
+          "display_name": "Generalization",
+          "score": 0.577170729637146
+        },
+        {
+          "id": "https://openalex.org/keywords/mathematics",
+          "display_name": "Mathematics",
+          "score": 0.5462054014205933
+        },
+        {
+          "id": "https://openalex.org/keywords/subspace-topology",
+          "display_name": "Subspace topology",
+          "score": 0.4639873504638672
+        },
+        {
+          "id": "https://openalex.org/keywords/section",
+          "display_name": "Section (typography)",
+          "score": 0.45550891757011414
+        },
+        {
+          "id": "https://openalex.org/keywords/pure-mathematics",
+          "display_name": "Pure mathematics",
+          "score": 0.43491360545158386
+        },
+        {
+          "id": "https://openalex.org/keywords/discrete-mathematics",
+          "display_name": "Discrete mathematics",
+          "score": 0.32021504640579224
+        },
+        {
+          "id": "https://openalex.org/keywords/computer-science",
+          "display_name": "Computer science",
+          "score": 0.22464776039123535
+        },
+        {
+          "id": "https://openalex.org/keywords/mathematical-analysis",
+          "display_name": "Mathematical analysis",
+          "score": 0.1271800398826599
+        }
+      ],
+      "concepts": [
+        {
+          "id": "https://openalex.org/C108710211",
+          "wikidata": "https://www.wikidata.org/wiki/Q11538",
+          "display_name": "Mathematical proof",
+          "level": 2,
+          "score": 0.6409104466438293
+        },
+        {
+          "id": "https://openalex.org/C2777026412",
+          "wikidata": "https://www.wikidata.org/wiki/Q2684591",
+          "display_name": "Statement (logic)",
+          "level": 2,
+          "score": 0.6261929273605347
+        },
+        {
+          "id": "https://openalex.org/C177148314",
+          "wikidata": "https://www.wikidata.org/wiki/Q170084",
+          "display_name": "Generalization",
+          "level": 2,
+          "score": 0.577170729637146
+        },
+        {
+          "id": "https://openalex.org/C33923547",
+          "wikidata": "https://www.wikidata.org/wiki/Q395",
+          "display_name": "Mathematics",
+          "level": 0,
+          "score": 0.5462054014205933
+        },
+        {
+          "id": "https://openalex.org/C32834561",
+          "wikidata": "https://www.wikidata.org/wiki/Q660730",
+          "display_name": "Subspace topology",
+          "level": 2,
+          "score": 0.4639873504638672
+        },
+        {
+          "id": "https://openalex.org/C2780129039",
+          "wikidata": "https://www.wikidata.org/wiki/Q1931107",
+          "display_name": "Section (typography)",
+          "level": 2,
+          "score": 0.45550891757011414
+        },
+        {
+          "id": "https://openalex.org/C202444582",
+          "wikidata": "https://www.wikidata.org/wiki/Q837863",
+          "display_name": "Pure mathematics",
+          "level": 1,
+          "score": 0.43491360545158386
+        },
+        {
+          "id": "https://openalex.org/C118615104",
+          "wikidata": "https://www.wikidata.org/wiki/Q121416",
+          "display_name": "Discrete mathematics",
+          "level": 1,
+          "score": 0.32021504640579224
+        },
+        {
+          "id": "https://openalex.org/C41008148",
+          "wikidata": "https://www.wikidata.org/wiki/Q21198",
+          "display_name": "Computer science",
+          "level": 0,
+          "score": 0.22464776039123535
+        },
+        {
+          "id": "https://openalex.org/C134306372",
+          "wikidata": "https://www.wikidata.org/wiki/Q7754",
+          "display_name": "Mathematical analysis",
+          "level": 1,
+          "score": 0.1271800398826599
+        },
+        {
+          "id": "https://openalex.org/C17744445",
+          "wikidata": "https://www.wikidata.org/wiki/Q36442",
+          "display_name": "Political science",
+          "level": 0,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C199539241",
+          "wikidata": "https://www.wikidata.org/wiki/Q7748",
+          "display_name": "Law",
+          "level": 1,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C2524010",
+          "wikidata": "https://www.wikidata.org/wiki/Q8087",
+          "display_name": "Geometry",
+          "level": 1,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C111919701",
+          "wikidata": "https://www.wikidata.org/wiki/Q9135",
+          "display_name": "Operating system",
+          "level": 1,
+          "score": 0.0
+        }
+      ],
+      "mesh": [],
+      "locations_count": 1,
+      "locations": [
+        {
+          "id": "doi:10.3934/dcds.2012.32.2565",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.3934/dcds.2012.32.2565",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S19392275",
+            "display_name": "Discrete and Continuous Dynamical Systems",
+            "issn_l": "1078-0947",
+            "issn": [
+              "1078-0947",
+              "1553-5231"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "host_organization": "https://openalex.org/P4310315844",
+            "host_organization_name": "American Institute of Mathematical Sciences",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310315844"
+            ],
+            "host_organization_lineage_names": [
+              "American Institute of Mathematical Sciences"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Discrete and Continuous Dynamical Systems",
+          "raw_type": "journal-article"
+        }
+      ],
+      "best_oa_location": null,
+      "sustainable_development_goals": [],
+      "awards": [],
+      "funders": [],
+      "has_content": {
+        "pdf": false,
+        "grobid_xml": false
+      },
+      "content_urls": null,
+      "referenced_works_count": 11,
+      "referenced_works": [
+        "https://openalex.org/W162296615",
+        "https://openalex.org/W607536900",
+        "https://openalex.org/W1502686888",
+        "https://openalex.org/W1522020530",
+        "https://openalex.org/W1545549932",
+        "https://openalex.org/W2001911898",
+        "https://openalex.org/W4206519198",
+        "https://openalex.org/W4292159986",
+        "https://openalex.org/W6629922212",
+        "https://openalex.org/W6631212978",
+        "https://openalex.org/W6827605395"
+      ],
+      "related_works": [
+        "https://openalex.org/W2560853036",
+        "https://openalex.org/W2808944898",
+        "https://openalex.org/W3196207352",
+        "https://openalex.org/W2951724202",
+        "https://openalex.org/W3084261076",
+        "https://openalex.org/W2566696415",
+        "https://openalex.org/W1996614773",
+        "https://openalex.org/W4387820098",
+        "https://openalex.org/W2576399385",
+        "https://openalex.org/W2963408011"
+      ],
+      "abstract_inverted_index": {
+        "The": [
+          0
+        ],
+        "purpose": [
+          1
+        ],
+        "of": [
+          2,
+          13,
+          31,
+          67,
+          80,
+          90,
+          96,
+          114,
+          120,
+          134
+        ],
+        "this": [
+          3
+        ],
+        "paper": [
+          4
+        ],
+        "is": [
+          5,
+          37,
+          51,
+          61,
+          128
+        ],
+        "to": [
+          6,
+          53,
+          63,
+          93
+        ],
+        "give": [
+          7,
+          87
+        ],
+        "a": [
+          8,
+          88,
+          107
+        ],
+        "clean": [
+          9
+        ],
+        "formulation": [
+          10
+        ],
+        "and": [
+          11,
+          59,
+          78
+        ],
+        "proof": [
+          12,
+          20,
+          79
+        ],
+        "Rohlin's": [
+          14,
+          32,
+          81,
+          91,
+          115
+        ],
+        "Disintegration": [
+          15,
+          33
+        ],
+        "Theorem": [
+          16,
+          34,
+          92,
+          116
+        ],
+        "[7].": [
+          17
+        ],
+        "Another": [
+          18
+        ],
+        "(possible)": [
+          19
+        ],
+        "can": [
+          21
+        ],
+        "be": [
+          22,
+          54,
+          64
+        ],
+        "found": [
+          23
+        ],
+        "in": [
+          24,
+          43,
+          48,
+          117
+        ],
+        "[6].": [
+          25
+        ],
+        "Note": [
+          26
+        ],
+        "also": [
+          27
+        ],
+        "that": [
+          28,
+          49
+        ],
+        "our": [
+          29
+        ],
+        "statement": [
+          30,
+          42,
+          77
+        ],
+        "(Theorem": [
+          35
+        ],
+        "2.1)": [
+          36
+        ],
+        "more": [
+          38,
+          111
+        ],
+        "general": [
+          39,
+          109
+        ],
+        "than": [
+          40
+        ],
+        "the": [
+          41,
+          76,
+          94,
+          118,
+          138
+        ],
+        "either": [
+          44
+        ],
+        "[7]": [
+          45
+        ],
+        "or": [
+          46
+        ],
+        "[6]": [
+          47
+        ],
+        "$X$": [
+          50
+        ],
+        "allowed": [
+          52,
+          62
+        ],
+        "any": [
+          55,
+          65
+        ],
+        "universally": [
+          56
+        ],
+        "measurable": [
+          57
+        ],
+        "space,": [
+          58
+        ],
+        "$Y$": [
+          60
+        ],
+        "subspace": [
+          66
+        ],
+        "standard": [
+          68
+        ],
+        "Borel": [
+          69
+        ],
+        "space.": [
+          70
+        ],
+        "Sections": [
+          71,
+          83
+        ],
+        "1": [
+          72
+        ],
+        "-": [
+          73,
+          85
+        ],
+        "4": [
+          74
+        ],
+        "contain": [
+          75
+        ],
+        "Theorem.": [
+          82
+        ],
+        "5": [
+          84
+        ],
+        "7": [
+          86
+        ],
+        "generalization": [
+          89
+        ],
+        "category": [
+          95,
+          119
+        ],
+        "$\\sigma$-finite": [
+          97
+        ],
+        "measure": [
+          98
+        ],
+        "spaces": [
+          99
+        ],
+        "with": [
+          100
+        ],
+        "absolutely": [
+          101
+        ],
+        "continuous": [
+          102
+        ],
+        "morphisms.": [
+          103
+        ],
+        "Section": [
+          104,
+          126
+        ],
+        "8": [
+          105
+        ],
+        "gives": [
+          106
+        ],
+        "less": [
+          108
+        ],
+        "but": [
+          110
+        ],
+        "powerful": [
+          112
+        ],
+        "version": [
+          113
+        ],
+        "smooth": [
+          121
+        ],
+        "measures": [
+          122
+        ],
+        "on": [
+          123
+        ],
+        "$C^1$": [
+          124
+        ],
+        "manifolds.": [
+          125
+        ],
+        "9": [
+          127
+        ],
+        "an": [
+          129
+        ],
+        "appendix": [
+          130
+        ],
+        "which": [
+          131
+        ],
+        "contains": [
+          132
+        ],
+        "proofs": [
+          133
+        ],
+        "facts": [
+          135
+        ],
+        "used": [
+          136
+        ],
+        "throughout": [
+          137
+        ],
+        "paper.": [
+          139
+        ]
+      },
+      "counts_by_year": [
+        {
+          "year": 2026,
+          "cited_by_count": 2
+        },
+        {
+          "year": 2025,
+          "cited_by_count": 4
+        },
+        {
+          "year": 2024,
+          "cited_by_count": 7
+        },
+        {
+          "year": 2023,
+          "cited_by_count": 1
+        },
+        {
+          "year": 2022,
+          "cited_by_count": 6
+        },
+        {
+          "year": 2021,
+          "cited_by_count": 4
+        },
+        {
+          "year": 2020,
+          "cited_by_count": 6
+        },
+        {
+          "year": 2019,
+          "cited_by_count": 4
+        },
+        {
+          "year": 2018,
+          "cited_by_count": 7
+        },
+        {
+          "year": 2017,
+          "cited_by_count": 8
+        },
+        {
+          "year": 2016,
+          "cited_by_count": 4
+        },
+        {
+          "year": 2015,
+          "cited_by_count": 3
+        },
+        {
+          "year": 2014,
+          "cited_by_count": 2
+        },
+        {
+          "year": 2013,
+          "cited_by_count": 1
+        }
+      ],
+      "updated_date": "2026-04-05T17:49:38.594831",
+      "created_date": "2025-10-10T00:00:00"
+    },
+    {
+      "id": "https://openalex.org/W3149621876",
+      "doi": "https://doi.org/10.48550/arxiv.2104.00181",
+      "title": "Average-Cost Optimality Results for Borel-Space Markov Decision Processes with Universally Measurable Policies",
+      "display_name": "Average-Cost Optimality Results for Borel-Space Markov Decision Processes with Universally Measurable Policies",
+      "relevance_score": 105.73429,
+      "publication_year": 2021,
+      "publication_date": "2021-04-01",
+      "ids": {
+        "openalex": "https://openalex.org/W3149621876",
+        "doi": "https://doi.org/10.48550/arxiv.2104.00181",
+        "mag": "3149621876"
+      },
+      "language": "en",
+      "primary_location": {
+        "id": "pmh:oai:arXiv.org:2104.00181",
+        "is_oa": true,
+        "landing_page_url": "http://arxiv.org/abs/2104.00181",
+        "pdf_url": "https://arxiv.org/pdf/2104.00181",
+        "source": {
+          "id": "https://openalex.org/S4306400194",
+          "display_name": "arXiv (Cornell University)",
+          "issn_l": null,
+          "issn": null,
+          "is_oa": true,
+          "is_in_doaj": false,
+          "is_core": false,
+          "host_organization": "https://openalex.org/I205783295",
+          "host_organization_name": "Cornell University",
+          "host_organization_lineage": [
+            "https://openalex.org/I205783295"
+          ],
+          "host_organization_lineage_names": [],
+          "type": "repository"
+        },
+        "license": null,
+        "license_id": null,
+        "version": "submittedVersion",
+        "is_accepted": false,
+        "is_published": false,
+        "raw_source_name": "",
+        "raw_type": "text"
+      },
+      "type": "preprint",
+      "indexed_in": [
+        "arxiv",
+        "datacite"
+      ],
+      "open_access": {
+        "is_oa": true,
+        "oa_status": "green",
+        "oa_url": "https://arxiv.org/pdf/2104.00181",
+        "any_repository_has_fulltext": true
+      },
+      "authorships": [
+        {
+          "author_position": "first",
+          "author": {
+            "id": "https://openalex.org/A5014937312",
+            "display_name": "Huizhen Yu",
+            "orcid": "https://orcid.org/0000-0002-3673-0094"
+          },
+          "institutions": [],
+          "countries": [],
+          "is_corresponding": true,
+          "raw_author_name": "Yu, Huizhen",
+          "raw_affiliation_strings": [],
+          "affiliations": []
+        }
+      ],
+      "institutions": [],
+      "countries_distinct_count": 0,
+      "institutions_distinct_count": 1,
+      "corresponding_author_ids": [
+        "https://openalex.org/A5014937312"
+      ],
+      "corresponding_institution_ids": [],
+      "apc_list": null,
+      "apc_paid": null,
+      "fwci": null,
+      "has_fulltext": false,
+      "cited_by_count": 2,
+      "citation_normalized_percentile": null,
+      "cited_by_percentile_year": null,
+      "biblio": {
+        "volume": null,
+        "issue": null,
+        "first_page": null,
+        "last_page": null
+      },
+      "is_retracted": false,
+      "is_paratext": false,
+      "is_xpac": false,
+      "primary_topic": {
+        "id": "https://openalex.org/T12056",
+        "display_name": "Markov Chains and Monte Carlo Methods",
+        "score": 0.9860000014305115,
+        "subfield": {
+          "id": "https://openalex.org/subfields/2613",
+          "display_name": "Statistics and Probability"
+        },
+        "field": {
+          "id": "https://openalex.org/fields/26",
+          "display_name": "Mathematics"
+        },
+        "domain": {
+          "id": "https://openalex.org/domains/3",
+          "display_name": "Physical Sciences"
+        }
+      },
+      "topics": [
+        {
+          "id": "https://openalex.org/T12056",
+          "display_name": "Markov Chains and Monte Carlo Methods",
+          "score": 0.9860000014305115,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2613",
+            "display_name": "Statistics and Probability"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/26",
+            "display_name": "Mathematics"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/3",
+            "display_name": "Physical Sciences"
+          }
+        },
+        {
+          "id": "https://openalex.org/T10067",
+          "display_name": "Stochastic processes and financial applications",
+          "score": 0.9627000093460083,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2003",
+            "display_name": "Finance"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/20",
+            "display_name": "Economics, Econometrics and Finance"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/2",
+            "display_name": "Social Sciences"
+          }
+        },
+        {
+          "id": "https://openalex.org/T12137",
+          "display_name": "Economic theories and models",
+          "score": 0.9574999809265137,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2002",
+            "display_name": "Economics and Econometrics"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/20",
+            "display_name": "Economics, Econometrics and Finance"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/2",
+            "display_name": "Social Sciences"
+          }
+        }
+      ],
+      "keywords": [
+        {
+          "id": "https://openalex.org/keywords/markov-decision-process",
+          "display_name": "Markov decision process",
+          "score": 0.7828443050384521
+        },
+        {
+          "id": "https://openalex.org/keywords/mathematics",
+          "display_name": "Mathematics",
+          "score": 0.7558943033218384
+        },
+        {
+          "id": "https://openalex.org/keywords/markov-chain",
+          "display_name": "Markov chain",
+          "score": 0.7089769840240479
+        },
+        {
+          "id": "https://openalex.org/keywords/average-cost",
+          "display_name": "Average cost",
+          "score": 0.6257622241973877
+        },
+        {
+          "id": "https://openalex.org/keywords/mathematical-optimization",
+          "display_name": "Mathematical optimization",
+          "score": 0.5726800560951233
+        },
+        {
+          "id": "https://openalex.org/keywords/partially-observable-markov-decision-process",
+          "display_name": "Partially observable Markov decision process",
+          "score": 0.5225726366043091
+        },
+        {
+          "id": "https://openalex.org/keywords/state-space",
+          "display_name": "State space",
+          "score": 0.520982563495636
+        },
+        {
+          "id": "https://openalex.org/keywords/markov-process",
+          "display_name": "Markov process",
+          "score": 0.5028759837150574
+        },
+        {
+          "id": "https://openalex.org/keywords/measure",
+          "display_name": "Measure (data warehouse)",
+          "score": 0.46056610345840454
+        },
+        {
+          "id": "https://openalex.org/keywords/markov-kernel",
+          "display_name": "Markov kernel",
+          "score": 0.4440714716911316
+        },
+        {
+          "id": "https://openalex.org/keywords/mathematical-economics",
+          "display_name": "Mathematical economics",
+          "score": 0.43210387229919434
+        },
+        {
+          "id": "https://openalex.org/keywords/markov-model",
+          "display_name": "Markov model",
+          "score": 0.42510056495666504
+        },
+        {
+          "id": "https://openalex.org/keywords/action",
+          "display_name": "Action (physics)",
+          "score": 0.4243004024028778
+        },
+        {
+          "id": "https://openalex.org/keywords/constant",
+          "display_name": "Constant (computer programming)",
+          "score": 0.41950535774230957
+        },
+        {
+          "id": "https://openalex.org/keywords/applied-mathematics",
+          "display_name": "Applied mathematics",
+          "score": 0.40671125054359436
+        },
+        {
+          "id": "https://openalex.org/keywords/variable-order-markov-model",
+          "display_name": "Variable-order Markov model",
+          "score": 0.2543906569480896
+        },
+        {
+          "id": "https://openalex.org/keywords/computer-science",
+          "display_name": "Computer science",
+          "score": 0.19360241293907166
+        },
+        {
+          "id": "https://openalex.org/keywords/economics",
+          "display_name": "Economics",
+          "score": 0.18815407156944275
+        },
+        {
+          "id": "https://openalex.org/keywords/statistics",
+          "display_name": "Statistics",
+          "score": 0.1795034408569336
+        },
+        {
+          "id": "https://openalex.org/keywords/microeconomics",
+          "display_name": "Microeconomics",
+          "score": 0.07444387674331665
+        }
+      ],
+      "concepts": [
+        {
+          "id": "https://openalex.org/C106189395",
+          "wikidata": "https://www.wikidata.org/wiki/Q176789",
+          "display_name": "Markov decision process",
+          "level": 3,
+          "score": 0.7828443050384521
+        },
+        {
+          "id": "https://openalex.org/C33923547",
+          "wikidata": "https://www.wikidata.org/wiki/Q395",
+          "display_name": "Mathematics",
+          "level": 0,
+          "score": 0.7558943033218384
+        },
+        {
+          "id": "https://openalex.org/C98763669",
+          "wikidata": "https://www.wikidata.org/wiki/Q176645",
+          "display_name": "Markov chain",
+          "level": 2,
+          "score": 0.7089769840240479
+        },
+        {
+          "id": "https://openalex.org/C2780958618",
+          "wikidata": "https://www.wikidata.org/wiki/Q945621",
+          "display_name": "Average cost",
+          "level": 2,
+          "score": 0.6257622241973877
+        },
+        {
+          "id": "https://openalex.org/C126255220",
+          "wikidata": "https://www.wikidata.org/wiki/Q141495",
+          "display_name": "Mathematical optimization",
+          "level": 1,
+          "score": 0.5726800560951233
+        },
+        {
+          "id": "https://openalex.org/C17098449",
+          "wikidata": "https://www.wikidata.org/wiki/Q176814",
+          "display_name": "Partially observable Markov decision process",
+          "level": 4,
+          "score": 0.5225726366043091
+        },
+        {
+          "id": "https://openalex.org/C72434380",
+          "wikidata": "https://www.wikidata.org/wiki/Q230930",
+          "display_name": "State space",
+          "level": 2,
+          "score": 0.520982563495636
+        },
+        {
+          "id": "https://openalex.org/C159886148",
+          "wikidata": "https://www.wikidata.org/wiki/Q176645",
+          "display_name": "Markov process",
+          "level": 2,
+          "score": 0.5028759837150574
+        },
+        {
+          "id": "https://openalex.org/C2780009758",
+          "wikidata": "https://www.wikidata.org/wiki/Q6804172",
+          "display_name": "Measure (data warehouse)",
+          "level": 2,
+          "score": 0.46056610345840454
+        },
+        {
+          "id": "https://openalex.org/C106666656",
+          "wikidata": "https://www.wikidata.org/wiki/Q6771323",
+          "display_name": "Markov kernel",
+          "level": 5,
+          "score": 0.4440714716911316
+        },
+        {
+          "id": "https://openalex.org/C144237770",
+          "wikidata": "https://www.wikidata.org/wiki/Q747534",
+          "display_name": "Mathematical economics",
+          "level": 1,
+          "score": 0.43210387229919434
+        },
+        {
+          "id": "https://openalex.org/C163836022",
+          "wikidata": "https://www.wikidata.org/wiki/Q6771326",
+          "display_name": "Markov model",
+          "level": 3,
+          "score": 0.42510056495666504
+        },
+        {
+          "id": "https://openalex.org/C2780791683",
+          "wikidata": "https://www.wikidata.org/wiki/Q846785",
+          "display_name": "Action (physics)",
+          "level": 2,
+          "score": 0.4243004024028778
+        },
+        {
+          "id": "https://openalex.org/C2777027219",
+          "wikidata": "https://www.wikidata.org/wiki/Q1284190",
+          "display_name": "Constant (computer programming)",
+          "level": 2,
+          "score": 0.41950535774230957
+        },
+        {
+          "id": "https://openalex.org/C28826006",
+          "wikidata": "https://www.wikidata.org/wiki/Q33521",
+          "display_name": "Applied mathematics",
+          "level": 1,
+          "score": 0.40671125054359436
+        },
+        {
+          "id": "https://openalex.org/C54907487",
+          "wikidata": "https://www.wikidata.org/wiki/Q7915688",
+          "display_name": "Variable-order Markov model",
+          "level": 4,
+          "score": 0.2543906569480896
+        },
+        {
+          "id": "https://openalex.org/C41008148",
+          "wikidata": "https://www.wikidata.org/wiki/Q21198",
+          "display_name": "Computer science",
+          "level": 0,
+          "score": 0.19360241293907166
+        },
+        {
+          "id": "https://openalex.org/C162324750",
+          "wikidata": "https://www.wikidata.org/wiki/Q8134",
+          "display_name": "Economics",
+          "level": 0,
+          "score": 0.18815407156944275
+        },
+        {
+          "id": "https://openalex.org/C105795698",
+          "wikidata": "https://www.wikidata.org/wiki/Q12483",
+          "display_name": "Statistics",
+          "level": 1,
+          "score": 0.1795034408569336
+        },
+        {
+          "id": "https://openalex.org/C175444787",
+          "wikidata": "https://www.wikidata.org/wiki/Q39072",
+          "display_name": "Microeconomics",
+          "level": 1,
+          "score": 0.07444387674331665
+        },
+        {
+          "id": "https://openalex.org/C121332964",
+          "wikidata": "https://www.wikidata.org/wiki/Q413",
+          "display_name": "Physics",
+          "level": 0,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C77088390",
+          "wikidata": "https://www.wikidata.org/wiki/Q8513",
+          "display_name": "Database",
+          "level": 1,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C199360897",
+          "wikidata": "https://www.wikidata.org/wiki/Q9143",
+          "display_name": "Programming language",
+          "level": 1,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C62520636",
+          "wikidata": "https://www.wikidata.org/wiki/Q944",
+          "display_name": "Quantum mechanics",
+          "level": 1,
+          "score": 0.0
+        }
+      ],
+      "mesh": [],
+      "locations_count": 2,
+      "locations": [
+        {
+          "id": "pmh:oai:arXiv.org:2104.00181",
+          "is_oa": true,
+          "landing_page_url": "http://arxiv.org/abs/2104.00181",
+          "pdf_url": "https://arxiv.org/pdf/2104.00181",
+          "source": {
+            "id": "https://openalex.org/S4306400194",
+            "display_name": "arXiv (Cornell University)",
+            "issn_l": null,
+            "issn": null,
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": false,
+            "host_organization": "https://openalex.org/I205783295",
+            "host_organization_name": "Cornell University",
+            "host_organization_lineage": [
+              "https://openalex.org/I205783295"
+            ],
+            "host_organization_lineage_names": [],
+            "type": "repository"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "submittedVersion",
+          "is_accepted": false,
+          "is_published": false,
+          "raw_source_name": "",
+          "raw_type": "text"
+        },
+        {
+          "id": "doi:10.48550/arxiv.2104.00181",
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.48550/arxiv.2104.00181",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S4306400194",
+            "display_name": "arXiv (Cornell University)",
+            "issn_l": null,
+            "issn": null,
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": false,
+            "host_organization": "https://openalex.org/I205783295",
+            "host_organization_name": "Cornell University",
+            "host_organization_lineage": [
+              "https://openalex.org/I205783295"
+            ],
+            "host_organization_lineage_names": [],
+            "type": "repository"
+          },
+          "license": null,
+          "license_id": null,
+          "version": null,
+          "is_accepted": false,
+          "is_published": null,
+          "raw_source_name": null,
+          "raw_type": "article"
+        }
+      ],
+      "best_oa_location": {
+        "id": "pmh:oai:arXiv.org:2104.00181",
+        "is_oa": true,
+        "landing_page_url": "http://arxiv.org/abs/2104.00181",
+        "pdf_url": "https://arxiv.org/pdf/2104.00181",
+        "source": {
+          "id": "https://openalex.org/S4306400194",
+          "display_name": "arXiv (Cornell University)",
+          "issn_l": null,
+          "issn": null,
+          "is_oa": true,
+          "is_in_doaj": false,
+          "is_core": false,
+          "host_organization": "https://openalex.org/I205783295",
+          "host_organization_name": "Cornell University",
+          "host_organization_lineage": [
+            "https://openalex.org/I205783295"
+          ],
+          "host_organization_lineage_names": [],
+          "type": "repository"
+        },
+        "license": null,
+        "license_id": null,
+        "version": "submittedVersion",
+        "is_accepted": false,
+        "is_published": false,
+        "raw_source_name": "",
+        "raw_type": "text"
+      },
+      "sustainable_development_goals": [],
+      "awards": [],
+      "funders": [],
+      "has_content": {
+        "pdf": false,
+        "grobid_xml": false
+      },
+      "content_urls": null,
+      "referenced_works_count": 39,
+      "referenced_works": [
+        "https://openalex.org/W30697952",
+        "https://openalex.org/W649943522",
+        "https://openalex.org/W1529558080",
+        "https://openalex.org/W1535681442",
+        "https://openalex.org/W1543111551",
+        "https://openalex.org/W1578233523",
+        "https://openalex.org/W1966208686",
+        "https://openalex.org/W1973080471",
+        "https://openalex.org/W1973918939",
+        "https://openalex.org/W1975828588",
+        "https://openalex.org/W1978010605",
+        "https://openalex.org/W1993561151",
+        "https://openalex.org/W1995713768",
+        "https://openalex.org/W2010463048",
+        "https://openalex.org/W2010654234",
+        "https://openalex.org/W2018546408",
+        "https://openalex.org/W2022132102",
+        "https://openalex.org/W2042309620",
+        "https://openalex.org/W2050323767",
+        "https://openalex.org/W2061457535",
+        "https://openalex.org/W2062796590",
+        "https://openalex.org/W2085775487",
+        "https://openalex.org/W2097093465",
+        "https://openalex.org/W2112804068",
+        "https://openalex.org/W2115558605",
+        "https://openalex.org/W2134961363",
+        "https://openalex.org/W2147086938",
+        "https://openalex.org/W2150153095",
+        "https://openalex.org/W2163872159",
+        "https://openalex.org/W2523354449",
+        "https://openalex.org/W2736207102",
+        "https://openalex.org/W2796202694",
+        "https://openalex.org/W2910298858",
+        "https://openalex.org/W2949448959",
+        "https://openalex.org/W2998022140",
+        "https://openalex.org/W3000090869",
+        "https://openalex.org/W3005838400",
+        "https://openalex.org/W3140571750",
+        "https://openalex.org/W3150304496"
+      ],
+      "related_works": [
+        "https://openalex.org/W2096013579",
+        "https://openalex.org/W52153049",
+        "https://openalex.org/W1760611253",
+        "https://openalex.org/W1589140671",
+        "https://openalex.org/W2951545791",
+        "https://openalex.org/W1515117609",
+        "https://openalex.org/W2294884454",
+        "https://openalex.org/W4323315247",
+        "https://openalex.org/W3169161914",
+        "https://openalex.org/W4321379664"
+      ],
+      "abstract_inverted_index": {
+        "We": [
+          0,
+          60,
+          109
+        ],
+        "consider": [
+          1
+        ],
+        "discrete-time": [
+          2
+        ],
+        "Markov": [
+          3,
+          56,
+          144
+        ],
+        "Decision": [
+          4
+        ],
+        "Processes": [
+          5
+        ],
+        "with": [
+          6,
+          81,
+          98,
+          103,
+          126
+        ],
+        "Borel": [
+          7
+        ],
+        "state": [
+          8
+        ],
+        "and": [
+          9,
+          12,
+          45,
+          123
+        ],
+        "action": [
+          10
+        ],
+        "spaces": [
+          11
+        ],
+        "universally": [
+          13,
+          38
+        ],
+        "measurable": [
+          14,
+          39
+        ],
+        "policies.": [
+          15,
+          59
+        ],
+        "For": [
+          16
+        ],
+        "several": [
+          17
+        ],
+        "long-run": [
+          18
+        ],
+        "average": [
+          19,
+          30,
+          52,
+          68,
+          120
+        ],
+        "cost": [
+          20,
+          31,
+          69,
+          121
+        ],
+        "criteria,": [
+          21
+        ],
+        "we": [
+          22
+        ],
+        "establish": [
+          23
+        ],
+        "the": [
+          24,
+          28,
+          50,
+          63,
+          66,
+          118,
+          140
+        ],
+        "following": [
+          25
+        ],
+        "optimality": [
+          26
+        ],
+        "results:": [
+          27
+        ],
+        "optimal": [
+          29,
+          67,
+          119
+        ],
+        "functions": [
+          32,
+          122
+        ],
+        "are": [
+          33
+        ],
+        "lower": [
+          34
+        ],
+        "semianalytic,": [
+          35
+        ],
+        "there": [
+          36
+        ],
+        "exist": [
+          37
+        ],
+        "semi-Markov": [
+          40
+        ],
+        "or": [
+          41,
+          57
+        ],
+        "history-dependent": [
+          42
+        ],
+        "$ε$-optimal": [
+          43
+        ],
+        "policies,": [
+          44,
+          136
+        ],
+        "similar": [
+          46
+        ],
+        "results": [
+          47,
+          112
+        ],
+        "hold": [
+          48
+        ],
+        "for": [
+          49,
+          74,
+          117
+        ],
+        "minimum": [
+          51
+        ],
+        "costs": [
+          53
+        ],
+        "achievable": [
+          54
+        ],
+        "by": [
+          55,
+          113,
+          138
+        ],
+        "stationary": [
+          58,
+          135
+        ],
+        "then": [
+          61
+        ],
+        "analyze": [
+          62
+        ],
+        "structure": [
+          64
+        ],
+        "of": [
+          65,
+          96,
+          142
+        ],
+        "functions,": [
+          70
+        ],
+        "proving": [
+          71
+        ],
+        "sufficient": [
+          72
+        ],
+        "conditions": [
+          73
+        ],
+        "them": [
+          75
+        ],
+        "to": [
+          76,
+          83
+        ],
+        "be": [
+          77,
+          101
+        ],
+        "constant": [
+          78
+        ],
+        "almost": [
+          79
+        ],
+        "everywhere": [
+          80
+        ],
+        "respect": [
+          82
+        ],
+        "certain": [
+          84
+        ],
+        "$σ$-finite": [
+          85
+        ],
+        "measures.": [
+          86
+        ],
+        "The": [
+          87
+        ],
+        "most": [
+          88
+        ],
+        "important": [
+          89
+        ],
+        "condition": [
+          90
+        ],
+        "here": [
+          91
+        ],
+        "is": [
+          92
+        ],
+        "that": [
+          93,
+          133
+        ],
+        "each": [
+          94
+        ],
+        "subset": [
+          95
+        ],
+        "states": [
+          97
+        ],
+        "positive": [
+          99
+        ],
+        "measure": [
+          100
+        ],
+        "reachable": [
+          102
+        ],
+        "probability": [
+          104
+        ],
+        "one": [
+          105
+        ],
+        "under": [
+          106
+        ],
+        "some": [
+          107
+        ],
+        "policy.": [
+          108
+        ],
+        "obtain": [
+          110
+        ],
+        "our": [
+          111
+        ],
+        "exploiting": [
+          114
+        ],
+        "an": [
+          115
+        ],
+        "inequality": [
+          116
+        ],
+        "its": [
+          124
+        ],
+        "connection": [
+          125
+        ],
+        "submartingales,": [
+          127
+        ],
+        "and,": [
+          128
+        ],
+        "in": [
+          129
+        ],
+        "a": [
+          130
+        ],
+        "special": [
+          131
+        ],
+        "case": [
+          132
+        ],
+        "involves": [
+          134
+        ],
+        "also": [
+          137
+        ],
+        "using": [
+          139
+        ],
+        "theory": [
+          141
+        ],
+        "recurrent": [
+          143
+        ],
+        "chains.": [
+          145
+        ]
+      },
+      "counts_by_year": [
+        {
+          "year": 2021,
+          "cited_by_count": 2
+        }
+      ],
+      "updated_date": "2026-02-09T09:26:11.010843",
+      "created_date": "2021-04-13T00:00:00"
+    },
+    {
+      "id": "https://openalex.org/W4200430873",
+      "doi": "https://doi.org/10.1016/j.jmaa.2021.125954",
+      "title": "On structural properties of optimal average cost functions in Markov decision processes with Borel spaces and universally measurable policies",
+      "display_name": "On structural properties of optimal average cost functions in Markov decision processes with Borel spaces and universally measurable policies",
+      "relevance_score": 96.35009,
+      "publication_year": 2021,
+      "publication_date": "2021-12-28",
+      "ids": {
+        "openalex": "https://openalex.org/W4200430873",
+        "doi": "https://doi.org/10.1016/j.jmaa.2021.125954"
+      },
+      "language": "en",
+      "primary_location": {
+        "id": "doi:10.1016/j.jmaa.2021.125954",
+        "is_oa": false,
+        "landing_page_url": "https://doi.org/10.1016/j.jmaa.2021.125954",
+        "pdf_url": null,
+        "source": {
+          "id": "https://openalex.org/S151579836",
+          "display_name": "Journal of Mathematical Analysis and Applications",
+          "issn_l": "0022-247X",
+          "issn": [
+            "0022-247X",
+            "1096-0813"
+          ],
+          "is_oa": false,
+          "is_in_doaj": false,
+          "is_core": true,
+          "host_organization": "https://openalex.org/P4310320990",
+          "host_organization_name": "Elsevier BV",
+          "host_organization_lineage": [
+            "https://openalex.org/P4310320990"
+          ],
+          "host_organization_lineage_names": [
+            "Elsevier BV"
+          ],
+          "type": "journal"
+        },
+        "license": null,
+        "license_id": null,
+        "version": "publishedVersion",
+        "is_accepted": true,
+        "is_published": true,
+        "raw_source_name": "Journal of Mathematical Analysis and Applications",
+        "raw_type": "journal-article"
+      },
+      "type": "article",
+      "indexed_in": [
+        "crossref"
+      ],
+      "open_access": {
+        "is_oa": false,
+        "oa_status": "closed",
+        "oa_url": null,
+        "any_repository_has_fulltext": false
+      },
+      "authorships": [
+        {
+          "author_position": "first",
+          "author": {
+            "id": "https://openalex.org/A5014937312",
+            "display_name": "Huizhen Yu",
+            "orcid": "https://orcid.org/0000-0002-3673-0094"
+          },
+          "institutions": [
+            {
+              "id": "https://openalex.org/I154425047",
+              "display_name": "University of Alberta",
+              "ror": "https://ror.org/0160cpw27",
+              "country_code": "CA",
+              "type": "education",
+              "lineage": [
+                "https://openalex.org/I154425047"
+              ]
+            }
+          ],
+          "countries": [
+            "CA"
+          ],
+          "is_corresponding": true,
+          "raw_author_name": "Huizhen Yu",
+          "raw_affiliation_strings": [
+            "Department of Computing Science, University of Alberta, Canada"
+          ],
+          "raw_orcid": "https://orcid.org/0000-0002-3673-0094",
+          "affiliations": [
+            {
+              "raw_affiliation_string": "Department of Computing Science, University of Alberta, Canada",
+              "institution_ids": [
+                "https://openalex.org/I154425047"
+              ]
+            }
+          ]
+        }
+      ],
+      "institutions": [],
+      "countries_distinct_count": 1,
+      "institutions_distinct_count": 1,
+      "corresponding_author_ids": [
+        "https://openalex.org/A5014937312"
+      ],
+      "corresponding_institution_ids": [
+        "https://openalex.org/I154425047"
+      ],
+      "apc_list": {
+        "value": 3070,
+        "currency": "USD",
+        "value_usd": 3070
+      },
+      "apc_paid": null,
+      "fwci": 0.4732,
+      "has_fulltext": false,
+      "cited_by_count": 2,
+      "citation_normalized_percentile": {
+        "value": 0.69594235,
+        "is_in_top_1_percent": false,
+        "is_in_top_10_percent": false
+      },
+      "cited_by_percentile_year": {
+        "min": 90,
+        "max": 94
+      },
+      "biblio": {
+        "volume": "509",
+        "issue": "1",
+        "first_page": "125954",
+        "last_page": "125954"
+      },
+      "is_retracted": false,
+      "is_paratext": false,
+      "is_xpac": false,
+      "primary_topic": {
+        "id": "https://openalex.org/T12056",
+        "display_name": "Markov Chains and Monte Carlo Methods",
+        "score": 0.9886000156402588,
+        "subfield": {
+          "id": "https://openalex.org/subfields/2613",
+          "display_name": "Statistics and Probability"
+        },
+        "field": {
+          "id": "https://openalex.org/fields/26",
+          "display_name": "Mathematics"
+        },
+        "domain": {
+          "id": "https://openalex.org/domains/3",
+          "display_name": "Physical Sciences"
+        }
+      },
+      "topics": [
+        {
+          "id": "https://openalex.org/T12056",
+          "display_name": "Markov Chains and Monte Carlo Methods",
+          "score": 0.9886000156402588,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2613",
+            "display_name": "Statistics and Probability"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/26",
+            "display_name": "Mathematics"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/3",
+            "display_name": "Physical Sciences"
+          }
+        },
+        {
+          "id": "https://openalex.org/T12137",
+          "display_name": "Economic theories and models",
+          "score": 0.9864000082015991,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2002",
+            "display_name": "Economics and Econometrics"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/20",
+            "display_name": "Economics, Econometrics and Finance"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/2",
+            "display_name": "Social Sciences"
+          }
+        },
+        {
+          "id": "https://openalex.org/T11151",
+          "display_name": "Advanced Topology and Set Theory",
+          "score": 0.9624999761581421,
+          "subfield": {
+            "id": "https://openalex.org/subfields/2608",
+            "display_name": "Geometry and Topology"
+          },
+          "field": {
+            "id": "https://openalex.org/fields/26",
+            "display_name": "Mathematics"
+          },
+          "domain": {
+            "id": "https://openalex.org/domains/3",
+            "display_name": "Physical Sciences"
+          }
+        }
+      ],
+      "keywords": [
+        {
+          "id": "https://openalex.org/keywords/mathematics",
+          "display_name": "Mathematics",
+          "score": 0.8639853000640869
+        },
+        {
+          "id": "https://openalex.org/keywords/markov-decision-process",
+          "display_name": "Markov decision process",
+          "score": 0.7072283625602722
+        },
+        {
+          "id": "https://openalex.org/keywords/average-cost",
+          "display_name": "Average cost",
+          "score": 0.5459862351417542
+        },
+        {
+          "id": "https://openalex.org/keywords/mathematical-proof",
+          "display_name": "Mathematical proof",
+          "score": 0.5322359204292297
+        },
+        {
+          "id": "https://openalex.org/keywords/markov-chain",
+          "display_name": "Markov chain",
+          "score": 0.5187044739723206
+        },
+        {
+          "id": "https://openalex.org/keywords/measure",
+          "display_name": "Measure (data warehouse)",
+          "score": 0.46809840202331543
+        },
+        {
+          "id": "https://openalex.org/keywords/action",
+          "display_name": "Action (physics)",
+          "score": 0.4500569999217987
+        },
+        {
+          "id": "https://openalex.org/keywords/probability-measure",
+          "display_name": "Probability measure",
+          "score": 0.438442587852478
+        },
+        {
+          "id": "https://openalex.org/keywords/mathematical-optimization",
+          "display_name": "Mathematical optimization",
+          "score": 0.4376679062843323
+        },
+        {
+          "id": "https://openalex.org/keywords/borel-measure",
+          "display_name": "Borel measure",
+          "score": 0.43661031126976013
+        },
+        {
+          "id": "https://openalex.org/keywords/mathematical-economics",
+          "display_name": "Mathematical economics",
+          "score": 0.4189518094062805
+        },
+        {
+          "id": "https://openalex.org/keywords/markov-process",
+          "display_name": "Markov process",
+          "score": 0.4099375903606415
+        },
+        {
+          "id": "https://openalex.org/keywords/discrete-mathematics",
+          "display_name": "Discrete mathematics",
+          "score": 0.38048937916755676
+        },
+        {
+          "id": "https://openalex.org/keywords/applied-mathematics",
+          "display_name": "Applied mathematics",
+          "score": 0.3357144594192505
+        },
+        {
+          "id": "https://openalex.org/keywords/statistics",
+          "display_name": "Statistics",
+          "score": 0.12248671054840088
+        },
+        {
+          "id": "https://openalex.org/keywords/computer-science",
+          "display_name": "Computer science",
+          "score": 0.09086024761199951
+        },
+        {
+          "id": "https://openalex.org/keywords/economics",
+          "display_name": "Economics",
+          "score": 0.07578188180923462
+        }
+      ],
+      "concepts": [
+        {
+          "id": "https://openalex.org/C33923547",
+          "wikidata": "https://www.wikidata.org/wiki/Q395",
+          "display_name": "Mathematics",
+          "level": 0,
+          "score": 0.8639853000640869
+        },
+        {
+          "id": "https://openalex.org/C106189395",
+          "wikidata": "https://www.wikidata.org/wiki/Q176789",
+          "display_name": "Markov decision process",
+          "level": 3,
+          "score": 0.7072283625602722
+        },
+        {
+          "id": "https://openalex.org/C2780958618",
+          "wikidata": "https://www.wikidata.org/wiki/Q945621",
+          "display_name": "Average cost",
+          "level": 2,
+          "score": 0.5459862351417542
+        },
+        {
+          "id": "https://openalex.org/C108710211",
+          "wikidata": "https://www.wikidata.org/wiki/Q11538",
+          "display_name": "Mathematical proof",
+          "level": 2,
+          "score": 0.5322359204292297
+        },
+        {
+          "id": "https://openalex.org/C98763669",
+          "wikidata": "https://www.wikidata.org/wiki/Q176645",
+          "display_name": "Markov chain",
+          "level": 2,
+          "score": 0.5187044739723206
+        },
+        {
+          "id": "https://openalex.org/C2780009758",
+          "wikidata": "https://www.wikidata.org/wiki/Q6804172",
+          "display_name": "Measure (data warehouse)",
+          "level": 2,
+          "score": 0.46809840202331543
+        },
+        {
+          "id": "https://openalex.org/C2780791683",
+          "wikidata": "https://www.wikidata.org/wiki/Q846785",
+          "display_name": "Action (physics)",
+          "level": 2,
+          "score": 0.4500569999217987
+        },
+        {
+          "id": "https://openalex.org/C21031990",
+          "wikidata": "https://www.wikidata.org/wiki/Q355020",
+          "display_name": "Probability measure",
+          "level": 2,
+          "score": 0.438442587852478
+        },
+        {
+          "id": "https://openalex.org/C126255220",
+          "wikidata": "https://www.wikidata.org/wiki/Q141495",
+          "display_name": "Mathematical optimization",
+          "level": 1,
+          "score": 0.4376679062843323
+        },
+        {
+          "id": "https://openalex.org/C166758865",
+          "wikidata": "https://www.wikidata.org/wiki/Q892585",
+          "display_name": "Borel measure",
+          "level": 3,
+          "score": 0.43661031126976013
+        },
+        {
+          "id": "https://openalex.org/C144237770",
+          "wikidata": "https://www.wikidata.org/wiki/Q747534",
+          "display_name": "Mathematical economics",
+          "level": 1,
+          "score": 0.4189518094062805
+        },
+        {
+          "id": "https://openalex.org/C159886148",
+          "wikidata": "https://www.wikidata.org/wiki/Q176645",
+          "display_name": "Markov process",
+          "level": 2,
+          "score": 0.4099375903606415
+        },
+        {
+          "id": "https://openalex.org/C118615104",
+          "wikidata": "https://www.wikidata.org/wiki/Q121416",
+          "display_name": "Discrete mathematics",
+          "level": 1,
+          "score": 0.38048937916755676
+        },
+        {
+          "id": "https://openalex.org/C28826006",
+          "wikidata": "https://www.wikidata.org/wiki/Q33521",
+          "display_name": "Applied mathematics",
+          "level": 1,
+          "score": 0.3357144594192505
+        },
+        {
+          "id": "https://openalex.org/C105795698",
+          "wikidata": "https://www.wikidata.org/wiki/Q12483",
+          "display_name": "Statistics",
+          "level": 1,
+          "score": 0.12248671054840088
+        },
+        {
+          "id": "https://openalex.org/C41008148",
+          "wikidata": "https://www.wikidata.org/wiki/Q21198",
+          "display_name": "Computer science",
+          "level": 0,
+          "score": 0.09086024761199951
+        },
+        {
+          "id": "https://openalex.org/C162324750",
+          "wikidata": "https://www.wikidata.org/wiki/Q8134",
+          "display_name": "Economics",
+          "level": 0,
+          "score": 0.07578188180923462
+        },
+        {
+          "id": "https://openalex.org/C133425853",
+          "wikidata": "https://www.wikidata.org/wiki/Q60571",
+          "display_name": "Neoclassical economics",
+          "level": 1,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C2524010",
+          "wikidata": "https://www.wikidata.org/wiki/Q8087",
+          "display_name": "Geometry",
+          "level": 1,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C62520636",
+          "wikidata": "https://www.wikidata.org/wiki/Q944",
+          "display_name": "Quantum mechanics",
+          "level": 1,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C121332964",
+          "wikidata": "https://www.wikidata.org/wiki/Q413",
+          "display_name": "Physics",
+          "level": 0,
+          "score": 0.0
+        },
+        {
+          "id": "https://openalex.org/C77088390",
+          "wikidata": "https://www.wikidata.org/wiki/Q8513",
+          "display_name": "Database",
+          "level": 1,
+          "score": 0.0
+        }
+      ],
+      "mesh": [],
+      "locations_count": 1,
+      "locations": [
+        {
+          "id": "doi:10.1016/j.jmaa.2021.125954",
+          "is_oa": false,
+          "landing_page_url": "https://doi.org/10.1016/j.jmaa.2021.125954",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S151579836",
+            "display_name": "Journal of Mathematical Analysis and Applications",
+            "issn_l": "0022-247X",
+            "issn": [
+              "0022-247X",
+              "1096-0813"
+            ],
+            "is_oa": false,
+            "is_in_doaj": false,
+            "is_core": true,
+            "host_organization": "https://openalex.org/P4310320990",
+            "host_organization_name": "Elsevier BV",
+            "host_organization_lineage": [
+              "https://openalex.org/P4310320990"
+            ],
+            "host_organization_lineage_names": [
+              "Elsevier BV"
+            ],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Journal of Mathematical Analysis and Applications",
+          "raw_type": "journal-article"
+        }
+      ],
+      "best_oa_location": null,
+      "sustainable_development_goals": [],
+      "awards": [],
+      "funders": [
+        {
+          "id": "https://openalex.org/F4320314212",
+          "display_name": "Alberta Machine Intelligence Institute",
+          "ror": null
+        },
+        {
+          "id": "https://openalex.org/F4320317153",
+          "display_name": "DeepMind",
+          "ror": "https://ror.org/00971b260"
+        },
+        {
+          "id": "https://openalex.org/F4320319907",
+          "display_name": "Alberta Innovates - Technology Futures",
+          "ror": "https://ror.org/00ynafe15"
+        },
+        {
+          "id": "https://openalex.org/F4320330689",
+          "display_name": "Innotech Alberta",
+          "ror": null
+        }
+      ],
+      "has_content": {
+        "pdf": false,
+        "grobid_xml": false
+      },
+      "content_urls": null,
+      "referenced_works_count": 48,
+      "referenced_works": [
+        "https://openalex.org/W30697952",
+        "https://openalex.org/W870377966",
+        "https://openalex.org/W1516418405",
+        "https://openalex.org/W1529558080",
+        "https://openalex.org/W1535681442",
+        "https://openalex.org/W1543111551",
+        "https://openalex.org/W1966208686",
+        "https://openalex.org/W1966294600",
+        "https://openalex.org/W1967037758",
+        "https://openalex.org/W1973080471",
+        "https://openalex.org/W1975828588",
+        "https://openalex.org/W1978010605",
+        "https://openalex.org/W2004640191",
+        "https://openalex.org/W2010463048",
+        "https://openalex.org/W2018546408",
+        "https://openalex.org/W2029656683",
+        "https://openalex.org/W2030544250",
+        "https://openalex.org/W2042309620",
+        "https://openalex.org/W2050323767",
+        "https://openalex.org/W2061457535",
+        "https://openalex.org/W2062796590",
+        "https://openalex.org/W2085775487",
+        "https://openalex.org/W2087896522",
+        "https://openalex.org/W2087963613",
+        "https://openalex.org/W2097093465",
+        "https://openalex.org/W2115558605",
+        "https://openalex.org/W2134961363",
+        "https://openalex.org/W2150153095",
+        "https://openalex.org/W2259445907",
+        "https://openalex.org/W2313728779",
+        "https://openalex.org/W2736207102",
+        "https://openalex.org/W2796202694",
+        "https://openalex.org/W2950888428",
+        "https://openalex.org/W2998022140",
+        "https://openalex.org/W3000090869",
+        "https://openalex.org/W3047196850",
+        "https://openalex.org/W3080892474",
+        "https://openalex.org/W3102915138",
+        "https://openalex.org/W3124716731",
+        "https://openalex.org/W4210545817",
+        "https://openalex.org/W4253201987",
+        "https://openalex.org/W4300093168",
+        "https://openalex.org/W4302617909",
+        "https://openalex.org/W4385797290",
+        "https://openalex.org/W6604789100",
+        "https://openalex.org/W6665962042",
+        "https://openalex.org/W6692425522",
+        "https://openalex.org/W6741034074"
+      ],
+      "related_works": [
+        "https://openalex.org/W2082244434",
+        "https://openalex.org/W2143225908",
+        "https://openalex.org/W3125014721",
+        "https://openalex.org/W2097475492",
+        "https://openalex.org/W1994015125",
+        "https://openalex.org/W1590726137",
+        "https://openalex.org/W1562967287",
+        "https://openalex.org/W3098369587",
+        "https://openalex.org/W2083248610",
+        "https://openalex.org/W2075985877"
+      ],
+      "abstract_inverted_index": null,
+      "counts_by_year": [
+        {
+          "year": 2023,
+          "cited_by_count": 1
+        },
+        {
+          "year": 2022,
+          "cited_by_count": 1
+        }
+      ],
+      "updated_date": "2025-11-06T03:46:38.306776",
+      "created_date": "2025-10-10T00:00:00"
+    }
+  ],
+  "group_by": []
+}
