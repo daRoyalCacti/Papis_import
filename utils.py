@@ -4,11 +4,9 @@ from __future__ import annotations
 import difflib
 import os
 import re
-import shlex
-import subprocess
-import sys
 from pathlib import Path
-from typing import Any
+
+from papis_import.core.process import command_exists, eprint, quote_shell, read_cmd
 
 # ---------------------------------------------------------------------------
 # API base URLs
@@ -371,18 +369,6 @@ NOISE_LINE_PATTERNS = [
 ]
 
 # ---------------------------------------------------------------------------
-# Output helpers
-# ---------------------------------------------------------------------------
-
-def eprint(*args: Any, **kwargs: Any) -> None:
-    print(*args, file=sys.stderr, **kwargs)
-
-
-def quote_shell(s: str) -> str:
-    return shlex.quote(s)
-
-
-# ---------------------------------------------------------------------------
 # Text cleaning
 # ---------------------------------------------------------------------------
 
@@ -626,26 +612,6 @@ def build_tags(staging_dir: Path, file_path: Path) -> list[str]:
         if cleaned:
             tags.append(cleaned)
     return tags or ["imported"]
-
-
-# ---------------------------------------------------------------------------
-# Process utilities
-# ---------------------------------------------------------------------------
-
-def command_exists(name: str) -> bool:
-    for p in os.environ.get("PATH", "").split(os.pathsep):
-        candidate = Path(p) / name
-        if candidate.exists() and os.access(candidate, os.X_OK):
-            return True
-    return False
-
-
-def read_cmd(cmd: list[str], timeout: int = 40) -> str:
-    try:
-        cp = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
-    except Exception:
-        return ""
-    return cp.stdout or "" if cp.returncode == 0 else ""
 
 
 # ---------------------------------------------------------------------------
