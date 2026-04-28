@@ -31,6 +31,12 @@ class Metadata:
     # Only auto_safe rows go to papis_import_auto.tsv; everything else
     # goes to papis_import_review.tsv for human review.
     auto_safe: bool = False
+    # soft_auto: NOT auto_safe but rescued via local corroboration —
+    # multiple independent strong extractors agree on title + authors.
+    # Soft-auto rows go to BOTH the auto TSV and a soft-auto TSV for
+    # later human review of the rescue rule.
+    soft_auto: bool = False
+    soft_auto_reasons: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
 
     def merge_missing(self, other: "Metadata") -> None:

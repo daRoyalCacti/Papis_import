@@ -11,6 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = "~/.config/papis-import/config.json"
 
 DEFAULT_REVIEW_TSV = PROJECT_ROOT / "out" / "papis_import_review.tsv"
+DEFAULT_SOFT_TSV = PROJECT_ROOT / "out" / "papis_import_soft.tsv"
 DEFAULT_DEBUG_TSV = PROJECT_ROOT / "out" / "papis_import_debug.tsv"
 DEFAULT_PROFILE_TSV = PROJECT_ROOT / "out" / "papis_import_profile.tsv"
 

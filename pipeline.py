@@ -352,6 +352,79 @@ def _local_corroboration_note(meta: Metadata, candidates: list[Candidate]) -> st
     return ""
 
 
+# ---------------------------------------------------------------------------
+# Soft auto-accept: rescue a review row when multiple independent strong
+# local extractors agree on title + authors.  Output is a SUBSET of the auto
+# TSV — these rows still get written to papis_import.tsv, but ALSO to
+# papis_import_soft.tsv so they can be eyeballed once the run is complete.
+# ---------------------------------------------------------------------------
+_SOFT_AUTO_STRONG_SOURCES = {"grobid", "pdfinfo", "xmp", "text_header"}
+_SOFT_AUTO_STRONG_PREFIXES = ("llm:", "vision_llm:")
+_SOFT_AUTO_TITLE_SIM = 0.7
+# Short but legitimate titles like "Borel Spaces" (11) or "Convex Analysis"
+# (15) must be allowed; the real safeguard is multi-source corroboration plus
+# the suspicious/garbage/journal-abbrev filters.
+_SOFT_AUTO_MIN_TITLE_LEN = 5
+
+
+def _is_strong_soft_source(source: str) -> bool:
+    return source in _SOFT_AUTO_STRONG_SOURCES or source.startswith(_SOFT_AUTO_STRONG_PREFIXES)
+
+
+def _evaluate_soft_auto(meta: Metadata, candidates: list[Candidate]) -> tuple[bool, list[str]]:
+    """Decide whether a non-auto row should be soft auto-accepted.
+
+    Rules (all must hold):
+      1. meta.auto_safe is False  (otherwise the row is already in auto)
+      2. meta.needs_ocr is False  OR  >=3 strong corroborators (instead of 2)
+      3. Final title is non-empty, length >= 15, and not garbage / journal abbrev / suspicious
+      4. >=2 distinct strong-source candidates have a title matching meta.title
+         (token+sequence similarity >= 0.7)
+      5. >=1 of those agreeing sources also corroborates the authors
+         (any shared surname with meta.authors)
+
+    Strong sources: grobid, pdfinfo, xmp, text_header, llm:*, vision_llm:*.
+    Excluded: filename_*, synthesized, all external sources.
+    """
+    if meta.auto_safe:
+        return False, []
+    title = (meta.title or "").strip()
+    if len(title) < _SOFT_AUTO_MIN_TITLE_LEN:
+        return False, []
+    if is_garbage_title(title) or is_journal_abbrev_title(title) or is_suspicious_title(title):
+        return False, []
+
+    title_match_sources: list[str] = []
+    author_match_sources: set[str] = set()
+    for cand in candidates:
+        if not _is_strong_soft_source(cand.source):
+            continue
+        if not cand.title:
+            continue
+        if title_similarity(cand.title, title) < _SOFT_AUTO_TITLE_SIM:
+            continue
+        if cand.source in title_match_sources:
+            continue
+        title_match_sources.append(cand.source)
+        if meta.authors and cand.authors and author_overlap(cand.authors, meta.authors) > 0.0:
+            author_match_sources.add(cand.source)
+
+    needed = 3 if meta.needs_ocr else 2
+    if len(title_match_sources) < needed:
+        return False, []
+    if not author_match_sources:
+        return False, []
+
+    reason = (
+        f"title corroborated by {len(title_match_sources)} strong sources "
+        f"({', '.join(title_match_sources)}); authors corroborated by "
+        f"{', '.join(sorted(author_match_sources))}"
+    )
+    if meta.needs_ocr:
+        reason = "[needs-ocr threshold] " + reason
+    return True, [reason]
+
+
 def _rescue_locally_corroborated_match(meta: Metadata, candidates: list[Candidate], text: str) -> Metadata:
     """Allow strong local corroboration to rescue an external title-search hit.
 
@@ -1200,6 +1273,7 @@ def resolve(
         winner.auto_safe = (winner.verified
                             and winner.sanity_passed
                             and winner.confidence == "high")
+        winner.soft_auto, winner.soft_auto_reasons = _evaluate_soft_auto(winner, candidates)
         debug["final_source"] = winner.source
 
         timing.resolve_total_s = perf_counter() - resolve_started
@@ -1215,6 +1289,7 @@ def resolve(
     fallback.sanity_passed = False
     fallback.sanity_score = 0.0
     fallback.auto_safe = False
+    fallback.soft_auto, fallback.soft_auto_reasons = _evaluate_soft_auto(fallback, candidates)
     debug["final_source"] = fallback.source
 
     timing.resolve_total_s = perf_counter() - resolve_started

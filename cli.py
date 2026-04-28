@@ -90,6 +90,12 @@ def parse_args() -> argparse.Namespace:
                    help="Output path for the review TSV (rows that need human "
                         "attention).  Default: auto-derived from --tsv by "
                         "appending _review before the extension.")
+    p.add_argument("--soft-tsv", default="",
+                   help="Output path for the soft auto-accept TSV (a subset of "
+                        "the auto TSV containing rows rescued via local "
+                        "corroboration — recommended for spot-checks).  "
+                        "Default: auto-derived from --tsv by appending _soft "
+                        "before the extension.")
     p.add_argument("--debug-tsv", default="",
                    help="Optional path for a verbose debug TSV with per-file "
                         "pipeline diagnostics (vision/GROBID/raw candidates).")
@@ -264,6 +270,7 @@ _TSV_HEADER = [
     "Sanity Passed", "Sanity Score", "Auto Safe", "Needs OCR",
     "Notes", "Imported", "Error", "Suggested Command",
     "Vision Used", "Vision Trigger", "Vision Status", "Vision Error", "Final Source",
+    "Soft Auto", "Soft Auto Reasons",
 ]
 
 _DEBUG_TSV_HEADER = [
@@ -291,6 +298,7 @@ _DEBUG_TSV_HEADER = [
     "Candidate Sources", "Candidates JSON", "Title Search Queries JSON",
     "Title", "Authors", "Year", "DOI", "ISBN", "arXiv",
     "Notes", "Imported", "Error", "Suggested Command",
+    "Soft Auto", "Soft Auto Reasons",
 ]
 
 _PROFILE_TSV_HEADER = [
@@ -448,6 +456,8 @@ def _record_row(rec: Record) -> list[str]:
         rec.debug.get("vision_status", ""),
         rec.debug.get("vision_error", ""),
         rec.debug.get("final_source", m.source),
+        "yes" if m.soft_auto else "no",
+        " | ".join(m.soft_auto_reasons),
     ]
 
 
@@ -530,6 +540,8 @@ def _debug_row(rec: Record) -> list[str]:
         "yes" if rec.imported else "no",
         rec.error,
         rec.suggested_command,
+        "yes" if m.soft_auto else "no",
+        " | ".join(m.soft_auto_reasons),
     ]
 
 
@@ -542,17 +554,41 @@ def write_debug_tsv(path: Path, records: list[Record]) -> None:
             w.writerow(_debug_row(rec))
 
 
-def init_result_tsvs(auto_path: Path, review_path: Path) -> None:
-    for p in (auto_path, review_path):
+def init_result_tsvs(auto_path: Path, review_path: Path, soft_path: Path | None = None) -> None:
+    paths = [auto_path, review_path]
+    if soft_path is not None:
+        paths.append(soft_path)
+    for p in paths:
         p.parent.mkdir(parents=True, exist_ok=True)
         with p.open("w", encoding="utf-8", newline="") as f:
             csv.writer(f, delimiter="\t").writerow(_TSV_HEADER)
 
 
-def append_result_tsv(auto_path: Path, review_path: Path, rec: Record) -> None:
-    path = auto_path if rec.result.auto_safe else review_path
-    with path.open("a", encoding="utf-8", newline="") as f:
-        csv.writer(f, delimiter="\t").writerow(_record_row(rec))
+def append_result_tsv(
+    auto_path: Path,
+    review_path: Path,
+    rec: Record,
+    soft_path: Path | None = None,
+) -> None:
+    """Append *rec* to the appropriate TSV(s).
+
+    auto_safe rows go to auto_path.
+    soft_auto rows go to auto_path AND (if provided) soft_path.
+    Everything else goes to review_path.
+    """
+    m = rec.result
+    if m.auto_safe:
+        with auto_path.open("a", encoding="utf-8", newline="") as f:
+            csv.writer(f, delimiter="\t").writerow(_record_row(rec))
+    elif m.soft_auto:
+        with auto_path.open("a", encoding="utf-8", newline="") as f:
+            csv.writer(f, delimiter="\t").writerow(_record_row(rec))
+        if soft_path is not None:
+            with soft_path.open("a", encoding="utf-8", newline="") as f:
+                csv.writer(f, delimiter="\t").writerow(_record_row(rec))
+    else:
+        with review_path.open("a", encoding="utf-8", newline="") as f:
+            csv.writer(f, delimiter="\t").writerow(_record_row(rec))
 
 
 def init_debug_tsv(path: Path) -> None:
@@ -566,34 +602,49 @@ def append_debug_tsv(path: Path, rec: Record) -> None:
         csv.writer(f, delimiter="\t").writerow(_debug_row(rec))
 
 
-def write_two_tsvs(
+def write_three_tsvs(
     auto_path: Path,
     review_path: Path,
+    soft_path: Path | None,
     records: list[Record],
-) -> tuple[int, int]:
-    """Split *records* into auto_safe / needs-review and write each to its own TSV.
+) -> tuple[int, int, int]:
+    """Split *records* into auto / soft-auto / needs-review and write each TSV.
 
-    Returns (auto_count, review_count).
+    Returns (auto_count, review_count, soft_count).
 
-    The auto TSV contains only rows where Metadata.auto_safe is True — i.e.
-    verified externally AND passed the sanity check AND confidence is high.
-    These are safe to `papis add` without human review.
-
-    The review TSV contains everything else: unverified rows, rows that
-    failed the sanity check (likely false positives), low-confidence guesses,
-    and rows flagged needs_ocr.  The TSV keeps the full set of candidate
-    metadata in the Notes column so manual fix-up is quick.
+    auto_path  — rows where auto_safe OR soft_auto. These are safe to
+                 `papis add` without per-row review (soft rows can be
+                 audited later via soft_path).
+    soft_path  — subset of auto_path containing only soft_auto rows. The
+                 same _TSV_HEADER as the auto/review TSVs; the
+                 "Soft Auto Reasons" column says why each row was rescued.
+    review_path — everything else.
     """
-    auto_records   = [r for r in records if r.result.auto_safe]
-    review_records = [r for r in records if not r.result.auto_safe]
-    for p, recs in ((auto_path, auto_records), (review_path, review_records)):
+    auto_records   = [r for r in records if r.result.auto_safe or r.result.soft_auto]
+    review_records = [r for r in records if not r.result.auto_safe and not r.result.soft_auto]
+    soft_records   = [r for r in records if r.result.soft_auto and not r.result.auto_safe]
+
+    targets = [(auto_path, auto_records), (review_path, review_records)]
+    if soft_path is not None:
+        targets.append((soft_path, soft_records))
+    for p, recs in targets:
         p.parent.mkdir(parents=True, exist_ok=True)
         with p.open("w", encoding="utf-8", newline="") as f:
             w = csv.writer(f, delimiter="\t")
             w.writerow(_TSV_HEADER)
             for rec in recs:
                 w.writerow(_record_row(rec))
-    return len(auto_records), len(review_records)
+    return len(auto_records), len(review_records), len(soft_records)
+
+
+def write_two_tsvs(
+    auto_path: Path,
+    review_path: Path,
+    records: list[Record],
+) -> tuple[int, int]:
+    """Backward-compat shim — prefer write_three_tsvs in new code."""
+    auto, review, _soft = write_three_tsvs(auto_path, review_path, None, records)
+    return auto, review
 
 
 def write_tsv(path: Path, records: list[Record]) -> None:
@@ -748,6 +799,10 @@ def _load_previous_tsv(*tsv_paths: Path) -> tuple[dict[str, Record], int]:
                     sanity_passed=row.get("Sanity Passed", "").strip().lower() == "yes",
                     sanity_score=sanity_score,
                     auto_safe=True,
+                    soft_auto=row.get("Soft Auto", "").strip().lower() == "yes",
+                    soft_auto_reasons=[
+                        r.strip() for r in row.get("Soft Auto Reasons", "").split("|") if r.strip()
+                    ],
                     needs_ocr=row.get("Needs OCR", "").strip().lower() == "yes",
                     notes=[n.strip() for n in row.get("Notes", "").split("|") if n.strip()],
                 )
@@ -784,6 +839,12 @@ def main() -> int:
         review_tsv_path = auto_tsv_path.with_name(
             auto_tsv_path.stem + "_review" + auto_tsv_path.suffix
         )
+    if getattr(args, "soft_tsv", ""):
+        soft_tsv_path = Path(os.path.expanduser(args.soft_tsv)).resolve()
+    else:
+        soft_tsv_path = auto_tsv_path.with_name(
+            auto_tsv_path.stem + "_soft" + auto_tsv_path.suffix
+        )
     debug_tsv_path = Path(os.path.expanduser(args.debug_tsv)).resolve() if getattr(args, "debug_tsv", "") else None
     profile_tsv_path = Path(os.path.expanduser(args.profile_tsv)).resolve() if getattr(args, "profile_tsv", "") else None
 
@@ -799,7 +860,7 @@ def main() -> int:
     if args.limit > 0:
         files = files[: args.limit]
 
-    init_result_tsvs(auto_tsv_path, review_tsv_path)
+    init_result_tsvs(auto_tsv_path, review_tsv_path, soft_tsv_path)
     if debug_tsv_path is not None:
         init_debug_tsv(debug_tsv_path)
     if profile_tsv_path is not None:
@@ -854,7 +915,7 @@ def main() -> int:
             if str(path) in prev_verified:
                 rec = prev_verified[str(path)]
                 records.append(rec)
-                append_result_tsv(auto_tsv_path, review_tsv_path, rec)
+                append_result_tsv(auto_tsv_path, review_tsv_path, rec, soft_tsv_path)
                 if debug_tsv_path is not None:
                     append_debug_tsv(debug_tsv_path, rec)
                 if profile_tsv_path is not None:
@@ -935,7 +996,8 @@ def main() -> int:
                 cmd      = build_papis_command(path, tags, meta, args.link)
                 imported = False
                 err      = ""
-                if args.do_import and meta.auto_safe and should_import(meta.confidence, args.min_confidence):
+                importable = meta.auto_safe or meta.soft_auto
+                if args.do_import and importable and should_import(meta.confidence, args.min_confidence):
                     if not command_exists("papis"):
                         err = "papis executable not found"
                     else:
@@ -944,7 +1006,7 @@ def main() -> int:
                         if not imported:
                             err = clean_text(cp.stderr or cp.stdout)
                 elif args.do_import:
-                    if not meta.auto_safe:
+                    if not importable:
                         err = "skipped: not auto-safe; manual review required"
                     else:
                         err = f"skipped: confidence {meta.confidence} below threshold {args.min_confidence}"
@@ -955,7 +1017,7 @@ def main() -> int:
                 )
                 rec.timing.file_wall_s = perf_counter() - file_started
                 records.append(rec)
-                append_result_tsv(auto_tsv_path, review_tsv_path, rec)
+                append_result_tsv(auto_tsv_path, review_tsv_path, rec, soft_tsv_path)
                 if debug_tsv_path is not None:
                     append_debug_tsv(debug_tsv_path, rec)
                 if profile_tsv_path is not None:
@@ -978,7 +1040,7 @@ def main() -> int:
                     timing=timing,
                 )
                 records.append(rec)
-                append_result_tsv(auto_tsv_path, review_tsv_path, rec)
+                append_result_tsv(auto_tsv_path, review_tsv_path, rec, soft_tsv_path)
                 if debug_tsv_path is not None:
                     append_debug_tsv(debug_tsv_path, rec)
                 if profile_tsv_path is not None:
@@ -986,7 +1048,8 @@ def main() -> int:
 
     # ---- Output summary: result/debug TSVs were streamed per completed file ----
     auto_count = sum(1 for r in records if r.result.auto_safe)
-    review_count = len(records) - auto_count
+    soft_count = sum(1 for r in records if r.result.soft_auto and not r.result.auto_safe)
+    review_count = len(records) - auto_count - soft_count
 
     # Summary
     high  = sum(1 for r in records if r.result.confidence == "high")
@@ -1004,10 +1067,12 @@ def main() -> int:
     if ocr_attempted or ocr_flagged:
         print(f"OCR          : flagged={ocr_flagged}  retried={ocr_attempted}  recovered={ocr_recovered}")
     print(f"Auto-safe    : {auto_count}/{total}  (→ {auto_tsv_path.name})")
+    print(f"Soft auto    : {soft_count}/{total}  (also written to {auto_tsv_path.name}; spot-check via {soft_tsv_path.name})")
     print(f"Needs review : {review_count}/{total}  (→ {review_tsv_path.name})")
     if args.do_import:
         print(f"Imported     : {imp}/{total}")
     print(f"TSV (auto)   : {auto_tsv_path}")
+    print(f"TSV (soft)   : {soft_tsv_path}")
     print(f"TSV (review) : {review_tsv_path}")
     if debug_tsv_path is not None:
         print(f"TSV (debug)  : {debug_tsv_path}")
