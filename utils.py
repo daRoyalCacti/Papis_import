@@ -1,8 +1,6 @@
 """Regex constants, text utilities, identifier extraction, similarity helpers."""
 from __future__ import annotations
 
-import re
-
 from papis_import.core.constants import (
     ARXIV_API_URL,
     CROSSREF_BASE,
@@ -27,6 +25,12 @@ from papis_import.core.identifiers import (
     numeric_filename_dois,
     pii_to_doi,
     validate_isbn,
+)
+from papis_import.core.filename_patterns import (
+    ANNA_NAME_RE,
+    ANNA_SPLIT_RE,
+    HEX32_RE,
+    LEADING_SERIES_RE,
 )
 from papis_import.core.matching import author_overlap, title_similarity
 from papis_import.core.pipeline_helpers import build_tags, confidence_rank, should_import
@@ -62,14 +66,3 @@ from papis_import.core.title_quality import (
     is_journal_header_title,
     is_suspicious_title,
 )
-
-# ---------------------------------------------------------------------------
-# Compiled regexes
-# ---------------------------------------------------------------------------
-
-HEX32_RE          = re.compile(r"^[0-9a-f]{32}$", re.I)
-LEADING_SERIES_RE = re.compile(r"^[\[(].{0,160}?[\])]\s*")
-ANNA_SPLIT_RE     = re.compile(r"\s+--\s+")
-ANNA_NAME_RE      = re.compile(r"^Anna['']?s Archive(?:-\d+)?$", re.I)
-
-
