@@ -40,8 +40,10 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import dataclasses
 import json
 import threading
+from pathlib import Path
 from typing import Callable
 
 from papis_import.extractors import Extractor
@@ -991,6 +993,96 @@ def _finalize_identifier_match(
 # Main resolution function
 # ---------------------------------------------------------------------------
 
+@dataclasses.dataclass
+class ResolutionRun:
+    path: Path
+    extractor: Extractor
+    skip_vision: bool = False
+
+    timing: TimingBreakdown = dataclasses.field(default_factory=TimingBreakdown)
+    resolve_started: float = dataclasses.field(default_factory=perf_counter)
+    text: str = ""
+    sanity_text: str = ""
+    filename_cands: list[Candidate] = dataclasses.field(default_factory=list)
+    filename_best: Candidate | None = None
+    needs_ocr_flag: bool = False
+    debug: dict[str, str] = dataclasses.field(default_factory=dict)
+    candidates: list[Candidate] = dataclasses.field(default_factory=list)
+    ident_text: str = ""
+
+    def extract_initial_text(self) -> None:
+        t0 = perf_counter()
+        self.text = self.extractor.get_text(self.path)
+        self.sanity_text = self.extractor.get_sanity_text(self.path)
+        if not self.sanity_text:
+            self.sanity_text = self.text
+        self.filename_cands = self.extractor.filename_candidate(self.path)
+        self.needs_ocr_flag = is_unreadable_text(self.text)
+        self.timing.text_extract_s += perf_counter() - t0
+
+    def init_debug(self) -> None:
+        self.debug = {
+            "vision_used": "no",
+            "vision_trigger": "",
+            "vision_status": "not_attempted",
+            "vision_error": "",
+            "final_source": "",
+            "grobid_used": "yes" if bool(getattr(self.extractor.args, "grobid_url", "")) else "no",
+            "grobid_title": "",
+            "grobid_authors": "",
+            "grobid_year": "",
+            "vision_model": getattr(self.extractor.args, "vision_llm_model", "") or "",
+            "vision_pages": str(getattr(self.extractor.args, "vision_pages", "") or ""),
+            "vision_dpi": str(getattr(self.extractor.args, "vision_dpi", "") or ""),
+            "vision_title": "",
+            "vision_authors": "",
+            "vision_year": "",
+            "text_llm_used": "no",
+            "text_llm_status": "not_attempted",
+            "text_llm_error": "",
+            "text_llm_model": getattr(self.extractor.args, "llm_model", "") or "",
+            "text_llm_http_json": "",
+            "text_llm_title": "",
+            "text_llm_authors": "",
+            "text_llm_year": "",
+            "local_best_source": "",
+            "candidate_sources": "",
+            "identifier_dois": "",
+            "identifier_isbns": "",
+            "identifier_arxivs": "",
+            "candidates_json": "",
+            "title_search_queries_json": "",
+        }
+
+    def collect_cheap_local_candidates(self) -> None:
+        t0 = perf_counter()
+        self.candidates.extend(self.extractor.embedded_metadata(self.path))
+        self.candidates.extend(self.extractor.pdfinfo_metadata(self.path))
+        self.timing.embedded_metadata_s = perf_counter() - t0
+
+        self.candidates.extend(self.filename_cands)
+
+        t0 = perf_counter()
+        self.filename_best = choose_best_local(self.filename_cands)
+        self.timing.best_local_s = perf_counter() - t0
+        if self.text:
+            t0 = perf_counter()
+            self.candidates.extend(self.extractor.text_header_candidate(self.text))
+            self.timing.header_candidate_s = perf_counter() - t0
+
+    def collect_initial_identifier_pool(self) -> tuple[list[str], list[str], list[str], list[str]]:
+        t0 = perf_counter()
+        self.ident_text = self.extractor.get_identifier_text(self.path)
+        self.timing.text_extract_s += perf_counter() - t0
+
+        _extend_unique_candidates(self.candidates, _synthesize(self.candidates))
+        dois, isbns, arxivs, stable_ids = _collect_identifier_pool(
+            self.path, self.text, self.ident_text, self.candidates
+        )
+        _update_identifier_debug(self.debug, dois, isbns, arxivs)
+        return dois, isbns, arxivs, stable_ids
+
+
 def resolve(
     path,
     extractor: Extractor,
@@ -1013,84 +1105,21 @@ def resolve(
         would just pay for the same inference a second time.
     """
 
-    timing = TimingBreakdown()
-    resolve_started = perf_counter()
+    run = ResolutionRun(path=path, extractor=extractor, skip_vision=skip_vision)
+    run.extract_initial_text()
+    run.init_debug()
+    run.collect_cheap_local_candidates()
+    dois, isbns, arxivs, stable_ids = run.collect_initial_identifier_pool()
 
-
-    t0 = perf_counter()
-    text            = extractor.get_text(path)
-    sanity_text     = extractor.get_sanity_text(path)
-    if not sanity_text:
-        sanity_text = text
-    filename_cands  = extractor.filename_candidate(path)
-    needs_ocr_flag  = is_unreadable_text(text)
-    timing.text_extract_s += perf_counter() - t0
-
-
-    debug: dict[str, str] = {
-        "vision_used": "no",
-        "vision_trigger": "",
-        "vision_status": "not_attempted",
-        "vision_error": "",
-        "final_source": "",
-        "grobid_used": "yes" if bool(getattr(extractor.args, "grobid_url", "")) else "no",
-        "grobid_title": "",
-        "grobid_authors": "",
-        "grobid_year": "",
-        "vision_model": getattr(extractor.args, "vision_llm_model", "") or "",
-        "vision_pages": str(getattr(extractor.args, "vision_pages", "") or ""),
-        "vision_dpi": str(getattr(extractor.args, "vision_dpi", "") or ""),
-        "vision_title": "",
-        "vision_authors": "",
-        "vision_year": "",
-        "text_llm_used": "no",
-        "text_llm_status": "not_attempted",
-        "text_llm_error": "",
-        "text_llm_model": getattr(extractor.args, "llm_model", "") or "",
-        "text_llm_http_json": "",
-        "text_llm_title": "",
-        "text_llm_authors": "",
-        "text_llm_year": "",
-        "local_best_source": "",
-        "candidate_sources": "",
-        "identifier_dois": "",
-        "identifier_isbns": "",
-        "identifier_arxivs": "",
-        "candidates_json": "",
-        "title_search_queries_json": "",
-    }
-
-    # Phase 0: collect cheap local candidates before hitting external APIs.
-    t0 = perf_counter()
-    candidates: list[Candidate] = []
-    candidates.extend(extractor.embedded_metadata(path))
-    candidates.extend(extractor.pdfinfo_metadata(path))
-    timing.embedded_metadata_s = perf_counter() - t0
-
-
-    candidates.extend(filename_cands)
-
-    # text_header and LLM used to be gated on `not needs_ocr_flag`, but the
-    # detector is intentionally cautious and fires on math-heavy text.  For
-    # borderline-readable text the header extractor is cheap and often useful.
-    # Expensive candidate sources (GROBID, LLMs) are deferred until after
-    # authoritative identifier lookup has had a chance to answer.
-    t0 = perf_counter()
-    filename_best = choose_best_local(filename_cands)
-    timing.best_local_s = perf_counter() - t0
-    if text:
-        t0 = perf_counter()
-        candidates.extend(extractor.text_header_candidate(text))
-        timing.header_candidate_s = perf_counter() - t0
-
-    # Identifier pool — union of (text-extracted + filename + candidate-reported).
-    t0 = perf_counter()
-    ident_text = extractor.get_identifier_text(path)
-    timing.text_extract_s += perf_counter() - t0
-
-    _extend_unique_candidates(candidates, _synthesize(candidates))
-    dois, isbns, arxivs, stable_ids = _collect_identifier_pool(path, text, ident_text, candidates)
-    _update_identifier_debug(debug, dois, isbns, arxivs)
+    timing = run.timing
+    resolve_started = run.resolve_started
+    text = run.text
+    sanity_text = run.sanity_text
+    filename_best = run.filename_best
+    needs_ocr_flag = run.needs_ocr_flag
+    debug = run.debug
+    candidates = run.candidates
+    ident_text = run.ident_text
 
     max_cands  = int(getattr(extractor.args, "max_search_candidates", 6))
     google_key = getattr(extractor.args, "google_books_api_key", "")
