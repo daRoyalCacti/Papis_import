@@ -1009,6 +1009,15 @@ class ResolutionRun:
     debug: dict[str, str] = dataclasses.field(default_factory=dict)
     candidates: list[Candidate] = dataclasses.field(default_factory=list)
     ident_text: str = ""
+    dois: list[str] = dataclasses.field(default_factory=list)
+    isbns: list[str] = dataclasses.field(default_factory=list)
+    arxivs: list[str] = dataclasses.field(default_factory=list)
+    stable_ids: list[str] = dataclasses.field(default_factory=list)
+    tried_identifiers: set[tuple[str, str]] = dataclasses.field(default_factory=set)
+    best_ident: Metadata | None = None
+    best_ident_score: float = -1.0
+    best_ident_note: str = ""
+    any_identifier_matched: bool = False
 
     def extract_initial_text(self) -> None:
         t0 = perf_counter()
@@ -1070,17 +1079,49 @@ class ResolutionRun:
             self.candidates.extend(self.extractor.text_header_candidate(self.text))
             self.timing.header_candidate_s = perf_counter() - t0
 
-    def collect_initial_identifier_pool(self) -> tuple[list[str], list[str], list[str], list[str]]:
+    def refresh_identifier_pool(self) -> None:
+        _extend_unique_candidates(self.candidates, _synthesize(self.candidates))
+        self.dois, self.isbns, self.arxivs, self.stable_ids = _collect_identifier_pool(
+            self.path, self.text, self.ident_text, self.candidates
+        )
+        _update_identifier_debug(self.debug, self.dois, self.isbns, self.arxivs)
+
+    def collect_initial_identifier_pool(self) -> None:
         t0 = perf_counter()
         self.ident_text = self.extractor.get_identifier_text(self.path)
         self.timing.text_extract_s += perf_counter() - t0
 
-        _extend_unique_candidates(self.candidates, _synthesize(self.candidates))
-        dois, isbns, arxivs, stable_ids = _collect_identifier_pool(
-            self.path, self.text, self.ident_text, self.candidates
+        self.refresh_identifier_pool()
+
+    def try_identifier_resolution(self) -> None:
+        ident, score, note, matched_any = _run_identifier_lookups(
+            self.extractor,
+            self.path,
+            self.sanity_text,
+            self.dois,
+            self.isbns,
+            self.arxivs,
+            self.timing,
+            self.tried_identifiers,
         )
-        _update_identifier_debug(self.debug, dois, isbns, arxivs)
-        return dois, isbns, arxivs, stable_ids
+        self.any_identifier_matched = self.any_identifier_matched or matched_any
+        if ident is not None and score > self.best_ident_score:
+            self.best_ident = ident
+            self.best_ident_score = score
+            self.best_ident_note = note
+
+    def has_passing_identifier_match(self) -> bool:
+        return self.best_ident is not None and self.best_ident.sanity_passed
+
+    def finalize_identifier_match(self) -> Metadata:
+        assert self.best_ident is not None
+        return _finalize_identifier_match(
+            self.best_ident,
+            self.candidates,
+            self.best_ident_note,
+            self.needs_ocr_flag,
+            self.debug,
+        )
 
 
 def resolve(
@@ -1109,7 +1150,7 @@ def resolve(
     run.extract_initial_text()
     run.init_debug()
     run.collect_cheap_local_candidates()
-    dois, isbns, arxivs, stable_ids = run.collect_initial_identifier_pool()
+    run.collect_initial_identifier_pool()
 
     timing = run.timing
     resolve_started = run.resolve_started
@@ -1119,7 +1160,6 @@ def resolve(
     needs_ocr_flag = run.needs_ocr_flag
     debug = run.debug
     candidates = run.candidates
-    ident_text = run.ident_text
 
     max_cands  = int(getattr(extractor.args, "max_search_candidates", 6))
     google_key = getattr(extractor.args, "google_books_api_key", "")
@@ -1130,18 +1170,12 @@ def resolve(
     # Each lookup is authoritative, but we still sanity-check the returned
     # metadata against the PDF text.  If multiple identifiers are present,
     # we pick the one with the highest sanity score.
-    tried_identifiers: set[tuple[str, str]] = set()
-    best_ident, best_ident_score, best_ident_note, identifier_matched_any = _run_identifier_lookups(
-        extractor, path, sanity_text, dois, isbns, arxivs, timing, tried_identifiers
-    )
-    any_identifier_matched = identifier_matched_any
+    run.try_identifier_resolution()
 
     # If an identifier match passed the sanity check, it's the answer.
-    if best_ident is not None and best_ident.sanity_passed:
+    if run.has_passing_identifier_match():
         _update_candidate_debug(debug, candidates)
-        best_ident = _finalize_identifier_match(
-            best_ident, candidates, best_ident_note, needs_ocr_flag, debug
-        )
+        best_ident = run.finalize_identifier_match()
 
         timing.resolve_total_s = perf_counter() - resolve_started
         return best_ident, candidates, text, debug, timing
@@ -1161,23 +1195,12 @@ def resolve(
 
     # GROBID/text LLM may reveal new identifiers. Try them before vision,
     # since identifier lookup is still cheaper and more authoritative.
-    _extend_unique_candidates(candidates, _synthesize(candidates))
-    dois, isbns, arxivs, stable_ids = _collect_identifier_pool(path, text, ident_text, candidates)
-    _update_identifier_debug(debug, dois, isbns, arxivs)
-    late_ident, late_ident_score, late_ident_note, late_matched_any = _run_identifier_lookups(
-        extractor, path, sanity_text, dois, isbns, arxivs, timing, tried_identifiers
-    )
-    any_identifier_matched = any_identifier_matched or late_matched_any
-    if late_ident is not None and late_ident_score > best_ident_score:
-        best_ident = late_ident
-        best_ident_score = late_ident_score
-        best_ident_note = late_ident_note
+    run.refresh_identifier_pool()
+    run.try_identifier_resolution()
 
-    if best_ident is not None and best_ident.sanity_passed:
+    if run.has_passing_identifier_match():
         _update_candidate_debug(debug, candidates)
-        best_ident = _finalize_identifier_match(
-            best_ident, candidates, best_ident_note, needs_ocr_flag, debug
-        )
+        best_ident = run.finalize_identifier_match()
 
         timing.resolve_total_s = perf_counter() - resolve_started
         return best_ident, candidates, text, debug, timing
@@ -1193,8 +1216,8 @@ def resolve(
         should_call_vision = True
         trigger_reason = "configured"
         if getattr(extractor.args, "vision_only_if_hard", False):
-            has_deep_ident = bool(dois or isbns or arxivs)
-            if has_deep_ident and any_identifier_matched:
+            has_deep_ident = bool(run.dois or run.isbns or run.arxivs)
+            if has_deep_ident and run.any_identifier_matched:
                 should_call_vision = False
                 trigger_reason = "skipped: identifier lookup returned metadata"
             elif not needs_ocr_flag and _has_strong_searchable_candidate(candidates):
@@ -1236,22 +1259,12 @@ def resolve(
 
     # Vision may reveal new identifiers. Try only identifiers that were not
     # already checked before falling back to title search.
-    dois, isbns, arxivs, stable_ids = _collect_identifier_pool(path, text, ident_text, candidates)
-    _update_identifier_debug(debug, dois, isbns, arxivs)
-    vision_ident, vision_ident_score, vision_ident_note, vision_matched_any = _run_identifier_lookups(
-        extractor, path, sanity_text, dois, isbns, arxivs, timing, tried_identifiers
-    )
-    any_identifier_matched = any_identifier_matched or vision_matched_any
-    if vision_ident is not None and vision_ident_score > best_ident_score:
-        best_ident = vision_ident
-        best_ident_score = vision_ident_score
-        best_ident_note = vision_ident_note
+    run.refresh_identifier_pool()
+    run.try_identifier_resolution()
 
-    if best_ident is not None and best_ident.sanity_passed:
+    if run.has_passing_identifier_match():
         _update_candidate_debug(debug, candidates)
-        best_ident = _finalize_identifier_match(
-            best_ident, candidates, best_ident_note, needs_ocr_flag, debug
-        )
+        best_ident = run.finalize_identifier_match()
 
         timing.resolve_total_s = perf_counter() - resolve_started
         return best_ident, candidates, text, debug, timing
@@ -1284,8 +1297,8 @@ def resolve(
     # Pick the better of identifier-lookup (failed sanity) vs title-search.
     # Prefer whichever has the higher sanity score if both are present.
     winners: list[tuple[Metadata, float, str]] = []
-    if best_ident is not None:
-        winners.append((best_ident, best_ident_score, best_ident_note))
+    if run.best_ident is not None:
+        winners.append((run.best_ident, run.best_ident_score, run.best_ident_note))
     if best_search is not None:
         winners.append((best_search, best_search_score, "title-search match"))
 
@@ -1310,8 +1323,8 @@ def resolve(
 
     # ---- Phase 4: no external verification — return local best ----
     fallback = _local_fallback(candidates)
-    if stable_ids:
-        fallback.notes.append(f"JSTOR stable ID present (not an arXiv ID): {stable_ids[0]}")
+    if run.stable_ids:
+        fallback.notes.append(f"JSTOR stable ID present (not an arXiv ID): {run.stable_ids[0]}")
     if needs_ocr_flag:
         fallback.notes.append("PDF text appears unreadable — OCR recommended")
     fallback.needs_ocr = needs_ocr_flag
