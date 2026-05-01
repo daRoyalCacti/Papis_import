@@ -1018,6 +1018,9 @@ class ResolutionRun:
     best_ident_score: float = -1.0
     best_ident_note: str = ""
     any_identifier_matched: bool = False
+    is_book: bool = False
+    best_search: Metadata | None = None
+    best_search_score: float = -1.0
 
     def extract_initial_text(self) -> None:
         t0 = perf_counter()
@@ -1123,6 +1126,108 @@ class ResolutionRun:
             self.debug,
         )
 
+    def collect_deferred_candidates(self) -> None:
+        t0 = perf_counter()
+        grobid_cands = self.extractor.grobid_candidate(self.path)
+        self.candidates.extend(grobid_cands)
+        self.timing.grobid_s = perf_counter() - t0
+
+        if self.text:
+            t0 = perf_counter()
+            llm_cands = self.extractor.llm_candidate(self.path, self.text, self.filename_best)
+            self.candidates.extend(llm_cands)
+            self.timing.text_llm_s = perf_counter() - t0
+            self.debug.update({
+                k: str(v)
+                for k, v in getattr(self.extractor, "last_llm_debug", {}).items()
+                if v is not None
+            })
+
+    def compute_book_signal(self) -> None:
+        self.is_book = is_book_signal(self.path.name, self.text)
+
+    def maybe_collect_vision_candidates(self) -> None:
+        t0 = perf_counter()
+        if not self.skip_vision:
+            should_call_vision = True
+            trigger_reason = "configured"
+            if getattr(self.extractor.args, "vision_only_if_hard", False):
+                has_deep_ident = bool(self.dois or self.isbns or self.arxivs)
+                if has_deep_ident and self.any_identifier_matched:
+                    should_call_vision = False
+                    trigger_reason = "skipped: identifier lookup returned metadata"
+                elif not self.needs_ocr_flag and _has_strong_searchable_candidate(self.candidates):
+                    should_call_vision = False
+                    trigger_reason = "skipped: readable text with strong local candidate"
+                elif has_deep_ident:
+                    trigger_reason = "hard-case: identifiers found but lookup failed"
+                else:
+                    trigger_reason = "hard-case: no_identifier"
+            self.debug["vision_trigger"] = trigger_reason
+            if should_call_vision:
+                vision_cands, vision_dbg = self.extractor.vision_llm_candidate(
+                    self.path, self.filename_best, is_book=self.is_book
+                )
+                _extend_unique_candidates(self.candidates, vision_cands)
+                self.debug.update({k: str(v) for k, v in vision_dbg.items() if v is not None})
+                self.debug["vision_used"] = (
+                    "yes" if self.debug.get("vision_status") not in {"not_configured", "skipped"} else "no"
+                )
+            else:
+                self.debug["vision_status"] = "skipped"
+        else:
+            self.debug["vision_trigger"] = "skip_vision flag"
+            self.debug["vision_status"] = "skipped"
+        self.timing.vision_llm_s += perf_counter() - t0
+        self.timing.vision_pacing_s = self.extractor.http.take_pacing_s("vision_llm")
+        self.debug["vision_pacing_s"] = f"{self.timing.vision_pacing_s:.6f}"
+        rem = self.extractor.http.remaining_tokens("vision_llm")
+        if rem is not None:
+            self.debug["vision_tokens_remaining"] = str(rem)
+
+    def synthesize_candidates(self) -> None:
+        _extend_unique_candidates(self.candidates, _synthesize(self.candidates))
+
+    def demote_grobid_for_books(self) -> None:
+        if self.is_book:
+            for c in self.candidates:
+                if c.source == "grobid":
+                    c.priority = max(c.priority, 30)
+                    c.notes.append("grobid demoted (is_book)")
+
+    def run_title_search(self) -> None:
+        max_cands = int(getattr(self.extractor.args, "max_search_candidates", 6))
+        google_key = getattr(self.extractor.args, "google_books_api_key", "")
+        use_ss = not getattr(self.extractor.args, "no_semantic_scholar", False)
+        ss_key = getattr(self.extractor.args, "semantic_scholar_api_key", "")
+
+        t0 = perf_counter()
+        best_search, best_search_score, title_search_timings = _parallel_title_search(
+            self.candidates,
+            self.extractor,
+            self.sanity_text,
+            max_cands,
+            google_key,
+            use_ss,
+            semantic_scholar_key=ss_key,
+            filename=self.path.name,
+            timeout_s=float(getattr(self.extractor.args, "title_search_timeout", 12.0) or 0.0),
+        )
+        self.timing.title_search_s += perf_counter() - t0
+        self.timing.title_searches.extend(title_search_timings)
+        self.debug["title_search_queries_json"] = json.dumps(
+            [
+                query
+                for source_timing in title_search_timings
+                for query in source_timing.query_traces
+            ],
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        self.best_search = best_search
+        self.best_search_score = best_search_score
+
 
 def resolve(
     path,
@@ -1156,15 +1261,9 @@ def resolve(
     resolve_started = run.resolve_started
     text = run.text
     sanity_text = run.sanity_text
-    filename_best = run.filename_best
     needs_ocr_flag = run.needs_ocr_flag
     debug = run.debug
     candidates = run.candidates
-
-    max_cands  = int(getattr(extractor.args, "max_search_candidates", 6))
-    google_key = getattr(extractor.args, "google_books_api_key", "")
-    use_ss     = not getattr(extractor.args, "no_semantic_scholar", False)
-    ss_key     = getattr(extractor.args, "semantic_scholar_api_key", "")
 
     # ---- Phase 1: cheap authoritative identifier lookups (DOI / ISBN / arXiv) ----
     # Each lookup is authoritative, but we still sanity-check the returned
@@ -1181,17 +1280,7 @@ def resolve(
         return best_ident, candidates, text, debug, timing
 
     # ---- Phase 2: expensive candidate sources, only after identifiers fail ----
-    t0 = perf_counter()
-    grobid_cands = extractor.grobid_candidate(path)
-    candidates.extend(grobid_cands)
-    timing.grobid_s = perf_counter() - t0
-
-    if text:
-        t0 = perf_counter()
-        llm_cands = extractor.llm_candidate(path, text, filename_best)
-        candidates.extend(llm_cands)
-        timing.text_llm_s = perf_counter() - t0
-        debug.update({k: str(v) for k, v in getattr(extractor, "last_llm_debug", {}).items() if v is not None})
+    run.collect_deferred_candidates()
 
     # GROBID/text LLM may reveal new identifiers. Try them before vision,
     # since identifier lookup is still cheaper and more authoritative.
@@ -1205,57 +1294,16 @@ def resolve(
         timing.resolve_total_s = perf_counter() - resolve_started
         return best_ident, candidates, text, debug, timing
 
-    # Compute book signal once; reused for both the vision tier choice and the
-    # GROBID demotion below so we don't call is_book_signal twice.
-    _is_book = is_book_signal(path.name, text)
+    run.compute_book_signal()
 
     # Vision LLM is still optional, but now it runs after deep identifier
     # passes so books with ISBNs on copyright pages can avoid the expensive call.
-    t0 = perf_counter()
-    if not skip_vision:
-        should_call_vision = True
-        trigger_reason = "configured"
-        if getattr(extractor.args, "vision_only_if_hard", False):
-            has_deep_ident = bool(run.dois or run.isbns or run.arxivs)
-            if has_deep_ident and run.any_identifier_matched:
-                should_call_vision = False
-                trigger_reason = "skipped: identifier lookup returned metadata"
-            elif not needs_ocr_flag and _has_strong_searchable_candidate(candidates):
-                should_call_vision = False
-                trigger_reason = "skipped: readable text with strong local candidate"
-            elif has_deep_ident:
-                trigger_reason = "hard-case: identifiers found but lookup failed"
-            else:
-                trigger_reason = "hard-case: no_identifier"
-        debug["vision_trigger"] = trigger_reason
-        if should_call_vision:
-            vision_cands, vision_dbg = extractor.vision_llm_candidate(
-                path, filename_best, is_book=_is_book
-            )
-            _extend_unique_candidates(candidates, vision_cands)
-            debug.update({k: str(v) for k, v in vision_dbg.items() if v is not None})
-            debug["vision_used"] = "yes" if debug.get("vision_status") not in {"not_configured", "skipped"} else "no"
-        else:
-            debug["vision_status"] = "skipped"
-    else:
-        debug["vision_trigger"] = "skip_vision flag"
-        debug["vision_status"] = "skipped"
-    timing.vision_llm_s += perf_counter() - t0
-    timing.vision_pacing_s = extractor.http.take_pacing_s("vision_llm")
-    debug["vision_pacing_s"] = f"{timing.vision_pacing_s:.6f}"
-    rem = extractor.http.remaining_tokens("vision_llm")
-    if rem is not None:
-        debug["vision_tokens_remaining"] = str(rem)
-
-    _extend_unique_candidates(candidates, _synthesize(candidates))
+    run.maybe_collect_vision_candidates()
+    run.synthesize_candidates()
 
     # is_book signal: demote GROBID candidates on books. GROBID is trained on
     # journal-article headers and picks up editor/affiliation noise on books.
-    if _is_book:
-        for c in candidates:
-            if c.source == "grobid":
-                c.priority = max(c.priority, 30)
-                c.notes.append("grobid demoted (is_book)")
+    run.demote_grobid_for_books()
 
     # Vision may reveal new identifiers. Try only identifiers that were not
     # already checked before falling back to title search.
@@ -1274,33 +1322,15 @@ def resolve(
     _update_candidate_debug(debug, candidates)
 
     # ---- Phase 3: parallel title-search across all configured resolvers ----
-    t0 = perf_counter()
-    best_search, best_search_score, title_search_timings = _parallel_title_search(
-        candidates, extractor, sanity_text, max_cands, google_key, use_ss,
-        semantic_scholar_key=ss_key,
-        filename=path.name,
-        timeout_s=float(getattr(extractor.args, "title_search_timeout", 12.0) or 0.0),
-    )
-    timing.title_search_s += perf_counter() - t0
-    timing.title_searches.extend(title_search_timings)
-    debug["title_search_queries_json"] = json.dumps(
-        [
-            query
-            for source_timing in title_search_timings
-            for query in source_timing.query_traces
-        ],
-        ensure_ascii=True,
-        sort_keys=True,
-        separators=(",", ":"),
-    )
+    run.run_title_search()
 
     # Pick the better of identifier-lookup (failed sanity) vs title-search.
     # Prefer whichever has the higher sanity score if both are present.
     winners: list[tuple[Metadata, float, str]] = []
     if run.best_ident is not None:
         winners.append((run.best_ident, run.best_ident_score, run.best_ident_note))
-    if best_search is not None:
-        winners.append((best_search, best_search_score, "title-search match"))
+    if run.best_search is not None:
+        winners.append((run.best_search, run.best_search_score, "title-search match"))
 
     if winners:
         winners.sort(key=lambda x: -x[1])
