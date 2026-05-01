@@ -38,7 +38,6 @@ This version:
 """
 from __future__ import annotations
 
-import argparse
 import dataclasses
 import json
 from pathlib import Path
@@ -51,30 +50,21 @@ from papis_import.models import (
     TimingBreakdown,
 )
 from papis_import.pipeline_parts.candidates import CandidateSelector, extend_unique_candidates
+from papis_import.pipeline_parts.finalization import ResolutionFinalizer
 from papis_import.pipeline_parts.identifiers import (
     collect_identifier_pool,
     finalize_identifier_match,
     run_identifier_lookups,
     update_identifier_debug,
 )
-from papis_import.pipeline_parts.title_search import (
-    is_too_generic_to_search,
-    parallel_title_search,
-)
+from papis_import.pipeline_parts.title_search import parallel_title_search
 from papis_import.utils import (
     MIN_SANITY_SCORE,
-    author_overlap,
     extract_identifiers,
     is_book_signal,
-    is_garbage_title,
-    is_journal_abbrev_title,
-    is_journal_header_title,
-    is_suspicious_title,
     is_unreadable_text,
     normalize_title,
     sanity_score_for_match,
-    should_import,
-    title_similarity,
 )
 
 
@@ -123,21 +113,6 @@ def _apply_sanity(meta: Metadata, text: str, filename: str = "") -> Metadata:
     return meta
 
 
-def _downgrade_if_sanity_failed(meta: Metadata) -> Metadata:
-    """If the sanity check failed, mark the result as unverified and drop
-    confidence to medium.  The metadata is still returned — it may be the
-    best guess available — but it will land in the review TSV rather than
-    the auto-import TSV."""
-    if not meta.sanity_passed:
-        meta.verified = False
-        if meta.confidence == "high":
-            meta.confidence = "medium"
-        meta.notes.append(f"sanity_score={meta.sanity_score:.3f} (below threshold {MIN_SANITY_SCORE})")
-    else:
-        meta.notes.append(f"sanity_score={meta.sanity_score:.3f} (passed)")
-    return meta
-
-
 def _has_strong_searchable_candidate(candidates: list[Candidate]) -> bool:
     """Return True if any candidate has a meaningful title from a reliable source.
 
@@ -166,196 +141,6 @@ def _has_strong_searchable_candidate(candidates: list[Candidate]) -> bool:
     return False
 
 
-def _is_strong_local_corroborator(source: str) -> bool:
-    """Return True for local extractors strong enough to rescue an unreadable-
-    text title-search hit.
-
-    Excludes synthetic/title-only sources so we do not certify an external hit
-    using the same weak signal that produced the query in the first place.
-    """
-    if not source:
-        return False
-    if source in {"synthesized", "filename_title_only", "text_header", "filename_author_only"}:
-        return False
-    return (
-        source in {"grobid", "pdfinfo", "pdf_metadata", "xmp", "filename_author_title", "filename_structured", "filename_series"}
-        or source.startswith("vision_llm:")
-        or source.startswith("llm:")
-    )
-
-
-def _local_corroboration_note(meta: Metadata, candidates: list[Candidate]) -> str:
-    """Return a note describing strong local corroboration, or "" if absent.
-
-    Used only to rescue externally verified title-search results when the PDF
-    text is unreadable, so the normal text-based sanity check cannot fire.
-    """
-    title_words = normalize_title(meta.title).split()
-    strong_title_sources: list[str] = []
-    strong_full_sources: list[str] = []
-
-    for cand in candidates:
-        if not _is_strong_local_corroborator(cand.source):
-            continue
-        if not cand.title:
-            continue
-        ts = title_similarity(meta.title, cand.title)
-        if ts < 0.97:
-            continue
-        strong_title_sources.append(cand.source)
-
-        ao = author_overlap(meta.authors, cand.authors) if meta.authors and cand.authors else 0.0
-        ym = bool(meta.year and cand.year and meta.year == cand.year)
-        if ao >= 0.5 or ym:
-            strong_full_sources.append(cand.source)
-
-    if strong_full_sources:
-        seen = list(dict.fromkeys(strong_full_sources))
-        return "locally corroborated despite unreadable text via " + ", ".join(seen)
-
-    # Slightly weaker rescue path: two independent strong extractors agree on
-    # a non-trivial title verbatim/near-verbatim, even if they did not recover
-    # authors.  This catches cases where both vision and GROBID see the same
-    # title page but authors are truncated.
-    seen_title = list(dict.fromkeys(strong_title_sources))
-    if len(seen_title) >= 2 and len(title_words) >= 4:
-        return "title corroborated by multiple local extractors despite unreadable text via " + ", ".join(seen_title)
-
-    return ""
-
-
-# ---------------------------------------------------------------------------
-# Soft auto-accept: rescue a review row when multiple independent strong
-# local extractors agree on title + authors.  Output is a SUBSET of the auto
-# TSV — these rows still get written to papis_import.tsv, but ALSO to
-# papis_import_soft.tsv so they can be eyeballed once the run is complete.
-# ---------------------------------------------------------------------------
-_SOFT_AUTO_STRONG_SOURCES = {"grobid", "pdfinfo", "xmp", "text_header"}
-_SOFT_AUTO_STRONG_PREFIXES = ("llm:", "vision_llm:")
-_SOFT_AUTO_TITLE_SIM = 0.7
-# Short but legitimate titles like "Borel Spaces" (11) or "Convex Analysis"
-# (15) must be allowed; the real safeguard is multi-source corroboration plus
-# the suspicious/garbage/journal-abbrev filters.
-_SOFT_AUTO_MIN_TITLE_LEN = 5
-
-
-def _is_strong_soft_source(source: str) -> bool:
-    return source in _SOFT_AUTO_STRONG_SOURCES or source.startswith(_SOFT_AUTO_STRONG_PREFIXES)
-
-
-def _evaluate_soft_auto(meta: Metadata, candidates: list[Candidate]) -> tuple[bool, list[str]]:
-    """Decide whether a non-auto row should be soft auto-accepted.
-
-    Rules (all must hold):
-      1. meta.auto_safe is False  (otherwise the row is already in auto)
-      2. meta.needs_ocr is False  OR  >=3 strong corroborators (instead of 2)
-      3. Final title is non-empty, length >= 15, and not garbage / journal abbrev / suspicious
-      4. >=2 distinct strong-source candidates have a title matching meta.title
-         (token+sequence similarity >= 0.7)
-      5. >=1 of those agreeing sources also corroborates the authors
-         (any shared surname with meta.authors)
-
-    Strong sources: grobid, pdfinfo, xmp, text_header, llm:*, vision_llm:*.
-    Excluded: filename_*, synthesized, all external sources.
-    """
-    if meta.auto_safe:
-        return False, []
-    title = (meta.title or "").strip()
-    if len(title) < _SOFT_AUTO_MIN_TITLE_LEN:
-        return False, []
-    if is_garbage_title(title) or is_journal_abbrev_title(title) or is_suspicious_title(title):
-        return False, []
-
-    title_match_sources: list[str] = []
-    author_match_sources: set[str] = set()
-    for cand in candidates:
-        if not _is_strong_soft_source(cand.source):
-            continue
-        if not cand.title:
-            continue
-        if title_similarity(cand.title, title) < _SOFT_AUTO_TITLE_SIM:
-            continue
-        if cand.source in title_match_sources:
-            continue
-        title_match_sources.append(cand.source)
-        if meta.authors and cand.authors and author_overlap(cand.authors, meta.authors) > 0.0:
-            author_match_sources.add(cand.source)
-
-    needed = 3 if meta.needs_ocr else 2
-    if len(title_match_sources) < needed:
-        return False, []
-    if not author_match_sources:
-        return False, []
-
-    reason = (
-        f"title corroborated by {len(title_match_sources)} strong sources "
-        f"({', '.join(title_match_sources)}); authors corroborated by "
-        f"{', '.join(sorted(author_match_sources))}"
-    )
-    if meta.needs_ocr:
-        reason = "[needs-ocr threshold] " + reason
-    return True, [reason]
-
-
-def _rescue_locally_corroborated_match(meta: Metadata, candidates: list[Candidate], text: str) -> Metadata:
-    """Allow strong local corroboration to rescue an external title-search hit.
-
-    The standard sanity check relies on extracted text. That can fail for two
-    different reasons:
-      1) the text layer is unreadable/scanned, or
-      2) the first short text window only sees a series page / preface rather
-         than the real title page.
-
-    In either regime, keep the external verification if an independent strong
-    local extractor (especially vision) strongly agrees with it.
-    """
-    if meta.sanity_passed or not meta.verified:
-        return meta
-    if meta.source not in {
-        "crossref_search", "openalex_search", "semanticscholar_search",
-        "openlibrary_search", "google_books_search",
-    }:
-        return meta
-
-    note = _local_corroboration_note(meta, candidates)
-    if not note:
-        return meta
-
-    meta.sanity_passed = True
-    meta.sanity_score = max(meta.sanity_score, 0.6)
-    meta.notes.append(note)
-    return meta
-
-
-def _prefer_local_when_external_conflicts(meta: Metadata, candidates: list[Candidate]) -> Metadata:
-    """When a title-search hit fails sanity badly and contradicts strong local
-    evidence, show the local guess instead of the wrong external metadata.
-
-    This keeps review rows actionable: ``Marginal_Likelihood.pdf`` should show
-    the locally recovered talk title, not an unrelated Crossref encyclopedia
-    entry pulled from the filename stem.
-    """
-    if meta.verified:
-        return meta
-    if meta.source not in {
-        "crossref_search", "openalex_search", "semanticscholar_search",
-        "openlibrary_search", "google_books_search",
-    }:
-        return meta
-    local = CandidateSelector().local_fallback(candidates)
-    if not local.title:
-        return meta
-    if is_too_generic_to_search(Candidate(title=local.title, authors=local.authors, year=local.year, source=local.source, priority=0)):
-        return meta
-    if meta.title and title_similarity(meta.title, local.title) >= 0.5:
-        return meta
-    local.notes.append(f"rejected conflicting external match from {meta.source}")
-    for note in meta.notes:
-        if note not in local.notes:
-            local.notes.append(note)
-    return local
-
-
 # ---------------------------------------------------------------------------
 # Main resolution function
 # ---------------------------------------------------------------------------
@@ -366,6 +151,7 @@ class ResolutionRun:
     extractor: Extractor
     skip_vision: bool = False
     selector: CandidateSelector = dataclasses.field(default_factory=CandidateSelector)
+    finalizer: ResolutionFinalizer = dataclasses.field(init=False)
 
     timing: TimingBreakdown = dataclasses.field(default_factory=TimingBreakdown)
     resolve_started: float = dataclasses.field(default_factory=perf_counter)
@@ -389,6 +175,9 @@ class ResolutionRun:
     is_book: bool = False
     best_search: Metadata | None = None
     best_search_score: float = -1.0
+
+    def __post_init__(self) -> None:
+        self.finalizer = ResolutionFinalizer(self.selector)
 
     def extract_initial_text(self) -> None:
         t0 = perf_counter()
@@ -694,45 +483,28 @@ def resolve(
     # ---- Phase 3: parallel title-search across all configured resolvers ----
     run.run_title_search()
 
-    # Pick the better of identifier-lookup (failed sanity) vs title-search.
-    # Prefer whichever has the higher sanity score if both are present.
-    winners: list[tuple[Metadata, float, str]] = []
-    if run.best_ident is not None:
-        winners.append((run.best_ident, run.best_ident_score, run.best_ident_note))
-    if run.best_search is not None:
-        winners.append((run.best_search, run.best_search_score, "title-search match"))
-
-    if winners:
-        winners.sort(key=lambda x: -x[1])
-        winner, _score, note = winners[0]
-        winner.merge_missing(run.selector.local_fallback(candidates))
-        winner.notes.append(note)
-        _rescue_locally_corroborated_match(winner, candidates, sanity_text)
-        _downgrade_if_sanity_failed(winner)
-        if not winner.sanity_passed:
-            winner = _prefer_local_when_external_conflicts(winner, candidates)
-        winner.needs_ocr = needs_ocr_flag
-        winner.auto_safe = (winner.verified
-                            and winner.sanity_passed
-                            and winner.confidence == "high")
-        winner.soft_auto, winner.soft_auto_reasons = _evaluate_soft_auto(winner, candidates)
-        debug["final_source"] = winner.source
-
+    winner = run.finalizer.finalize_winner(
+        best_ident=run.best_ident,
+        best_ident_score=run.best_ident_score,
+        best_ident_note=run.best_ident_note,
+        best_search=run.best_search,
+        best_search_score=run.best_search_score,
+        candidates=candidates,
+        sanity_text=sanity_text,
+        needs_ocr_flag=needs_ocr_flag,
+        debug=debug,
+    )
+    if winner is not None:
         timing.resolve_total_s = perf_counter() - resolve_started
         return winner, candidates, text, debug, timing
 
     # ---- Phase 4: no external verification — return local best ----
-    fallback = run.selector.local_fallback(candidates)
-    if run.stable_ids:
-        fallback.notes.append(f"JSTOR stable ID present (not an arXiv ID): {run.stable_ids[0]}")
-    if needs_ocr_flag:
-        fallback.notes.append("PDF text appears unreadable — OCR recommended")
-    fallback.needs_ocr = needs_ocr_flag
-    fallback.sanity_passed = False
-    fallback.sanity_score = 0.0
-    fallback.auto_safe = False
-    fallback.soft_auto, fallback.soft_auto_reasons = _evaluate_soft_auto(fallback, candidates)
-    debug["final_source"] = fallback.source
+    fallback = run.finalizer.local_fallback(
+        candidates=candidates,
+        stable_ids=run.stable_ids,
+        needs_ocr_flag=needs_ocr_flag,
+        debug=debug,
+    )
 
     timing.resolve_total_s = perf_counter() - resolve_started
     return fallback, candidates, text, debug, timing

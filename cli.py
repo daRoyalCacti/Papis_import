@@ -127,7 +127,11 @@ def main() -> int:
     if not args.dry_run and not args.do_import:
         args.dry_run = True
 
-    paths: OutputPaths = resolve_output_paths(args)
+    try:
+        paths: OutputPaths = resolve_output_paths(args)
+    except ValueError as exc:
+        eprint(f"[error] {exc}")
+        return 2
     result_writer  = ResultWriter(paths.auto, paths.review, paths.soft)
     profile_writer = ProfileWriter(paths.profile) if paths.profile else None
     debug_writer   = DebugWriter(paths.debug)     if paths.debug   else None

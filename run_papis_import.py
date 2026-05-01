@@ -23,7 +23,7 @@ Example config.json:
     "tsv":                 "~/Documents/papis_import.tsv",
     "review_tsv":          "~/Documents/papis_import_review.tsv",
     "soft_tsv":            "~/Documents/papis_import_soft.tsv",
-    "debug_tsv":           "~/Documents/papis_import_debug.tsv",
+    "debug_jsonl":         "~/Documents/papis_import_debug.jsonl",
     "profile_tsv":         "~/Documents/papis_import_profile.tsv",
     "cache_dir":           "~/.cache/papis_import",
     "title_search_timeout": 12
@@ -54,7 +54,7 @@ _CONFIG_MAP = {
     "tsv":                  "tsv",
     "review_tsv":           "review-tsv",
     "soft_tsv":             "soft-tsv",
-    "debug_tsv":            "debug-tsv",
+    "debug_jsonl":          "debug-jsonl",
     "profile_tsv":          "profile-tsv",
     "cache_dir":            "cache-dir",
     "title_search_timeout": "title-search-timeout",

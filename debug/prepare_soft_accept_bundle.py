@@ -20,7 +20,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 from io_utils import (  # noqa: E402
     CONFIDENCE_RANK,
     DEFAULT_CONFIG_PATH,
-    DEFAULT_DEBUG_TSV,
+    DEFAULT_DEBUG_JSONL,
     DEFAULT_SOFT_TSV,
     PROJECT_ROOT,
     as_float,
@@ -305,7 +305,7 @@ def write_manifest(path: Path, items: list[SoftItem]) -> None:
             })
 
 
-def write_report(path: Path, items: list[SoftItem], soft_tsv: Path, debug_tsv: Path | None) -> None:
+def write_report(path: Path, items: list[SoftItem], soft_tsv: Path, debug_jsonl: Path | None) -> None:
     copied = sum(1 for item in items if item.copied)
     missing = sum(1 for item in items if item.copy_error)
     needs_ocr = sum(1 for item in items if is_yes(item.value("Needs OCR")))
@@ -318,7 +318,7 @@ def write_report(path: Path, items: list[SoftItem], soft_tsv: Path, debug_tsv: P
         "# Soft Accept Bundle",
         "",
         f"Soft TSV: {soft_tsv}",
-        f"Debug TSV: {debug_tsv if debug_tsv else '(not used)'}",
+        f"Debug JSONL: {debug_jsonl if debug_jsonl else '(not used)'}",
         f"Total rows: {len(items)}",
         f"Copied PDFs: {copied}",
         f"Missing PDFs: {missing}",
@@ -400,7 +400,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--config", default=DEFAULT_CONFIG_PATH, help="Config JSON path")
     parser.add_argument("--soft-tsv", default="", help="Soft auto-accept TSV override")
-    parser.add_argument("--debug-tsv", default="", help="Debug TSV override")
+    parser.add_argument("--debug-jsonl", default="", help="Debug JSONL path override (must end in .jsonl)")
     parser.add_argument("--dest", default="", help="Bundle output directory override")
     parser.add_argument("--limit", type=int, default=0, help="Maximum rows to bundle; default/all = 0")
     parser.add_argument("--sort", choices=["risk", "tsv"], default="risk", help="Row order")
@@ -419,13 +419,17 @@ def main() -> int:
         return 2
 
     soft_tsv = resolve_soft_tsv(args, cfg)
-    debug_value = args.debug_tsv or str(cfg.get("debug_tsv") or DEFAULT_DEBUG_TSV)
-    debug_tsv = expand_path(debug_value) if debug_value else None
+    debug_value = args.debug_jsonl or str(cfg.get("debug_jsonl") or DEFAULT_DEBUG_JSONL)
+    debug_jsonl = expand_path(debug_value) if debug_value else None
     dest = expand_path(args.dest or str(cfg.get("soft_bundle_dest") or DEFAULT_DEST))
+
+    if debug_jsonl and debug_jsonl.suffix.lower() != ".jsonl":
+        print(f"[error] --debug-jsonl: expected a '.jsonl' file, got {debug_jsonl.name!r}", file=sys.stderr)
+        return 2
 
     try:
         soft_rows = read_tsv_dicts(soft_tsv, required=True)
-        debug_rows = read_debug_jsonl(debug_tsv, required=False) if debug_tsv else []
+        debug_rows = read_debug_jsonl(debug_jsonl, required=False) if debug_jsonl else []
         prepare_dest(dest, force=args.force)
     except Exception as exc:
         print(f"[error] {exc}", file=sys.stderr)
@@ -455,7 +459,7 @@ def main() -> int:
     manifest = dest / "manifest.tsv"
     report = dest / "soft_accept.md"
     write_manifest(manifest, items)
-    write_report(report, items, soft_tsv, debug_tsv if debug_rows else None)
+    write_report(report, items, soft_tsv, debug_jsonl if debug_rows else None)
 
     copied = sum(1 for item in items if item.copied)
     print(f"Wrote soft accept bundle: {dest}")

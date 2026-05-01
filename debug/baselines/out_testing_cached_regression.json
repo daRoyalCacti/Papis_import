@@ -15,7 +15,7 @@
     "<out>/papis_import_review.tsv",
     "--soft-tsv",
     "<out>/papis_import_soft.tsv",
-    "--debug-tsv",
+    "--debug-jsonl",
     "<out>/papis_import_debug.jsonl",
     "--profile-tsv",
     "<out>/papis_import_profile.tsv",

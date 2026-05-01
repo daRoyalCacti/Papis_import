@@ -18,26 +18,34 @@ class OutputPaths:
     profile: Path | None
 
 
+def _require_ext(path: Path, ext: str, flag: str) -> None:
+    if path.suffix.lower() != ext:
+        raise ValueError(f"--{flag}: expected a {ext!r} file, got {path.name!r}")
+
+
 def resolve_output_paths(args: argparse.Namespace) -> OutputPaths:
     auto = Path(os.path.expanduser(args.tsv)).resolve()
+    _require_ext(auto, ".tsv", "tsv")
     if getattr(args, "review_tsv", ""):
         review = Path(os.path.expanduser(args.review_tsv)).resolve()
+        _require_ext(review, ".tsv", "review-tsv")
     else:
         review = auto.with_name(auto.stem + "_review" + auto.suffix)
     if getattr(args, "soft_tsv", ""):
         soft = Path(os.path.expanduser(args.soft_tsv)).resolve()
+        _require_ext(soft, ".tsv", "soft-tsv")
     else:
         soft = auto.with_name(auto.stem + "_soft" + auto.suffix)
-    debug = (
-        Path(os.path.expanduser(args.debug_tsv)).resolve()
-        if getattr(args, "debug_tsv", "")
-        else None
-    )
-    profile = (
-        Path(os.path.expanduser(args.profile_tsv)).resolve()
-        if getattr(args, "profile_tsv", "")
-        else None
-    )
+    if getattr(args, "debug_jsonl", ""):
+        debug = Path(os.path.expanduser(args.debug_jsonl)).resolve()
+        _require_ext(debug, ".jsonl", "debug-jsonl")
+    else:
+        debug = None
+    if getattr(args, "profile_tsv", ""):
+        profile = Path(os.path.expanduser(args.profile_tsv)).resolve()
+        _require_ext(profile, ".tsv", "profile-tsv")
+    else:
+        profile = None
     return OutputPaths(auto=auto, review=review, soft=soft, debug=debug, profile=profile)
 
 
@@ -101,9 +109,10 @@ def parse_args() -> argparse.Namespace:
                         "corroboration — recommended for spot-checks).  "
                         "Default: auto-derived from --tsv by appending _soft "
                         "before the extension.")
-    p.add_argument("--debug-tsv", default="",
+    p.add_argument("--debug-jsonl", default="",
                    help="Optional path for a verbose debug JSONL with per-file "
-                        "pipeline diagnostics (vision/GROBID/raw candidates).")
+                        "pipeline diagnostics (vision/GROBID/raw candidates). "
+                        "File must end in .jsonl.")
     p.add_argument("--profile-tsv", default="",
                    help="Optional path for a timing TSV. One row is appended "
                         "as each file finishes, with elapsed wall time broken "
