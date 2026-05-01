@@ -50,6 +50,7 @@ from papis_import.models import (
     Metadata,
     TimingBreakdown,
 )
+from papis_import.pipeline_parts.candidates import CandidateSelector, extend_unique_candidates
 from papis_import.pipeline_parts.identifiers import (
     collect_identifier_pool,
     finalize_identifier_match,
@@ -71,43 +72,15 @@ from papis_import.utils import (
     is_suspicious_title,
     is_unreadable_text,
     normalize_title,
-    repair_title_ligatures,
     sanity_score_for_match,
     should_import,
     title_similarity,
 )
 
 
-def _quality(c: Candidate) -> float:
-    score = 0.0
-    if c.title:
-        if is_garbage_title(c.title):
-            score -= 3.0
-        elif is_journal_abbrev_title(c.title):
-            score -= 2.0
-        else:
-            score += min(4.0, max(1.0, len(normalize_title(c.title).split()) / 3.0))
-    if c.authors:
-        score += min(2.0, 0.75 + 0.5 * len(c.authors))
-    if c.year:
-        score += 0.4
-    if c.doi or c.isbn or c.arxiv:
-        score += 2.5
-    if c.source in {"filename_title_only", "text_header"}:
-        score -= 0.8
-    if c.source == "pdfinfo" and (c.title.startswith("PII:") or not c.title):
-        score -= 1.5
-    if c.title and len(normalize_title(c.title).split()) <= 2:
-        score -= 0.5
-    return score
-
-
 def choose_best_local(candidates: list[Candidate]) -> Candidate | None:
-    useful = [c for c in candidates if c.title or c.authors or c.doi or c.isbn or c.arxiv]
-    if not useful:
-        return None
-    useful.sort(key=lambda c: (-_quality(c), c.priority, -len(c.title)))
-    return useful[0]
+    """Compatibility wrapper for callers that imported this from pipeline."""
+    return CandidateSelector().choose_best_local(candidates)
 
 
 def _scan_for_any_identifier(filename: str, text: str) -> bool:
@@ -121,74 +94,6 @@ def _scan_for_any_identifier(filename: str, text: str) -> bool:
     except Exception:
         return False
     return bool(dois or isbns or arxivs)
-
-
-# ---------------------------------------------------------------------------
-# Synthetic candidate — combines the best title/authors/year across sources
-# ---------------------------------------------------------------------------
-
-def _synthesize(candidates: list[Candidate]) -> list[Candidate]:
-    for c in candidates:
-        if c.title:
-            c.title = repair_title_ligatures(c.title)
-    # Maillard JMLR 2021: text-LLM extracted the first author's affiliation
-    # ("Université Paris-Saclay, CNRS, Inria, Laboratoire de mathématiques
-    # d'Orsay…") as the title and beat the correct "Aggregated Hold-Out" from
-    # GROBID/Vision in choose_best_local. is_suspicious_title rejects the
-    # affiliation regardless of which extractor emitted it.
-    good_titles = [c for c in candidates if c.title and not is_garbage_title(c.title)
-                   and not is_journal_abbrev_title(c.title)
-                   and not is_suspicious_title(c.title)]
-    all_titles  = [c for c in candidates if c.title]
-    titles  = good_titles or all_titles
-    authors = [c for c in candidates if c.authors]
-    years   = [c for c in candidates if c.year]
-    idents  = [c for c in candidates if c.doi or c.isbn or c.arxiv]
-    if not titles:
-        return []
-    best_t = choose_best_local(titles)
-    best_a = choose_best_local(authors)
-    best_y = choose_best_local(years)
-    best_i = choose_best_local(idents)
-    assert best_t is not None
-    syn = Candidate(
-        title=best_t.title,
-        authors=(best_a.authors[:] if best_a and best_a.authors else best_t.authors[:]),
-        year=(best_y.year if best_y else best_t.year),
-        doi=(best_i.doi if best_i and best_i.doi else best_t.doi),
-        isbn=(best_i.isbn if best_i and best_i.isbn else best_t.isbn),
-        arxiv=(best_i.arxiv if best_i and best_i.arxiv else best_t.arxiv),
-        source="synthesized",
-        priority=min(best_t.priority, 22),
-        notes=["combined local title/author/year candidates"],
-    )
-    return [syn] if (syn.authors or syn.year or syn.doi or syn.isbn or syn.arxiv) else []
-
-
-# ---------------------------------------------------------------------------
-# Local-only fallback metadata (used when nothing verifies externally)
-# ---------------------------------------------------------------------------
-
-def _local_fallback(candidates: list[Candidate]) -> Metadata:
-    best = choose_best_local(candidates)
-    if best is None:
-        return Metadata(source="none", confidence="low", notes=["no metadata extracted"])
-    notes = best.notes[:]
-    best.authors = [
-        a.replace("Author(s):", "").replace("author(s):", "").strip()
-        for a in best.authors
-    ]
-    best.authors = [a for a in best.authors if a]
-    confidence = "low" if best.source in {"filename_title_only", "text_header"} else "medium"
-    if best.source == "pdfinfo" and best.title.startswith("PII:"):
-        confidence = "low"
-        notes.append("pdfinfo title looks like a publisher internal ID")
-    return Metadata(
-        title=best.title, authors=best.authors, year=best.year,
-        doi=best.doi, isbn=best.isbn, arxiv=best.arxiv,
-        source=best.source, confidence=confidence, verified=False,
-        notes=notes + ["best local guess; external verification failed"],
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -437,7 +342,7 @@ def _prefer_local_when_external_conflicts(meta: Metadata, candidates: list[Candi
         "openlibrary_search", "google_books_search",
     }:
         return meta
-    local = _local_fallback(candidates)
+    local = CandidateSelector().local_fallback(candidates)
     if not local.title:
         return meta
     if is_too_generic_to_search(Candidate(title=local.title, authors=local.authors, year=local.year, source=local.source, priority=0)):
@@ -451,63 +356,6 @@ def _prefer_local_when_external_conflicts(meta: Metadata, candidates: list[Candi
     return local
 
 
-def _candidates_json(candidates: list[Candidate]) -> str:
-    return json.dumps(
-        [
-            {
-                "source": c.source,
-                "title": c.title,
-                "authors": c.authors,
-                "year": c.year,
-                "doi": c.doi,
-                "isbn": c.isbn,
-                "arxiv": c.arxiv,
-                "priority": c.priority,
-                "notes": c.notes,
-            }
-            for c in candidates
-        ],
-        ensure_ascii=True,
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-
-
-def _update_candidate_debug(debug: dict[str, str], candidates: list[Candidate]) -> None:
-    for c in candidates:
-        if c.source == "grobid" and not debug["grobid_title"]:
-            debug["grobid_title"] = c.title
-            debug["grobid_authors"] = "; ".join(c.authors)
-            debug["grobid_year"] = c.year
-    debug["candidate_sources"] = " | ".join(c.source for c in candidates)
-    debug["candidates_json"] = _candidates_json(candidates)
-    local_best = choose_best_local(candidates)
-    if local_best is not None:
-        debug["local_best_source"] = local_best.source
-
-
-def _candidate_key(c: Candidate) -> tuple:
-    return (
-        c.source,
-        c.title,
-        tuple(c.authors),
-        c.year,
-        c.doi,
-        c.isbn,
-        c.arxiv,
-    )
-
-
-def _extend_unique_candidates(candidates: list[Candidate], additions: list[Candidate]) -> None:
-    seen = {_candidate_key(c) for c in candidates}
-    for cand in additions:
-        key = _candidate_key(cand)
-        if key in seen:
-            continue
-        candidates.append(cand)
-        seen.add(key)
-
-
 # ---------------------------------------------------------------------------
 # Main resolution function
 # ---------------------------------------------------------------------------
@@ -517,6 +365,7 @@ class ResolutionRun:
     path: Path
     extractor: Extractor
     skip_vision: bool = False
+    selector: CandidateSelector = dataclasses.field(default_factory=CandidateSelector)
 
     timing: TimingBreakdown = dataclasses.field(default_factory=TimingBreakdown)
     resolve_started: float = dataclasses.field(default_factory=perf_counter)
@@ -594,7 +443,7 @@ class ResolutionRun:
         self.candidates.extend(self.filename_cands)
 
         t0 = perf_counter()
-        self.filename_best = choose_best_local(self.filename_cands)
+        self.filename_best = self.selector.choose_best_local(self.filename_cands)
         self.timing.best_local_s = perf_counter() - t0
         if self.text:
             t0 = perf_counter()
@@ -602,7 +451,7 @@ class ResolutionRun:
             self.timing.header_candidate_s = perf_counter() - t0
 
     def refresh_identifier_pool(self) -> None:
-        _extend_unique_candidates(self.candidates, _synthesize(self.candidates))
+        extend_unique_candidates(self.candidates, self.selector.synthesize(self.candidates))
         self.dois, self.isbns, self.arxivs, self.stable_ids = collect_identifier_pool(
             self.path, self.text, self.ident_text, self.candidates
         )
@@ -640,7 +489,7 @@ class ResolutionRun:
         assert self.best_ident is not None
         return finalize_identifier_match(
             self.best_ident,
-            _local_fallback(self.candidates),
+            self.selector.local_fallback(self.candidates),
             self.best_ident_note,
             self.needs_ocr_flag,
             self.debug,
@@ -688,7 +537,7 @@ class ResolutionRun:
                 vision_cands, vision_dbg = self.extractor.vision_llm_candidate(
                     self.path, self.filename_best, is_book=self.is_book
                 )
-                _extend_unique_candidates(self.candidates, vision_cands)
+                extend_unique_candidates(self.candidates, vision_cands)
                 self.debug.update({k: str(v) for k, v in vision_dbg.items() if v is not None})
                 self.debug["vision_used"] = (
                     "yes" if self.debug.get("vision_status") not in {"not_configured", "skipped"} else "no"
@@ -706,7 +555,7 @@ class ResolutionRun:
             self.debug["vision_tokens_remaining"] = str(rem)
 
     def synthesize_candidates(self) -> None:
-        _extend_unique_candidates(self.candidates, _synthesize(self.candidates))
+        extend_unique_candidates(self.candidates, self.selector.synthesize(self.candidates))
 
     def demote_grobid_for_books(self) -> None:
         if self.is_book:
@@ -794,7 +643,7 @@ def resolve(
 
     # If an identifier match passed the sanity check, it's the answer.
     if run.has_passing_identifier_match():
-        _update_candidate_debug(debug, candidates)
+        run.selector.update_debug(debug, candidates)
         best_ident = run.finalize_identifier_match()
 
         timing.resolve_total_s = perf_counter() - resolve_started
@@ -809,7 +658,7 @@ def resolve(
     run.try_identifier_resolution()
 
     if run.has_passing_identifier_match():
-        _update_candidate_debug(debug, candidates)
+        run.selector.update_debug(debug, candidates)
         best_ident = run.finalize_identifier_match()
 
         timing.resolve_total_s = perf_counter() - resolve_started
@@ -832,7 +681,7 @@ def resolve(
     run.try_identifier_resolution()
 
     if run.has_passing_identifier_match():
-        _update_candidate_debug(debug, candidates)
+        run.selector.update_debug(debug, candidates)
         best_ident = run.finalize_identifier_match()
 
         timing.resolve_total_s = perf_counter() - resolve_started
@@ -840,7 +689,7 @@ def resolve(
 
     # Capture raw per-source candidates for debug TSVs after all candidate
     # sources have run.
-    _update_candidate_debug(debug, candidates)
+    run.selector.update_debug(debug, candidates)
 
     # ---- Phase 3: parallel title-search across all configured resolvers ----
     run.run_title_search()
@@ -856,7 +705,7 @@ def resolve(
     if winners:
         winners.sort(key=lambda x: -x[1])
         winner, _score, note = winners[0]
-        winner.merge_missing(_local_fallback(candidates))
+        winner.merge_missing(run.selector.local_fallback(candidates))
         winner.notes.append(note)
         _rescue_locally_corroborated_match(winner, candidates, sanity_text)
         _downgrade_if_sanity_failed(winner)
@@ -873,7 +722,7 @@ def resolve(
         return winner, candidates, text, debug, timing
 
     # ---- Phase 4: no external verification — return local best ----
-    fallback = _local_fallback(candidates)
+    fallback = run.selector.local_fallback(candidates)
     if run.stable_ids:
         fallback.notes.append(f"JSTOR stable ID present (not an arXiv ID): {run.stable_ids[0]}")
     if needs_ocr_flag:
