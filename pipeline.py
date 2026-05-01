@@ -39,32 +39,26 @@ This version:
 from __future__ import annotations
 
 import argparse
-import concurrent.futures
 import dataclasses
 import json
-import threading
 from pathlib import Path
-from typing import Callable
 
 from papis_import.extractors import Extractor
-from papis_import.http_client import HttpClient
 from time import perf_counter
 from papis_import.models import (
     Candidate,
-    IdentifierLookupTiming,
     Metadata,
     TimingBreakdown,
-    TitleSearchTiming,
 )
-from papis_import.resolvers import (
-    arxiv_by_id,
-    crossref_by_doi,
-    crossref_search,
-    google_books_search,
-    openalex_search,
-    openlibrary_by_isbn,
-    openlibrary_search,
-    semanticscholar_search,
+from papis_import.pipeline_parts.identifiers import (
+    collect_identifier_pool,
+    finalize_identifier_match,
+    run_identifier_lookups,
+    update_identifier_debug,
+)
+from papis_import.pipeline_parts.title_search import (
+    is_too_generic_to_search,
+    parallel_title_search,
 )
 from papis_import.utils import (
     MIN_SANITY_SCORE,
@@ -76,41 +70,12 @@ from papis_import.utils import (
     is_journal_header_title,
     is_suspicious_title,
     is_unreadable_text,
-    jstor_filename_doi,
     normalize_title,
-    numeric_filename_dois,
     repair_title_ligatures,
     sanity_score_for_match,
     should_import,
     title_similarity,
 )
-
-
-# ---------------------------------------------------------------------------
-# Generic titles that must never be sent to title-search alone
-# ---------------------------------------------------------------------------
-_GENERIC_TITLES = frozenset({
-    "thesis", "dissertation", "paper", "notes", "chapter", "chapters",
-    "lecture", "lectures", "slides", "document", "main", "draft",
-    "introduction", "appendix", "preface", "summary", "abstract",
-    "report", "manuscript", "preprint", "article", "book", "review",
-    "homework", "exercises", "problems", "solutions", "exam", "quiz",
-    "assignment", "handout", "handouts", "tutorial", "worksheet",
-    # Added: one- and two-letter stems / short filler words that collide
-    # on any search index (the ass.pdf pathology).
-    "a", "b", "c", "d", "e", "ass", "pdf",
-})
-
-
-def _is_too_generic_to_search(cand: Candidate) -> bool:
-    words = normalize_title(cand.title).split()
-    if not words:
-        return True
-    if len(words) == 1 and (words[0] in _GENERIC_TITLES or len(words[0]) <= 3):
-        return not (cand.authors and cand.year)
-    if len(words) == 2 and all(w in _GENERIC_TITLES for w in words):
-        return not (cand.authors and cand.year)
-    return False
 
 
 def _quality(c: Candidate) -> float:
@@ -475,7 +440,7 @@ def _prefer_local_when_external_conflicts(meta: Metadata, candidates: list[Candi
     local = _local_fallback(candidates)
     if not local.title:
         return meta
-    if _is_too_generic_to_search(Candidate(title=local.title, authors=local.authors, year=local.year, source=local.source, priority=0)):
+    if is_too_generic_to_search(Candidate(title=local.title, authors=local.authors, year=local.year, source=local.source, priority=0)):
         return meta
     if meta.title and title_similarity(meta.title, local.title) >= 0.5:
         return meta
@@ -484,300 +449,6 @@ def _prefer_local_when_external_conflicts(meta: Metadata, candidates: list[Candi
         if note not in local.notes:
             local.notes.append(note)
     return local
-
-
-# ---------------------------------------------------------------------------
-# Parallel title-search helpers
-# ---------------------------------------------------------------------------
-
-# One resolver function takes (HttpClient, Candidate) and returns Metadata|None
-_Resolver = Callable[[HttpClient, Candidate], "Metadata | None"]
-
-_TITLE_SEARCH_BUCKETS = {
-    "crossref": "crossref",
-    "openalex": "openalex",
-    "openlibrary": "openlibrary",
-    "semanticscholar": "semanticscholar",
-    "google_books": "googlebooks",
-}
-
-
-def _search_one_source(
-    name: str,
-    resolver: _Resolver,
-    candidates: list[Candidate],
-    extractor: Extractor,
-    text: str,
-    filename: str = "",
-    stop_event: threading.Event | None = None,
-    search_started: float | None = None,
-    timeout_s: float = 0.0,
-) -> tuple[Metadata | None, float, str, TitleSearchTiming]:
-    """Run *resolver* against each candidate in sequence (per-source throttle
-    safety), keeping the result with the best sanity score.
-
-    Returns (best_meta_or_None, best_score, source_name, timing).
-    """
-    started = perf_counter()
-    timing = TitleSearchTiming(source=name, candidates_available=len(candidates))
-    best: Metadata | None = None
-    best_score: float = -1.0
-    for cand_idx, cand in enumerate(candidates, start=1):
-        if stop_event is not None and stop_event.is_set():
-            timing.stopped_early = True
-            if not timing.skip_reason:
-                timing.skip_reason = "strong match found by another resolver"
-            break
-        if timeout_s > 0 and search_started is not None and perf_counter() - search_started >= timeout_s:
-            timing.stopped_early = True
-            if not timing.skip_reason:
-                timing.skip_reason = "title search timeout"
-            break
-        timing.candidates_tried += 1
-        query_started = perf_counter()
-        query_trace: dict[str, object] = {
-            "source": name,
-            "candidate_index": cand_idx,
-            "candidate_source": cand.source,
-            "query_title": cand.title,
-            "query_authors": cand.authors,
-            "query_year": cand.year,
-            "elapsed_s": 0.0,
-            "status": "",
-            "error": "",
-            "matched": False,
-            "match_title": "",
-            "match_source": "",
-            "match_score": 0.0,
-            "sanity_score": 0.0,
-            "cache_hit": "",
-            "http": {},
-        }
-        try:
-            meta = resolver(extractor.http, cand)
-        except Exception as exc:
-            meta = None
-            timing.errors += 1
-            query_trace["status"] = "exception"
-            query_trace["error"] = f"{type(exc).__name__}: {exc}"
-            if len(timing.error_messages) < 5:
-                timing.error_messages.append(f"{cand.source}: {type(exc).__name__}: {exc}")
-        finally:
-            http_trace = extractor.http.take_last_request_trace(_TITLE_SEARCH_BUCKETS.get(name, name))
-            if http_trace:
-                query_trace["http"] = http_trace
-                query_trace["cache_hit"] = http_trace.get("cache_hit", "")
-                query_trace["status"] = query_trace["status"] or str(http_trace.get("final_status", ""))
-            query_trace["elapsed_s"] = perf_counter() - query_started
-        if meta is None:
-            if not query_trace["status"]:
-                query_trace["status"] = "no_match"
-            timing.query_traces.append(query_trace)
-            continue
-        timing.matches_returned += 1
-        _apply_sanity(meta, text, filename)
-        query_trace["matched"] = True
-        query_trace["status"] = query_trace["status"] or "matched"
-        query_trace["match_title"] = meta.title
-        query_trace["match_source"] = meta.source
-        query_trace["sanity_score"] = meta.sanity_score
-        # Slight preference for results the API itself scored as high,
-        # so that when sanity scores tie we prefer the higher-confidence
-        # external match.
-        score = meta.sanity_score
-        if meta.confidence == "high":
-            score += 0.05
-        query_trace["match_score"] = score
-        if score > best_score:
-            best_score = score
-            best = meta
-            timing.best_score = score
-            timing.best_source = meta.source
-            timing.best_title = meta.title
-            timing.best_verified = meta.verified
-            timing.best_sanity_passed = meta.sanity_passed
-            timing.best_sanity_score = meta.sanity_score
-        if meta.verified and meta.sanity_passed and meta.confidence == "high":
-            timing.stopped_early = True
-            timing.skip_reason = "high-confidence sanity-passing match"
-            if stop_event is not None:
-                stop_event.set()
-            timing.query_traces.append(query_trace)
-            break
-        timing.query_traces.append(query_trace)
-    timing.elapsed_s = perf_counter() - started
-    return best, best_score, name, timing
-
-
-def _parallel_title_search(
-    candidates: list[Candidate],
-    extractor: Extractor,
-    text: str,
-    max_cands: int,
-    google_key: str,
-    use_ss: bool,
-    semantic_scholar_key: str = "",
-    filename: str = "",
-    timeout_s: float = 0.0,
-) -> tuple[Metadata | None, float, list[TitleSearchTiming]]:
-    """Query all configured resolvers in parallel; return the (meta, score)
-    pair with the highest sanity-adjusted score across all of them."""
-    search_cands = [
-        c for c in candidates
-        if c.title
-        and not _is_too_generic_to_search(c)
-        and not is_journal_header_title(c.title)
-        and not is_garbage_title(c.title)
-        and not is_journal_abbrev_title(c.title)
-    ]
-    search_cands.sort(key=lambda c: c.priority)
-    search_cands = search_cands[:max_cands]
-    if not search_cands:
-        return None, -1.0, [
-            TitleSearchTiming(source="crossref", skipped=True, skip_reason="no search candidates"),
-            TitleSearchTiming(source="openalex", skipped=True, skip_reason="no search candidates"),
-            TitleSearchTiming(source="openlibrary", skipped=True, skip_reason="no search candidates"),
-            TitleSearchTiming(source="semanticscholar", skipped=True, skip_reason="no search candidates"),
-            TitleSearchTiming(source="google_books", skipped=True, skip_reason="no search candidates"),
-        ]
-
-    # Wave 1: fast sources run in parallel.  OpenLibrary search can be very
-    # slow (30-90 s/request when their CDN is under load), so it is deferred
-    # to wave 2 and only run if wave 1 failed to find a strong match.
-    wave1_jobs: list[tuple[str, _Resolver]] = [
-        ("crossref",    crossref_search),
-        ("openalex",    openalex_search),
-    ]
-    if google_key:
-        wave1_jobs.append(("google_books",
-                           lambda http, c: google_books_search(http, c, google_key)))
-
-    best: Metadata | None = None
-    best_score: float = -1.0
-    timings: list[TitleSearchTiming] = []
-    search_started = perf_counter()
-    stop_event = threading.Event()
-
-    if not use_ss:
-        timings.append(TitleSearchTiming(
-            source="semanticscholar",
-            candidates_available=len(search_cands),
-            skipped=True,
-            skip_reason="disabled",
-        ))
-    if not google_key:
-        timings.append(TitleSearchTiming(
-            source="google_books",
-            candidates_available=len(search_cands),
-            skipped=True,
-            skip_reason="no api key",
-        ))
-
-    def is_strong(meta: Metadata | None) -> bool:
-        return bool(meta and meta.verified and meta.sanity_passed and meta.confidence == "high")
-
-    def budget_exhausted() -> bool:
-        return timeout_s > 0 and perf_counter() - search_started >= timeout_s
-
-    def run_wave(jobs: list[tuple[str, _Resolver]]) -> None:
-        nonlocal best, best_score
-        if not jobs:
-            return
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(jobs)) as ex:
-            futures = [
-                ex.submit(
-                    _search_one_source,
-                    name,
-                    fn,
-                    search_cands,
-                    extractor,
-                    text,
-                    filename,
-                    stop_event,
-                    search_started,
-                    timeout_s,
-                )
-                for name, fn in jobs
-            ]
-            for fut in concurrent.futures.as_completed(futures):
-                try:
-                    meta, score, _name, source_timing = fut.result()
-                    timings.append(source_timing)
-                except Exception as exc:
-                    timings.append(TitleSearchTiming(
-                        source="unknown",
-                        candidates_available=len(search_cands),
-                        errors=1,
-                        error_messages=[f"{type(exc).__name__}: {exc}"],
-                    ))
-                    continue
-                if meta and score > best_score:
-                    best_score = score
-                    best = meta
-                if is_strong(meta):
-                    stop_event.set()
-
-    run_wave(wave1_jobs)
-
-    # Wave 2: OpenLibrary — only if wave 1 didn't already find a strong match
-    # and the time budget hasn't expired.
-    if is_strong(best) or budget_exhausted():
-        timings.append(TitleSearchTiming(
-            source="openlibrary",
-            candidates_available=len(search_cands),
-            skipped=True,
-            skip_reason=(
-                "cheaper resolver found high-confidence sanity-passing match"
-                if is_strong(best) else "title search timeout"
-            ),
-        ))
-    else:
-        run_wave([("openlibrary", openlibrary_search)])
-
-    if use_ss:
-        if is_strong(best):
-            timings.append(TitleSearchTiming(
-                source="semanticscholar",
-                candidates_available=len(search_cands),
-                skipped=True,
-                skip_reason="cheaper resolver found high-confidence sanity-passing match",
-            ))
-        elif budget_exhausted():
-            timings.append(TitleSearchTiming(
-                source="semanticscholar",
-                candidates_available=len(search_cands),
-                skipped=True,
-                skip_reason="title search timeout",
-            ))
-        else:
-            run_wave([(
-                "semanticscholar",
-                lambda http, c: semanticscholar_search(http, c, semantic_scholar_key),
-            )])
-
-    return best, best_score, timings
-
-
-def _collect_identifier_pool(path, text: str, ident_text: str, candidates: list[Candidate]) -> tuple[list[str], list[str], list[str], list[str]]:
-    """Collect DOI/ISBN/arXiv identifiers from raw text, filename, and candidates."""
-    dois, isbns, arxivs, stable_ids = extract_identifiers(path.name, text, ident_text)
-    for c in candidates:
-        for val, bucket in ((c.doi, dois), (c.isbn, isbns), (c.arxiv, arxivs)):
-            if val and val not in bucket:
-                bucket.append(val)
-    jstor_doi = jstor_filename_doi(path.stem)
-    if jstor_doi and jstor_doi not in dois:
-        dois.insert(0, jstor_doi)
-    for extra_doi in numeric_filename_dois(path.stem):
-        if extra_doi not in dois:
-            dois.append(extra_doi)
-    return dois, isbns, arxivs, stable_ids
-
-
-def _update_identifier_debug(debug: dict[str, str], dois: list[str], isbns: list[str], arxivs: list[str]) -> None:
-    debug["identifier_dois"] = "; ".join(dois)
-    debug["identifier_isbns"] = "; ".join(isbns)
-    debug["identifier_arxivs"] = "; ".join(arxivs)
 
 
 def _candidates_json(candidates: list[Candidate]) -> str:
@@ -835,158 +506,6 @@ def _extend_unique_candidates(candidates: list[Candidate], additions: list[Candi
             continue
         candidates.append(cand)
         seen.add(key)
-
-
-def _run_identifier_lookups(
-    extractor: Extractor,
-    path,
-    sanity_text: str,
-    dois: list[str],
-    isbns: list[str],
-    arxivs: list[str],
-    timing: TimingBreakdown,
-    tried: set[tuple[str, str]],
-) -> tuple[Metadata | None, float, str, bool]:
-    """Run authoritative identifier lookups, skipping values already tried."""
-    best_ident: Metadata | None = None
-    best_ident_score: float = -1.0
-    best_ident_note = ""
-    matched_any = False
-    t_ident = perf_counter()
-
-    for doi in dois:
-        key = ("doi", doi)
-        if key in tried:
-            continue
-        tried.add(key)
-        lookup_started = perf_counter()
-        error = ""
-        try:
-            meta = crossref_by_doi(extractor.http, doi)
-        except Exception as exc:
-            meta = None
-            error = str(exc)
-        elapsed = perf_counter() - lookup_started
-
-        item = IdentifierLookupTiming(
-            kind="doi",
-            value=doi,
-            resolver="crossref_by_doi",
-            elapsed_s=elapsed,
-            matched=meta is not None,
-            source=(meta.source if meta else ""),
-            error=error,
-        )
-        if meta:
-            matched_any = True
-            _apply_sanity(meta, sanity_text, path.name)
-            item.sanity_score = meta.sanity_score
-            if meta.sanity_score > best_ident_score:
-                best_ident = meta
-                best_ident_score = meta.sanity_score
-                best_ident_note = "resolved by DOI via Crossref"
-        timing.identifier_lookups.append(item)
-        if best_ident is not None and best_ident.sanity_passed:
-            timing.identifier_lookups_s += perf_counter() - t_ident
-            return best_ident, best_ident_score, best_ident_note, matched_any
-
-    if best_ident is None or not best_ident.sanity_passed:
-        for isbn in isbns:
-            key = ("isbn", isbn)
-            if key in tried:
-                continue
-            tried.add(key)
-            lookup_started = perf_counter()
-            error = ""
-            try:
-                meta = openlibrary_by_isbn(extractor.http, isbn)
-            except Exception as exc:
-                meta = None
-                error = str(exc)
-            elapsed = perf_counter() - lookup_started
-
-            item = IdentifierLookupTiming(
-                kind="isbn",
-                value=isbn,
-                resolver="openlibrary_by_isbn",
-                elapsed_s=elapsed,
-                matched=meta is not None,
-                source=(meta.source if meta else ""),
-                error=error,
-            )
-            if meta:
-                matched_any = True
-                _apply_sanity(meta, sanity_text, path.name)
-                item.sanity_score = meta.sanity_score
-                if meta.sanity_score > best_ident_score:
-                    best_ident = meta
-                    best_ident_score = meta.sanity_score
-                    best_ident_note = "resolved by ISBN via OpenLibrary"
-            timing.identifier_lookups.append(item)
-            if best_ident is not None and best_ident.sanity_passed:
-                timing.identifier_lookups_s += perf_counter() - t_ident
-                return best_ident, best_ident_score, best_ident_note, matched_any
-
-    if best_ident is None or not best_ident.sanity_passed:
-        for arx in arxivs:
-            key = ("arxiv", arx)
-            if key in tried:
-                continue
-            tried.add(key)
-            lookup_started = perf_counter()
-            error = ""
-            try:
-                meta = arxiv_by_id(extractor.http, arx)
-            except Exception as exc:
-                meta = None
-                error = str(exc)
-            elapsed = perf_counter() - lookup_started
-
-            item = IdentifierLookupTiming(
-                kind="arxiv",
-                value=arx,
-                resolver="arxiv_by_id",
-                elapsed_s=elapsed,
-                matched=meta is not None,
-                source=(meta.source if meta else ""),
-                error=error,
-            )
-            if meta:
-                matched_any = True
-                _apply_sanity(meta, sanity_text, path.name)
-                item.sanity_score = meta.sanity_score
-                if meta.sanity_score > best_ident_score:
-                    best_ident = meta
-                    best_ident_score = meta.sanity_score
-                    best_ident_note = "resolved by arXiv ID"
-            timing.identifier_lookups.append(item)
-            if best_ident is not None and best_ident.sanity_passed:
-                timing.identifier_lookups_s += perf_counter() - t_ident
-                return best_ident, best_ident_score, best_ident_note, matched_any
-
-    timing.identifier_lookups_s += perf_counter() - t_ident
-    return best_ident, best_ident_score, best_ident_note, matched_any
-
-
-def _finalize_identifier_match(
-    meta: Metadata,
-    candidates: list[Candidate],
-    note: str,
-    needs_ocr_flag: bool,
-    debug: dict[str, str],
-) -> Metadata:
-    meta.merge_missing(_local_fallback(candidates))
-    if note:
-        meta.notes.append(note)
-    meta.notes.append(f"sanity_score={meta.sanity_score:.3f} (passed)")
-    meta.needs_ocr = needs_ocr_flag
-    meta.auto_safe = (
-        meta.verified
-        and meta.sanity_passed
-        and meta.confidence == "high"
-    )
-    debug["final_source"] = meta.source
-    return meta
 
 
 # ---------------------------------------------------------------------------
@@ -1084,10 +603,10 @@ class ResolutionRun:
 
     def refresh_identifier_pool(self) -> None:
         _extend_unique_candidates(self.candidates, _synthesize(self.candidates))
-        self.dois, self.isbns, self.arxivs, self.stable_ids = _collect_identifier_pool(
+        self.dois, self.isbns, self.arxivs, self.stable_ids = collect_identifier_pool(
             self.path, self.text, self.ident_text, self.candidates
         )
-        _update_identifier_debug(self.debug, self.dois, self.isbns, self.arxivs)
+        update_identifier_debug(self.debug, self.dois, self.isbns, self.arxivs)
 
     def collect_initial_identifier_pool(self) -> None:
         t0 = perf_counter()
@@ -1097,8 +616,8 @@ class ResolutionRun:
         self.refresh_identifier_pool()
 
     def try_identifier_resolution(self) -> None:
-        ident, score, note, matched_any = _run_identifier_lookups(
-            self.extractor,
+        ident, score, note, matched_any = run_identifier_lookups(
+            self.extractor.http,
             self.path,
             self.sanity_text,
             self.dois,
@@ -1106,6 +625,7 @@ class ResolutionRun:
             self.arxivs,
             self.timing,
             self.tried_identifiers,
+            _apply_sanity,
         )
         self.any_identifier_matched = self.any_identifier_matched or matched_any
         if ident is not None and score > self.best_ident_score:
@@ -1118,9 +638,9 @@ class ResolutionRun:
 
     def finalize_identifier_match(self) -> Metadata:
         assert self.best_ident is not None
-        return _finalize_identifier_match(
+        return finalize_identifier_match(
             self.best_ident,
-            self.candidates,
+            _local_fallback(self.candidates),
             self.best_ident_note,
             self.needs_ocr_flag,
             self.debug,
@@ -1202,13 +722,14 @@ class ResolutionRun:
         ss_key = getattr(self.extractor.args, "semantic_scholar_api_key", "")
 
         t0 = perf_counter()
-        best_search, best_search_score, title_search_timings = _parallel_title_search(
-            self.candidates,
-            self.extractor,
-            self.sanity_text,
-            max_cands,
-            google_key,
-            use_ss,
+        best_search, best_search_score, title_search_timings = parallel_title_search(
+            candidates=self.candidates,
+            http=self.extractor.http,
+            text=self.sanity_text,
+            max_cands=max_cands,
+            google_key=google_key,
+            use_ss=use_ss,
+            apply_sanity=_apply_sanity,
             semantic_scholar_key=ss_key,
             filename=self.path.name,
             timeout_s=float(getattr(self.extractor.args, "title_search_timeout", 12.0) or 0.0),
