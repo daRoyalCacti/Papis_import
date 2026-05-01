@@ -23,6 +23,7 @@ from io_utils import (  # noqa: E402
     expand_path,
     is_yes,
     load_json_config,
+    read_debug_jsonl,
     read_tsv_dicts,
 )
 
@@ -294,7 +295,7 @@ def main() -> int:
 
     try:
         review_rows = read_tsv_dicts(review_tsv, required=True)
-        debug_rows = read_tsv_dicts(debug_tsv, required=False) if debug_tsv else []
+        debug_rows = read_debug_jsonl(debug_tsv, required=False) if debug_tsv else []
         prepare_dest(dest, force=args.force)
     except Exception as exc:
         print(f"[error] {exc}", file=sys.stderr)

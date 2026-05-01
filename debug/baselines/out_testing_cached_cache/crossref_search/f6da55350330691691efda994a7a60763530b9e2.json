@@ -4,7 +4,7 @@
   "message-version": "1.0.0",
   "message": {
     "facets": {},
-    "total-results": 4342119,
+    "total-results": 4342839,
     "items": [
       {
         "DOI": "10.2307/2317299",
@@ -41,7 +41,7 @@
           ]
         },
         "publisher": "JSTOR",
-        "score": 23.500624,
+        "score": 23.330217,
         "type": "journal-article"
       },
       {
@@ -57,7 +57,7 @@
           ]
         },
         "publisher": "Springer Berlin Heidelberg",
-        "score": 22.251818,
+        "score": 22.169226,
         "type": "book-chapter"
       },
       {
@@ -74,8 +74,26 @@
           ]
         },
         "publisher": "University of Michigan Press",
-        "score": 21.884712,
+        "score": 21.912872,
         "type": "dataset"
+      },
+      {
+        "DOI": "10.5194/egusphere-2025-5576-rc1",
+        "title": [
+          "Comment on egusphere-2025-5576"
+        ],
+        "issued": {
+          "date-parts": [
+            [
+              2026,
+              3,
+              18
+            ]
+          ]
+        },
+        "publisher": "Copernicus GmbH",
+        "score": 19.295383,
+        "type": "peer-review"
       },
       {
         "DOI": "10.5194/egusphere-2025-5576-rc2",
@@ -92,24 +110,8 @@
           ]
         },
         "publisher": "Copernicus GmbH",
-        "score": 19.226614,
+        "score": 19.252811,
         "type": "peer-review"
-      },
-      {
-        "DOI": "10.1007/978-3-540-76435-9_12756",
-        "title": [
-          "5576 short-stay campground [n] [US]"
-        ],
-        "issued": {
-          "date-parts": [
-            [
-              2010
-            ]
-          ]
-        },
-        "publisher": "Springer Berlin Heidelberg",
-        "score": 18.975931,
-        "type": "book-chapter"
       }
     ],
     "items-per-page": 5,

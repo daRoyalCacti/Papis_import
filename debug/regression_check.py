@@ -25,7 +25,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from io_utils import DEFAULT_CONFIG_PATH, expand_path, load_json_config  # noqa: E402
+from io_utils import DEFAULT_CONFIG_PATH, expand_path, load_json_config, read_debug_jsonl  # noqa: E402
 
 
 DEFAULT_OUT = _PROJECT_ROOT / "out_testing"
@@ -68,11 +68,14 @@ SECRET_FLAGS = {
 }
 
 TSV_FILES = {
-    "auto": "papis_import.tsv",
-    "review": "papis_import_review.tsv",
-    "soft": "papis_import_soft.tsv",
-    "debug": "papis_import_debug.tsv",
+    "auto":    "papis_import.tsv",
+    "review":  "papis_import_review.tsv",
+    "soft":    "papis_import_soft.tsv",
     "profile": "papis_import_profile.tsv",
+}
+
+JSONL_FILES = {
+    "debug": "papis_import_debug.jsonl",
 }
 
 RESULT_STABLE_COLUMNS = [
@@ -89,9 +92,6 @@ RESULT_STABLE_COLUMNS = [
     "Sanity Score",
     "Auto Safe",
     "Needs OCR",
-    "Vision Used",
-    "Vision Trigger",
-    "Vision Status",
     "Soft Auto",
     "Soft Auto Reasons",
 ]
@@ -171,7 +171,6 @@ PROFILE_TIMING_COLUMNS = [
 ]
 
 JSON_CELL_COLUMNS = {
-    "debug": ["Text LLM HTTP JSON", "Vision HTTP JSON", "Candidates JSON", "Title Search Queries JSON"],
     "profile": ["Identifier Lookups JSON", "Title Searches JSON"],
 }
 
@@ -287,8 +286,6 @@ def load_output_snapshot(out_dir: Path) -> dict[str, Any]:
         if key in {"auto", "review", "soft"}:
             snapshot["rows"][key] = rows_by_file(rows, RESULT_STABLE_COLUMNS)
             snapshot["summaries"][key] = classification_summary(rows)
-        elif key == "debug":
-            snapshot["rows"][key] = rows_by_file(rows, DEBUG_STABLE_COLUMNS)
         elif key == "profile":
             snapshot["rows"][key] = rows_by_file(rows, PROFILE_STABLE_COLUMNS)
             snapshot["summaries"][key] = timing_summary(rows)
@@ -299,6 +296,13 @@ def load_output_snapshot(out_dir: Path) -> dict[str, Any]:
                 valid_cells[col] = all(parse_json_cell(row.get(col, "")) for row in rows)
         if valid_cells:
             snapshot["json_cells_valid"][key] = valid_cells
+
+    for key, filename in JSONL_FILES.items():
+        rows = read_debug_jsonl(out_dir / filename, required=True)
+        snapshot["schemas"][key] = "jsonl"
+        snapshot["row_counts"][key] = len(rows)
+        if key == "debug":
+            snapshot["rows"][key] = rows_by_file(rows, DEBUG_STABLE_COLUMNS)
 
     return snapshot
 
@@ -328,7 +332,7 @@ def make_baseline(out_dir: Path, args: argparse.Namespace, *, source: str) -> di
             "--soft-tsv",
             "<out>/papis_import_soft.tsv",
             "--debug-tsv",
-            "<out>/papis_import_debug.tsv",
+            "<out>/papis_import_debug.jsonl",
             "--profile-tsv",
             "<out>/papis_import_profile.tsv",
             "--cache-dir",
@@ -416,15 +420,16 @@ def compare_snapshots(
     base = baseline["snapshot"]
     strict_rows = mode == "cached" or strict_network
 
-    for key in TSV_FILES:
+    all_output_keys = list(TSV_FILES) + list(JSONL_FILES)
+    for key in all_output_keys:
         if current["schemas"].get(key) != base["schemas"].get(key):
-            result.error(f"{key}: TSV header changed")
+            result.error(f"{key}: schema changed")
         if current["row_counts"].get(key) != base["row_counts"].get(key):
             message = (
                 f"{key}: row count changed "
                 f"{base['row_counts'].get(key)} -> {current['row_counts'].get(key)}"
             )
-            if strict_rows or key in {"debug", "profile"}:
+            if strict_rows or key in {"profile"} or key in JSONL_FILES:
                 result.error(message)
             else:
                 result.warn(message)
@@ -441,13 +446,13 @@ def compare_snapshots(
         added = sorted(set(current_rows) - set(base_rows))
         if missing:
             message = f"{key}: missing files: {', '.join(missing)}"
-            if strict_rows or key in {"debug", "profile"}:
+            if strict_rows or key in {"profile"} or key in JSONL_FILES:
                 result.error(message)
             else:
                 result.warn(message)
         if added:
             message = f"{key}: added files: {', '.join(added)}"
-            if strict_rows or key in {"debug", "profile"}:
+            if strict_rows or key in {"profile"} or key in JSONL_FILES:
                 result.error(message)
             else:
                 result.warn(message)
@@ -512,7 +517,9 @@ def compare_cache_counts(base: dict[str, Any], current: dict[str, Any], *, mode:
 
 
 def output_paths(out_dir: Path) -> dict[str, Path]:
-    return {key: out_dir / filename for key, filename in TSV_FILES.items()}
+    paths = {key: out_dir / filename for key, filename in TSV_FILES.items()}
+    paths.update({key: out_dir / filename for key, filename in JSONL_FILES.items()})
+    return paths
 
 
 def config_defaults(args: argparse.Namespace, *, mode: str) -> list[str]:
