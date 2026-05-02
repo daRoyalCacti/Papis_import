@@ -4,6 +4,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import traceback
+from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 
@@ -117,6 +118,188 @@ def _apply_ocr_result(
     return meta, 0
 
 
+# ---------------------------------------------------------------------------
+# Writers bundle
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Writers:
+    result: ResultWriter
+    profile: ProfileWriter | None
+    debug: DebugWriter | None
+
+    @classmethod
+    def from_paths(cls, paths: OutputPaths) -> "Writers":
+        return cls(
+            result=ResultWriter(paths.auto, paths.review, paths.soft),
+            profile=ProfileWriter(paths.profile) if paths.profile else None,
+            debug=DebugWriter(paths.debug) if paths.debug else None,
+        )
+
+    def init_all(self) -> None:
+        self.result.init()
+        if self.profile:
+            self.profile.init()
+        if self.debug:
+            self.debug.init()
+
+
+def _append_record(writers: Writers, rec: Record, *, profile_status: str = "") -> None:
+    writers.result.append(rec)
+    if writers.debug:
+        writers.debug.append(rec)
+    if writers.profile:
+        if profile_status:
+            writers.profile.append(rec, status=profile_status)
+        else:
+            writers.profile.append(rec)
+
+
+# ---------------------------------------------------------------------------
+# Per-file pipeline loop
+# ---------------------------------------------------------------------------
+
+def run_pipeline_loop(
+    files: list[Path],
+    staging_dir: Path,
+    extractors: ExtractorSet,
+    args,
+    http: HttpClient,
+    prev_verified: dict[str, Record],
+    writers: Writers,
+) -> tuple[list[Record], int, int]:
+    """Process each PDF and return (records, ocr_attempted, ocr_recovered)."""
+    records: list[Record] = []
+    ocr_attempted = ocr_recovered = 0
+    total = len(files)
+
+    for idx, path in enumerate(files, start=1):
+        if str(path) in prev_verified:
+            rec = prev_verified[str(path)]
+            records.append(rec)
+            _append_record(writers, rec, profile_status="skipped: retry-unverified")
+            continue
+
+        file_started = perf_counter()
+        if args.verbose:
+            print(f"[{idx}/{total}] {path.name}")
+        elif idx % 25 == 0:
+            print(f"  … {idx}/{total}")
+
+        tags = build_tags(staging_dir, path)
+        try:
+            meta, _candidates, _text, debug, timing = resolve(path, extractors, args, http)
+
+            if args.ocr and meta.needs_ocr and not meta.verified and command_exists("ocrmypdf"):
+                ocr_attempted += 1
+                meta, recovered = _apply_ocr_result(
+                    meta, path, extractors, args, http, timing, args.verbose
+                )
+                ocr_recovered += recovered
+
+            cmd      = build_papis_command(path, tags, meta, args.link)
+            imported = False
+            err      = ""
+            importable = meta.auto_safe or meta.soft_auto
+            if args.do_import and importable and should_import(meta.confidence, args.min_confidence):
+                if not command_exists("papis"):
+                    err = "papis executable not found"
+                else:
+                    cp       = subprocess.run(cmd, capture_output=True, text=True, check=False)
+                    imported = cp.returncode == 0
+                    if not imported:
+                        err = clean_text(cp.stderr or cp.stdout)
+            elif args.do_import:
+                if not importable:
+                    err = "skipped: not auto-safe; manual review required"
+                else:
+                    err = f"skipped: confidence {meta.confidence} below threshold {args.min_confidence}"
+
+            rec = Record(
+                path=path, tags=tags, result=meta,
+                suggested_command=" ".join(quote_shell(x) for x in cmd),
+                imported=imported, error=err, debug=debug, timing=timing,
+            )
+            rec.timing.file_wall_s = perf_counter() - file_started
+            records.append(rec)
+            _append_record(writers, rec)
+
+        except KeyboardInterrupt:
+            raise
+        except Exception as exc:
+            timing = TimingBreakdown(file_wall_s=perf_counter() - file_started)
+            if args.verbose:
+                traceback.print_exc()
+            eprint(f"[error] {path.name}: {exc}")
+            rec = Record(
+                path=path, tags=tags,
+                result=Metadata(source="error", confidence="low",
+                                notes=["exception during processing"]),
+                suggested_command="",
+                imported=False,
+                error=clean_text(str(exc)),
+                debug={"final_source": "error", "vision_used": "no",
+                       "vision_status": "exception",
+                       "vision_error": clean_text(str(exc))},
+                timing=timing,
+            )
+            records.append(rec)
+            _append_record(writers, rec, profile_status="error")
+
+    return records, ocr_attempted, ocr_recovered
+
+
+# ---------------------------------------------------------------------------
+# Summary printer
+# ---------------------------------------------------------------------------
+
+def print_summary(
+    records: list[Record],
+    paths: OutputPaths,
+    cache_dir: str,
+    *,
+    ocr_attempted: int,
+    ocr_recovered: int,
+    do_import: bool,
+) -> None:
+    total        = len(records)
+    auto_count   = sum(1 for r in records if r.result.auto_safe)
+    soft_count   = sum(1 for r in records if r.result.soft_auto and not r.result.auto_safe)
+    review_count = total - auto_count - soft_count
+    high         = sum(1 for r in records if r.result.confidence == "high")
+    med          = sum(1 for r in records if r.result.confidence == "medium")
+    low          = sum(1 for r in records if r.result.confidence == "low")
+    ver          = sum(1 for r in records if r.result.verified)
+    sanity_pass  = sum(1 for r in records if r.result.sanity_passed)
+    ocr_flagged  = sum(1 for r in records if r.result.needs_ocr)
+    imp          = sum(1 for r in records if r.imported)
+
+    print("-" * 60)
+    print(f"Done. {total} PDFs scanned.")
+    print(f"Confidence   : high={high}  medium={med}  low={low}")
+    print(f"Verified     : {ver}/{total}")
+    print(f"Sanity passed: {sanity_pass}/{total}")
+    if ocr_attempted or ocr_flagged:
+        print(f"OCR          : flagged={ocr_flagged}  retried={ocr_attempted}  recovered={ocr_recovered}")
+    print(f"Auto-safe    : {auto_count}/{total}  (→ {paths.auto.name})")
+    print(f"Soft auto    : {soft_count}/{total}  (also written to {paths.auto.name}; spot-check via {paths.soft.name})")
+    print(f"Needs review : {review_count}/{total}  (→ {paths.review.name})")
+    if do_import:
+        print(f"Imported     : {imp}/{total}")
+    print(f"TSV (auto)   : {paths.auto}")
+    print(f"TSV (soft)   : {paths.soft}")
+    print(f"TSV (review) : {paths.review}")
+    if paths.debug:
+        print(f"Debug JSONL  : {paths.debug}")
+    if paths.profile:
+        print(f"TSV (profile): {paths.profile}")
+    print(f"Cache        : {Path(cache_dir).resolve()}")
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
 def main() -> int:
     args = parse_args()
 
@@ -135,15 +318,9 @@ def main() -> int:
     except ValueError as exc:
         eprint(f"[error] {exc}")
         return 2
-    result_writer  = ResultWriter(paths.auto, paths.review, paths.soft)
-    profile_writer = ProfileWriter(paths.profile) if paths.profile else None
-    debug_writer   = DebugWriter(paths.debug)     if paths.debug   else None
 
-    result_writer.init()
-    if profile_writer:
-        profile_writer.init()
-    if debug_writer:
-        debug_writer.init()
+    writers = Writers.from_paths(paths)
+    writers.init_all()
 
     files = collect_pdfs(staging_dir)
     if args.offset:
@@ -172,8 +349,6 @@ def main() -> int:
         print(f"Cleared {removed} stale error entries from cache.")
     http = HttpClient(cache=cache, mailto=args.mailto, verbose=args.verbose)
 
-    records: list[Record] = []
-    ocr_attempted = ocr_recovered = 0
     total = len(files)
     print(f"Scanning {total} PDF(s) in {staging_dir}")
 
@@ -184,124 +359,14 @@ def main() -> int:
             elif grobid_session.url == getattr(args, "grobid_url", ""):
                 print(f"GROBID    : using {grobid_session.url}")
         extractors = ExtractorSet.build(args, http)
+        records, ocr_attempted, ocr_recovered = run_pipeline_loop(
+            files, staging_dir, extractors, args, http, prev_verified, writers
+        )
 
-        for idx, path in enumerate(files, start=1):
-            if str(path) in prev_verified:
-                rec = prev_verified[str(path)]
-                records.append(rec)
-                result_writer.append(rec)
-                if debug_writer:
-                    debug_writer.append(rec)
-                if profile_writer:
-                    profile_writer.append(rec, status="skipped: retry-unverified")
-                continue
-
-            file_started = perf_counter()
-            if args.verbose:
-                print(f"[{idx}/{total}] {path.name}")
-            elif idx % 25 == 0:
-                print(f"  … {idx}/{total}")
-
-            tags = build_tags(staging_dir, path)
-            try:
-                meta, _candidates, _text, debug, timing = resolve(path, extractors, args, http)
-
-                if (args.ocr
-                        and meta.needs_ocr
-                        and not meta.verified
-                        and command_exists("ocrmypdf")):
-                    ocr_attempted += 1
-                    meta, recovered = _apply_ocr_result(
-                        meta, path, extractors, args, http, timing, args.verbose
-                    )
-                    ocr_recovered += recovered
-
-                cmd      = build_papis_command(path, tags, meta, args.link)
-                imported = False
-                err      = ""
-                importable = meta.auto_safe or meta.soft_auto
-                if args.do_import and importable and should_import(meta.confidence, args.min_confidence):
-                    if not command_exists("papis"):
-                        err = "papis executable not found"
-                    else:
-                        cp       = subprocess.run(cmd, capture_output=True, text=True, check=False)
-                        imported = cp.returncode == 0
-                        if not imported:
-                            err = clean_text(cp.stderr or cp.stdout)
-                elif args.do_import:
-                    if not importable:
-                        err = "skipped: not auto-safe; manual review required"
-                    else:
-                        err = f"skipped: confidence {meta.confidence} below threshold {args.min_confidence}"
-
-                rec = Record(
-                    path=path, tags=tags, result=meta,
-                    suggested_command=" ".join(quote_shell(x) for x in cmd),
-                    imported=imported, error=err, debug=debug, timing=timing,
-                )
-                rec.timing.file_wall_s = perf_counter() - file_started
-                records.append(rec)
-                result_writer.append(rec)
-                if debug_writer:
-                    debug_writer.append(rec)
-                if profile_writer:
-                    profile_writer.append(rec)
-
-            except KeyboardInterrupt:
-                raise
-            except Exception as exc:
-                timing = TimingBreakdown(file_wall_s=perf_counter() - file_started)
-                if args.verbose:
-                    traceback.print_exc()
-                eprint(f"[error] {path.name}: {exc}")
-                rec = Record(
-                    path=path, tags=tags,
-                    result=Metadata(source="error", confidence="low",
-                                    notes=["exception during processing"]),
-                    suggested_command="",
-                    imported=False,
-                    error=clean_text(str(exc)),
-                    debug={"final_source": "error", "vision_used": "no",
-                           "vision_status": "exception",
-                           "vision_error": clean_text(str(exc))},
-                    timing=timing,
-                )
-                records.append(rec)
-                result_writer.append(rec)
-                if debug_writer:
-                    debug_writer.append(rec)
-                if profile_writer:
-                    profile_writer.append(rec, status="error")
-
-    auto_count   = sum(1 for r in records if r.result.auto_safe)
-    soft_count   = sum(1 for r in records if r.result.soft_auto and not r.result.auto_safe)
-    review_count = len(records) - auto_count - soft_count
-    high         = sum(1 for r in records if r.result.confidence == "high")
-    med          = sum(1 for r in records if r.result.confidence == "medium")
-    low          = sum(1 for r in records if r.result.confidence == "low")
-    ver          = sum(1 for r in records if r.result.verified)
-    sanity_pass  = sum(1 for r in records if r.result.sanity_passed)
-    ocr_flagged  = sum(1 for r in records if r.result.needs_ocr)
-    imp          = sum(1 for r in records if r.imported)
-
-    print("-" * 60)
-    print(f"Done. {total} PDFs scanned.")
-    print(f"Confidence   : high={high}  medium={med}  low={low}")
-    print(f"Verified     : {ver}/{total}")
-    print(f"Sanity passed: {sanity_pass}/{total}")
-    if ocr_attempted or ocr_flagged:
-        print(f"OCR          : flagged={ocr_flagged}  retried={ocr_attempted}  recovered={ocr_recovered}")
-    print(f"Auto-safe    : {auto_count}/{total}  (→ {paths.auto.name})")
-    print(f"Soft auto    : {soft_count}/{total}  (also written to {paths.auto.name}; spot-check via {paths.soft.name})")
-    print(f"Needs review : {review_count}/{total}  (→ {paths.review.name})")
-    if args.do_import:
-        print(f"Imported     : {imp}/{total}")
-    print(f"TSV (auto)   : {paths.auto}")
-    print(f"TSV (soft)   : {paths.soft}")
-    print(f"TSV (review) : {paths.review}")
-    if paths.debug:
-        print(f"Debug JSONL  : {paths.debug}")
-    if paths.profile:
-        print(f"TSV (profile): {paths.profile}")
-    print(f"Cache        : {Path(args.cache_dir).resolve()}")
+    print_summary(
+        records, paths, args.cache_dir,
+        ocr_attempted=ocr_attempted,
+        ocr_recovered=ocr_recovered,
+        do_import=args.do_import,
+    )
     return 0
