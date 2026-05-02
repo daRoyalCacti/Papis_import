@@ -10,7 +10,8 @@ from time import perf_counter
 from papis_import.cli_args import OutputPaths, parse_args, resolve_output_paths
 from papis_import.extractor_parts import ExtractorSet
 from papis_import.grobid_service import local_grobid_session
-from papis_import.http_client import Cache, HttpClient
+from papis_import.http.cache import Cache
+from papis_import.http_client import HttpClient
 from papis_import.models import Metadata, Record, TimingBreakdown
 from papis_import.ocr_retry import run_ocr_retry
 from papis_import.output.readers import load_previous_tsv

@@ -27,9 +27,9 @@ from io_utils import (  # noqa: E402
     expand_path,
     is_yes,
     load_json_config,
-    read_debug_jsonl,
     read_tsv_dicts,
 )
+from _debug_flatten import read_debug_jsonl  # noqa: E402
 
 
 DEFAULT_DEST = PROJECT_ROOT / "out" / "soft_accept_bundle"

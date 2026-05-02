@@ -25,7 +25,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from io_utils import DEFAULT_CONFIG_PATH, expand_path, load_json_config, read_debug_jsonl  # noqa: E402
+from io_utils import DEFAULT_CONFIG_PATH, expand_path, load_json_config  # noqa: E402
+from _debug_flatten import read_debug_jsonl  # noqa: E402
 
 
 DEFAULT_OUT = _PROJECT_ROOT / "out_testing"
