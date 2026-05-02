@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import json
 import threading
 from time import perf_counter
 from typing import Callable
@@ -299,3 +300,13 @@ def parallel_title_search(
             )])
 
     return best, best_score, timings
+
+
+def build_queries_json(timings: list[TitleSearchTiming]) -> str:
+    """Serialize per-source query traces to a compact JSON string for the debug JSONL."""
+    return json.dumps(
+        [query for timing in timings for query in timing.query_traces],
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    )

@@ -71,6 +71,28 @@ class ResolutionFinalizer:
         debug["final_source"] = winner.source
         return winner
 
+    def finalize_identifier_winner(
+        self,
+        meta: Metadata,
+        candidates: list[Candidate],
+        note: str,
+        needs_ocr_flag: bool,
+        debug: dict[str, str],
+    ) -> Metadata:
+        meta.merge_missing(self.selector.local_fallback(candidates))
+        if note:
+            meta.notes.append(note)
+        meta.notes.append(f"sanity_score={meta.sanity_score:.3f} (passed)")
+        meta.needs_ocr = needs_ocr_flag
+        meta.auto_safe = (
+            meta.verified
+            and meta.sanity_passed
+            and meta.confidence == "high"
+        )
+        meta.soft_auto, meta.soft_auto_reasons = _evaluate_soft_auto(meta, candidates)
+        debug["final_source"] = meta.source
+        return meta
+
     def local_fallback(
         self,
         *,

@@ -38,55 +38,60 @@ This version:
 """
 from __future__ import annotations
 
+import argparse
 import dataclasses
-import json
 from pathlib import Path
-
-from papis_import.extractors import Extractor
 from time import perf_counter
+
+from papis_import.extractor_parts import ExtractorSet
+from papis_import.http_client import HttpClient
 from papis_import.models import (
     Candidate,
     Metadata,
     TimingBreakdown,
 )
-from papis_import.pipeline_parts.candidates import CandidateSelector, extend_unique_candidates
+from papis_import.pipeline_parts.candidates import CandidateSelector
+from papis_import.pipeline_parts.debug import PipelineDebug
 from papis_import.pipeline_parts.finalization import ResolutionFinalizer
-from papis_import.pipeline_parts.identifiers import (
-    collect_identifier_pool,
-    finalize_identifier_match,
-    run_identifier_lookups,
-    update_identifier_debug,
-)
-from papis_import.pipeline_parts.sanity import apply_sanity
-from papis_import.pipeline_parts.title_search import parallel_title_search
-from papis_import.pipeline_parts.vision_gate import has_strong_searchable_candidate
-from papis_import.utils import (
-    is_book_signal,
-    is_unreadable_text,
-)
+from papis_import.pipeline_parts.phases import CandidatePhase, IdentifierPhase, VisionPhase
 
-
-# ---------------------------------------------------------------------------
-# Main resolution function
-# ---------------------------------------------------------------------------
 
 @dataclasses.dataclass
 class ResolutionRun:
+    """Shared state container for one PDF resolution run.
+
+    Phase classes (CandidatePhase, IdentifierPhase, VisionPhase) receive a
+    reference to this object and read/write its fields directly.  The only
+    method is ``finish()``, which seals timing and returns the pipeline result.
+    """
+
     path: Path
-    extractor: Extractor
+    extractors: ExtractorSet
+    args: argparse.Namespace
+    http: HttpClient
     skip_vision: bool = False
+
+    # Coordinators (init=False, set in __post_init__)
     selector: CandidateSelector = dataclasses.field(default_factory=CandidateSelector)
     finalizer: ResolutionFinalizer = dataclasses.field(init=False)
+    debug: PipelineDebug = dataclasses.field(init=False)
 
+    # Timing
     timing: TimingBreakdown = dataclasses.field(default_factory=TimingBreakdown)
     resolve_started: float = dataclasses.field(default_factory=perf_counter)
+
+    # CandidatePhase state
     text: str = ""
     sanity_text: str = ""
     filename_cands: list[Candidate] = dataclasses.field(default_factory=list)
     filename_best: Candidate | None = None
     needs_ocr_flag: bool = False
-    debug: dict[str, str] = dataclasses.field(default_factory=dict)
     candidates: list[Candidate] = dataclasses.field(default_factory=list)
+    is_book: bool = False
+    best_search: Metadata | None = None
+    best_search_score: float = -1.0
+
+    # IdentifierPhase state
     ident_text: str = ""
     dois: list[str] = dataclasses.field(default_factory=list)
     isbns: list[str] = dataclasses.field(default_factory=list)
@@ -97,229 +102,21 @@ class ResolutionRun:
     best_ident_score: float = -1.0
     best_ident_note: str = ""
     any_identifier_matched: bool = False
-    is_book: bool = False
-    best_search: Metadata | None = None
-    best_search_score: float = -1.0
 
     def __post_init__(self) -> None:
         self.finalizer = ResolutionFinalizer(self.selector)
-
-    def extract_initial_text(self) -> None:
-        t0 = perf_counter()
-        self.text = self.extractor.get_text(self.path)
-        self.sanity_text = self.extractor.get_sanity_text(self.path)
-        if not self.sanity_text:
-            self.sanity_text = self.text
-        self.filename_cands = self.extractor.filename_candidate(self.path)
-        self.needs_ocr_flag = is_unreadable_text(self.text)
-        self.timing.text_extract_s += perf_counter() - t0
-
-    def init_debug(self) -> None:
-        self.debug = {
-            "vision_used": "no",
-            "vision_trigger": "",
-            "vision_status": "not_attempted",
-            "vision_error": "",
-            "final_source": "",
-            "grobid_used": "yes" if bool(getattr(self.extractor.args, "grobid_url", "")) else "no",
-            "grobid_title": "",
-            "grobid_authors": "",
-            "grobid_year": "",
-            "vision_model": getattr(self.extractor.args, "vision_llm_model", "") or "",
-            "vision_pages": str(getattr(self.extractor.args, "vision_pages", "") or ""),
-            "vision_dpi": str(getattr(self.extractor.args, "vision_dpi", "") or ""),
-            "vision_title": "",
-            "vision_authors": "",
-            "vision_year": "",
-            "text_llm_used": "no",
-            "text_llm_status": "not_attempted",
-            "text_llm_error": "",
-            "text_llm_model": getattr(self.extractor.args, "llm_model", "") or "",
-            "text_llm_http_json": "",
-            "text_llm_title": "",
-            "text_llm_authors": "",
-            "text_llm_year": "",
-            "local_best_source": "",
-            "candidate_sources": "",
-            "identifier_dois": "",
-            "identifier_isbns": "",
-            "identifier_arxivs": "",
-            "candidates_json": "",
-            "title_search_queries_json": "",
-        }
-
-    def collect_cheap_local_candidates(self) -> None:
-        t0 = perf_counter()
-        self.candidates.extend(self.extractor.embedded_metadata(self.path))
-        self.candidates.extend(self.extractor.pdfinfo_metadata(self.path))
-        self.timing.embedded_metadata_s = perf_counter() - t0
-
-        self.candidates.extend(self.filename_cands)
-
-        t0 = perf_counter()
-        self.filename_best = self.selector.choose_best_local(self.filename_cands)
-        self.timing.best_local_s = perf_counter() - t0
-        if self.text:
-            t0 = perf_counter()
-            self.candidates.extend(self.extractor.text_header_candidate(self.text))
-            self.timing.header_candidate_s = perf_counter() - t0
-
-    def refresh_identifier_pool(self) -> None:
-        extend_unique_candidates(self.candidates, self.selector.synthesize(self.candidates))
-        self.dois, self.isbns, self.arxivs, self.stable_ids = collect_identifier_pool(
-            self.path, self.text, self.ident_text, self.candidates
-        )
-        update_identifier_debug(self.debug, self.dois, self.isbns, self.arxivs)
-
-    def collect_initial_identifier_pool(self) -> None:
-        t0 = perf_counter()
-        self.ident_text = self.extractor.get_identifier_text(self.path)
-        self.timing.text_extract_s += perf_counter() - t0
-
-        self.refresh_identifier_pool()
-
-    def try_identifier_resolution(self) -> None:
-        ident, score, note, matched_any = run_identifier_lookups(
-            self.extractor.http,
-            self.path,
-            self.sanity_text,
-            self.dois,
-            self.isbns,
-            self.arxivs,
-            self.timing,
-            self.tried_identifiers,
-            apply_sanity,
-        )
-        self.any_identifier_matched = self.any_identifier_matched or matched_any
-        if ident is not None and score > self.best_ident_score:
-            self.best_ident = ident
-            self.best_ident_score = score
-            self.best_ident_note = note
-
-    def has_passing_identifier_match(self) -> bool:
-        return self.best_ident is not None and self.best_ident.sanity_passed
-
-    def finalize_identifier_match(self) -> Metadata:
-        assert self.best_ident is not None
-        return finalize_identifier_match(
-            self.best_ident,
-            self.selector.local_fallback(self.candidates),
-            self.best_ident_note,
-            self.needs_ocr_flag,
-            self.debug,
-        )
-
-    def collect_deferred_candidates(self) -> None:
-        t0 = perf_counter()
-        grobid_cands = self.extractor.grobid_candidate(self.path)
-        self.candidates.extend(grobid_cands)
-        self.timing.grobid_s = perf_counter() - t0
-
-        if self.text:
-            t0 = perf_counter()
-            llm_cands = self.extractor.llm_candidate(self.path, self.text, self.filename_best)
-            self.candidates.extend(llm_cands)
-            self.timing.text_llm_s = perf_counter() - t0
-            self.debug.update({
-                k: str(v)
-                for k, v in getattr(self.extractor, "last_llm_debug", {}).items()
-                if v is not None
-            })
-
-    def compute_book_signal(self) -> None:
-        self.is_book = is_book_signal(self.path.name, self.text)
-
-    def maybe_collect_vision_candidates(self) -> None:
-        t0 = perf_counter()
-        if not self.skip_vision:
-            should_call_vision = True
-            trigger_reason = "configured"
-            if getattr(self.extractor.args, "vision_only_if_hard", False):
-                has_deep_ident = bool(self.dois or self.isbns or self.arxivs)
-                if has_deep_ident and self.any_identifier_matched:
-                    should_call_vision = False
-                    trigger_reason = "skipped: identifier lookup returned metadata"
-                elif not self.needs_ocr_flag and has_strong_searchable_candidate(self.candidates):
-                    should_call_vision = False
-                    trigger_reason = "skipped: readable text with strong local candidate"
-                elif has_deep_ident:
-                    trigger_reason = "hard-case: identifiers found but lookup failed"
-                else:
-                    trigger_reason = "hard-case: no_identifier"
-            self.debug["vision_trigger"] = trigger_reason
-            if should_call_vision:
-                vision_cands, vision_dbg = self.extractor.vision_llm_candidate(
-                    self.path, self.filename_best, is_book=self.is_book
-                )
-                extend_unique_candidates(self.candidates, vision_cands)
-                self.debug.update({k: str(v) for k, v in vision_dbg.items() if v is not None})
-                self.debug["vision_used"] = (
-                    "yes" if self.debug.get("vision_status") not in {"not_configured", "skipped"} else "no"
-                )
-            else:
-                self.debug["vision_status"] = "skipped"
-        else:
-            self.debug["vision_trigger"] = "skip_vision flag"
-            self.debug["vision_status"] = "skipped"
-        self.timing.vision_llm_s += perf_counter() - t0
-        self.timing.vision_pacing_s = self.extractor.http.take_pacing_s("vision_llm")
-        self.debug["vision_pacing_s"] = f"{self.timing.vision_pacing_s:.6f}"
-        rem = self.extractor.http.remaining_tokens("vision_llm")
-        if rem is not None:
-            self.debug["vision_tokens_remaining"] = str(rem)
-
-    def synthesize_candidates(self) -> None:
-        extend_unique_candidates(self.candidates, self.selector.synthesize(self.candidates))
-
-    def demote_grobid_for_books(self) -> None:
-        if self.is_book:
-            for c in self.candidates:
-                if c.source == "grobid":
-                    c.priority = max(c.priority, 30)
-                    c.notes.append("grobid demoted (is_book)")
-
-    def run_title_search(self) -> None:
-        max_cands = int(getattr(self.extractor.args, "max_search_candidates", 6))
-        google_key = getattr(self.extractor.args, "google_books_api_key", "")
-        use_ss = not getattr(self.extractor.args, "no_semantic_scholar", False)
-        ss_key = getattr(self.extractor.args, "semantic_scholar_api_key", "")
-
-        t0 = perf_counter()
-        best_search, best_search_score, title_search_timings = parallel_title_search(
-            candidates=self.candidates,
-            http=self.extractor.http,
-            text=self.sanity_text,
-            max_cands=max_cands,
-            google_key=google_key,
-            use_ss=use_ss,
-            apply_sanity=apply_sanity,
-            semantic_scholar_key=ss_key,
-            filename=self.path.name,
-            timeout_s=float(getattr(self.extractor.args, "title_search_timeout", 12.0) or 0.0),
-        )
-        self.timing.title_search_s += perf_counter() - t0
-        self.timing.title_searches.extend(title_search_timings)
-        self.debug["title_search_queries_json"] = json.dumps(
-            [
-                query
-                for source_timing in title_search_timings
-                for query in source_timing.query_traces
-            ],
-            ensure_ascii=True,
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-        self.best_search = best_search
-        self.best_search_score = best_search_score
+        self.debug = PipelineDebug(self.args)
 
     def finish(self, meta: Metadata) -> tuple[Metadata, list[Candidate], str, dict[str, str], TimingBreakdown]:
         self.timing.resolve_total_s = perf_counter() - self.resolve_started
-        return meta, self.candidates, self.text, self.debug, self.timing
+        return meta, self.candidates, self.text, dict(self.debug), self.timing
 
 
 def resolve(
     path,
-    extractor: Extractor,
+    extractors: ExtractorSet,
+    args: argparse.Namespace,
+    http: HttpClient,
     *,
     skip_vision: bool = False,
 ) -> tuple[Metadata, list[Candidate], str, dict[str, str], TimingBreakdown]:
@@ -339,69 +136,46 @@ def resolve(
         would just pay for the same inference a second time.
     """
 
-    run = ResolutionRun(path=path, extractor=extractor, skip_vision=skip_vision)
-    run.extract_initial_text()
-    run.init_debug()
-    run.collect_cheap_local_candidates()
-    run.collect_initial_identifier_pool()
+    run = ResolutionRun(path=path, extractors=extractors, args=args, http=http, skip_vision=skip_vision)
+    candidates = CandidatePhase(run)
+    identifiers = IdentifierPhase(run)
+    vision = VisionPhase(run)
 
-    sanity_text = run.sanity_text
-    needs_ocr_flag = run.needs_ocr_flag
-    debug = run.debug
-    candidates = run.candidates
+    candidates.extract_initial_text()
+    candidates.collect_cheap_local_candidates()
+    identifiers.collect_initial_identifier_pool()
 
     # ---- Phase 1: cheap authoritative identifier lookups (DOI / ISBN / arXiv) ----
-    # Each lookup is authoritative, but we still sanity-check the returned
-    # metadata against the PDF text.  If multiple identifiers are present,
-    # we pick the one with the highest sanity score.
-    run.try_identifier_resolution()
-
-    # If an identifier match passed the sanity check, it's the answer.
-    if run.has_passing_identifier_match():
-        run.selector.update_debug(debug, candidates)
-        best_ident = run.finalize_identifier_match()
-        return run.finish(best_ident)
+    if (winner := identifiers.run_phase()) is not None:
+        return run.finish(winner)
 
     # ---- Phase 2: expensive candidate sources, only after identifiers fail ----
-    run.collect_deferred_candidates()
+    candidates.collect_deferred_candidates()
 
-    # GROBID/text LLM may reveal new identifiers. Try them before vision,
-    # since identifier lookup is still cheaper and more authoritative.
-    run.refresh_identifier_pool()
-    run.try_identifier_resolution()
+    # GROBID/text LLM may reveal new identifiers; try before vision.
+    if (winner := identifiers.run_phase()) is not None:
+        return run.finish(winner)
 
-    if run.has_passing_identifier_match():
-        run.selector.update_debug(debug, candidates)
-        best_ident = run.finalize_identifier_match()
-        return run.finish(best_ident)
+    candidates.compute_book_signal()
 
-    run.compute_book_signal()
+    # Vision LLM runs after deep identifier passes so books with ISBNs on
+    # copyright pages can skip the expensive call.
+    vision.collect_candidates()
+    candidates.synthesize_candidates()
 
-    # Vision LLM is still optional, but now it runs after deep identifier
-    # passes so books with ISBNs on copyright pages can avoid the expensive call.
-    run.maybe_collect_vision_candidates()
-    run.synthesize_candidates()
+    # Demote GROBID on books: it's trained on article headers and picks up
+    # editor/affiliation noise on book cover pages.
+    candidates.demote_grobid_for_books()
 
-    # is_book signal: demote GROBID candidates on books. GROBID is trained on
-    # journal-article headers and picks up editor/affiliation noise on books.
-    run.demote_grobid_for_books()
+    # Vision may reveal new identifiers not checked before.
+    if (winner := identifiers.run_phase()) is not None:
+        return run.finish(winner)
 
-    # Vision may reveal new identifiers. Try only identifiers that were not
-    # already checked before falling back to title search.
-    run.refresh_identifier_pool()
-    run.try_identifier_resolution()
-
-    if run.has_passing_identifier_match():
-        run.selector.update_debug(debug, candidates)
-        best_ident = run.finalize_identifier_match()
-        return run.finish(best_ident)
-
-    # Capture raw per-source candidates for debug TSVs after all candidate
-    # sources have run.
-    run.selector.update_debug(debug, candidates)
+    # Capture raw per-source candidates for debug TSVs after all sources ran.
+    run.selector.update_debug(run.debug, run.candidates)
 
     # ---- Phase 3: parallel title-search across all configured resolvers ----
-    run.run_title_search()
+    candidates.run_title_search()
 
     winner = run.finalizer.finalize_winner(
         best_ident=run.best_ident,
@@ -409,20 +183,20 @@ def resolve(
         best_ident_note=run.best_ident_note,
         best_search=run.best_search,
         best_search_score=run.best_search_score,
-        candidates=candidates,
-        sanity_text=sanity_text,
-        needs_ocr_flag=needs_ocr_flag,
-        debug=debug,
+        candidates=run.candidates,
+        sanity_text=run.sanity_text,
+        needs_ocr_flag=run.needs_ocr_flag,
+        debug=run.debug,
     )
     if winner is not None:
         return run.finish(winner)
 
     # ---- Phase 4: no external verification — return local best ----
     fallback = run.finalizer.local_fallback(
-        candidates=candidates,
+        candidates=run.candidates,
         stable_ids=run.stable_ids,
-        needs_ocr_flag=needs_ocr_flag,
-        debug=debug,
+        needs_ocr_flag=run.needs_ocr_flag,
+        debug=run.debug,
     )
 
     return run.finish(fallback)

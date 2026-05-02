@@ -175,24 +175,3 @@ def run_identifier_lookups(
 
     timing.identifier_lookups_s += perf_counter() - t_ident
     return best_ident, best_ident_score, best_ident_note, matched_any
-
-
-def finalize_identifier_match(
-    meta: Metadata,
-    fallback: Metadata,
-    note: str,
-    needs_ocr_flag: bool,
-    debug: dict[str, str],
-) -> Metadata:
-    meta.merge_missing(fallback)
-    if note:
-        meta.notes.append(note)
-    meta.notes.append(f"sanity_score={meta.sanity_score:.3f} (passed)")
-    meta.needs_ocr = needs_ocr_flag
-    meta.auto_safe = (
-        meta.verified
-        and meta.sanity_passed
-        and meta.confidence == "high"
-    )
-    debug["final_source"] = meta.source
-    return meta

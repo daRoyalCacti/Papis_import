@@ -8,7 +8,7 @@ from pathlib import Path
 from time import perf_counter
 
 from papis_import.cli_args import OutputPaths, parse_args, resolve_output_paths
-from papis_import.extractors import Extractor
+from papis_import.extractor_parts import ExtractorSet
 from papis_import.grobid_service import local_grobid_session
 from papis_import.http_client import Cache, HttpClient
 from papis_import.models import Metadata, Record, TimingBreakdown
@@ -65,14 +65,16 @@ def build_papis_command(path: Path, tags: list[str], meta: Metadata, link: bool)
 def _apply_ocr_result(
     meta: Metadata,
     path: Path,
-    extractor: Extractor,
+    extractors: ExtractorSet,
+    args,
+    http,
     timing: TimingBreakdown,
     verbose: bool,
 ) -> tuple[Metadata, int]:
     """Run OCR retry and merge into timing. Returns (accepted_meta, recovered_count)."""
     if verbose:
         print(f"  [ocr] {path.name}: retrying with ocrmypdf…")
-    new_meta, status, ocr_timing = run_ocr_retry(path, extractor, verbose=verbose)
+    new_meta, status, ocr_timing = run_ocr_retry(path, extractors, args, http, verbose=verbose)
     timing.ocrmypdf_s      += ocr_timing.ocrmypdf_s
     timing.ocr_reresolve_s += ocr_timing.ocr_reresolve_s
     timing.ocr_retry_s     += ocr_timing.ocr_retry_s
@@ -180,7 +182,7 @@ def main() -> int:
                 print(f"GROBID    : started local service at {grobid_session.url}")
             elif grobid_session.url == getattr(args, "grobid_url", ""):
                 print(f"GROBID    : using {grobid_session.url}")
-        extractor = Extractor(args, http)
+        extractors = ExtractorSet.build(args, http)
 
         for idx, path in enumerate(files, start=1):
             if str(path) in prev_verified:
@@ -201,7 +203,7 @@ def main() -> int:
 
             tags = build_tags(staging_dir, path)
             try:
-                meta, _candidates, _text, debug, timing = resolve(path, extractor)
+                meta, _candidates, _text, debug, timing = resolve(path, extractors, args, http)
 
                 if (args.ocr
                         and meta.needs_ocr
@@ -209,7 +211,7 @@ def main() -> int:
                         and command_exists("ocrmypdf")):
                     ocr_attempted += 1
                     meta, recovered = _apply_ocr_result(
-                        meta, path, extractor, timing, args.verbose
+                        meta, path, extractors, args, http, timing, args.verbose
                     )
                     ocr_recovered += recovered
 

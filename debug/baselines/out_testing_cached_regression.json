@@ -22,7 +22,7 @@
     "--cache-dir",
     "<out>/cache"
   ],
-  "created_at": "2026-05-01T19:32:33+1000",
+  "created_at": "2026-05-02T13:29:45+1000",
   "snapshot": {
     "cache_counts": {
       "crossref_doi": 5,
@@ -1304,6 +1304,10 @@
         "Imported",
         "Error",
         "Suggested Command",
+        "Vision Used",
+        "Vision Trigger",
+        "Vision Status",
+        "Vision Error",
         "Final Source",
         "Soft Auto",
         "Soft Auto Reasons"
@@ -1388,6 +1392,10 @@
         "Imported",
         "Error",
         "Suggested Command",
+        "Vision Used",
+        "Vision Trigger",
+        "Vision Status",
+        "Vision Error",
         "Final Source",
         "Soft Auto",
         "Soft Auto Reasons"
@@ -1412,6 +1420,10 @@
         "Imported",
         "Error",
         "Suggested Command",
+        "Vision Used",
+        "Vision Trigger",
+        "Vision Status",
+        "Vision Error",
         "Final Source",
         "Soft Auto",
         "Soft Auto Reasons"
@@ -1443,33 +1455,34 @@
           "yes": 13
         },
         "Vision Used": {
-          "": 15
+          "no": 14,
+          "yes": 1
         }
       },
       "profile": {
         "file_count": 18,
-        "file_wall_max_s": 11.350042,
-        "file_wall_median_s": 0.0923445,
-        "file_wall_total_s": 48.807708,
+        "file_wall_max_s": 9.951402,
+        "file_wall_median_s": 0.10883999999999999,
+        "file_wall_total_s": 43.077645,
         "timing_totals_s": {
-          "Best Local s": 0.001038,
-          "Embedded Metadata s": 0.187305,
-          "File Wall s": 48.807708,
-          "GROBID s": 12.044625,
-          "Header Candidate s": 0.006708,
-          "Identifier Lookups s": 0.009314,
+          "Best Local s": 0.000949,
+          "Embedded Metadata s": 0.190274,
+          "File Wall s": 43.077645,
+          "GROBID s": 12.033219,
+          "Header Candidate s": 0.006952,
+          "Identifier Lookups s": 0.009411,
           "OCR Reresolve s": 0.0,
-          "OCR Retry s": 0.810586,
-          "OCRMyPDF s": 0.809864,
-          "Resolve Total s": 47.994625,
-          "Text Extract s": 1.273214,
-          "Text LLM HTTP s": 0.0015350000000000001,
+          "OCR Retry s": 0.810485,
+          "OCRMyPDF s": 0.809588,
+          "Resolve Total s": 42.264376,
+          "Text Extract s": 1.181693,
+          "Text LLM HTTP s": 0.001396,
           "Text LLM Pacing s": 0.0,
           "Text LLM Retry Sleep s": 0.0,
-          "Text LLM s": 0.0037849999999999997,
-          "Title Search s": 34.165807,
-          "Vision HTTP s": 0.000487,
-          "Vision LLM s": 0.237325,
+          "Text LLM s": 0.003619,
+          "Title Search s": 28.473936,
+          "Vision HTTP s": 0.00049,
+          "Vision LLM s": 0.27109500000000003,
           "Vision Pacing s": 0.0,
           "Vision Retry Sleep s": 0.0
         }
@@ -1494,7 +1507,7 @@
           "no": 3
         },
         "Vision Used": {
-          "": 3
+          "yes": 3
         }
       },
       "soft": {
@@ -1515,12 +1528,13 @@
           "no": 2
         },
         "Vision Used": {
-          "": 2
+          "no": 1,
+          "yes": 1
         }
       }
     }
   },
   "source": "cached-run",
-  "source_out_dir": "/tmp/papis_import_regression_cached_q8_8wbzs",
+  "source_out_dir": "/tmp/papis_import_regression_cached_p8yxxtde",
   "staging_dir": "/home/jacob/Scripts/papis_import/pdfs_for_testing"
 }

@@ -6,6 +6,7 @@ RESULT_COLUMNS: list[str] = [
     "Title", "Authors", "Year", "DOI", "ISBN", "arXiv",
     "Sanity Passed", "Sanity Score", "Auto Safe", "Needs OCR",
     "Notes", "Imported", "Error", "Suggested Command",
+    "Vision Used", "Vision Trigger", "Vision Status", "Vision Error",
     "Final Source",
     "Soft Auto", "Soft Auto Reasons",
 ]

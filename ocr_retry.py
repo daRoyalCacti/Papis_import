@@ -1,12 +1,14 @@
 """OCR retry: run ocrmypdf on a temp copy of a PDF and re-resolve."""
 from __future__ import annotations
 
+import argparse
 import subprocess
 import tempfile
 from pathlib import Path
 from time import perf_counter
 
-from papis_import.extractors import Extractor
+from papis_import.extractor_parts import ExtractorSet
+from papis_import.http_client import HttpClient
 from papis_import.models import Metadata, TimingBreakdown
 from papis_import.pipeline import resolve
 from papis_import.utils import command_exists
@@ -14,7 +16,9 @@ from papis_import.utils import command_exists
 
 def run_ocr_retry(
     path: Path,
-    extractor: Extractor,
+    extractors: ExtractorSet,
+    args: argparse.Namespace,
+    http: HttpClient,
     verbose: bool = False,
 ) -> tuple[Metadata | None, str, TimingBreakdown]:
     """Run ocrmypdf on a temp copy of *path* and re-resolve.
@@ -68,7 +72,7 @@ def run_ocr_retry(
             resolve_started = perf_counter()
             try:
                 new_meta, _cands, _text, _debug, resolve_timing = resolve(
-                    ocr_path, extractor, skip_vision=True
+                    ocr_path, extractors, args, http, skip_vision=True
                 )
                 timing.ocr_reresolve_s = perf_counter() - resolve_started
                 timing.identifier_lookups_s = resolve_timing.identifier_lookups_s
