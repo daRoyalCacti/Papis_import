@@ -57,88 +57,13 @@ from papis_import.pipeline_parts.identifiers import (
     run_identifier_lookups,
     update_identifier_debug,
 )
+from papis_import.pipeline_parts.sanity import apply_sanity
 from papis_import.pipeline_parts.title_search import parallel_title_search
+from papis_import.pipeline_parts.vision_gate import has_strong_searchable_candidate
 from papis_import.utils import (
-    MIN_SANITY_SCORE,
-    extract_identifiers,
     is_book_signal,
     is_unreadable_text,
-    normalize_title,
-    sanity_score_for_match,
 )
-
-
-def choose_best_local(candidates: list[Candidate]) -> Candidate | None:
-    """Compatibility wrapper for callers that imported this from pipeline."""
-    return CandidateSelector().choose_best_local(candidates)
-
-
-def _scan_for_any_identifier(filename: str, text: str) -> bool:
-    """Return True if the filename OR the first pages of text contain any
-    DOI / ISBN / arXiv identifier pattern.  Used only by the
-    --vision-only-if-hard gate — a positive hit means the text-based
-    pipeline will (almost certainly) find something authoritative, so we
-    can safely skip the vision LLM call."""
-    try:
-        dois, isbns, arxivs, _ = extract_identifiers(filename, text or "")
-    except Exception:
-        return False
-    return bool(dois or isbns or arxivs)
-
-
-# ---------------------------------------------------------------------------
-# Sanity-check wrapper — attaches a score to every external result
-# ---------------------------------------------------------------------------
-
-def _apply_sanity(meta: Metadata, text: str, filename: str = "") -> Metadata:
-    """Compute the sanity score and set sanity_passed/sanity_score on *meta*.
-
-    Does NOT modify verified/confidence — the caller decides how to react
-    to the score.  Separate method so identifier lookups and title-searches
-    can apply different policies.
-
-    Parameters
-    ----------
-    filename : str, optional
-        Original PDF filename (or full path — only the basename is used).
-        Enables author-surname corroboration via the filename even when
-        the PDF body text is unreadable or only contains the TOC.  Safe
-        to omit; scoring falls back to text-only behaviour.
-    """
-    score = sanity_score_for_match(
-        meta.title, meta.authors, meta.source, text, filename=filename
-    )
-    meta.sanity_score = round(score, 3)
-    meta.sanity_passed = meta.sanity_score >= MIN_SANITY_SCORE
-    return meta
-
-
-def _has_strong_searchable_candidate(candidates: list[Candidate]) -> bool:
-    """Return True if any candidate has a meaningful title from a reliable source.
-
-    Used by the vision_only_if_hard gate to skip vision when the text is
-    readable and something searchable already exists. The threshold is ≥4
-    words so that short / ambiguous stems don't accidentally qualify.
-
-    Excludes text_header and filename_title_only because those are the two
-    weakest heuristics — they fire on every file and are often wrong, so
-    their presence alone shouldn't suppress vision on a genuinely hard case.
-    """
-    _STRONG_SOURCES = {
-        "filename_structured", "filename_author_title", "filename_series",
-        "pdfinfo", "pdf_metadata", "xmp", "grobid",
-    }
-    for c in candidates:
-        if not c.title:
-            continue
-        words = normalize_title(c.title).split()
-        if len(words) < 4:
-            continue
-        if c.source in _STRONG_SOURCES:
-            return True
-        if c.source.startswith("llm:"):
-            return True
-    return False
 
 
 # ---------------------------------------------------------------------------
@@ -263,7 +188,7 @@ class ResolutionRun:
             self.arxivs,
             self.timing,
             self.tried_identifiers,
-            _apply_sanity,
+            apply_sanity,
         )
         self.any_identifier_matched = self.any_identifier_matched or matched_any
         if ident is not None and score > self.best_ident_score:
@@ -314,7 +239,7 @@ class ResolutionRun:
                 if has_deep_ident and self.any_identifier_matched:
                     should_call_vision = False
                     trigger_reason = "skipped: identifier lookup returned metadata"
-                elif not self.needs_ocr_flag and _has_strong_searchable_candidate(self.candidates):
+                elif not self.needs_ocr_flag and has_strong_searchable_candidate(self.candidates):
                     should_call_vision = False
                     trigger_reason = "skipped: readable text with strong local candidate"
                 elif has_deep_ident:
@@ -367,7 +292,7 @@ class ResolutionRun:
             max_cands=max_cands,
             google_key=google_key,
             use_ss=use_ss,
-            apply_sanity=_apply_sanity,
+            apply_sanity=apply_sanity,
             semantic_scholar_key=ss_key,
             filename=self.path.name,
             timeout_s=float(getattr(self.extractor.args, "title_search_timeout", 12.0) or 0.0),
@@ -386,6 +311,10 @@ class ResolutionRun:
         )
         self.best_search = best_search
         self.best_search_score = best_search_score
+
+    def finish(self, meta: Metadata) -> tuple[Metadata, list[Candidate], str, dict[str, str], TimingBreakdown]:
+        self.timing.resolve_total_s = perf_counter() - self.resolve_started
+        return meta, self.candidates, self.text, self.debug, self.timing
 
 
 def resolve(
@@ -416,9 +345,6 @@ def resolve(
     run.collect_cheap_local_candidates()
     run.collect_initial_identifier_pool()
 
-    timing = run.timing
-    resolve_started = run.resolve_started
-    text = run.text
     sanity_text = run.sanity_text
     needs_ocr_flag = run.needs_ocr_flag
     debug = run.debug
@@ -434,9 +360,7 @@ def resolve(
     if run.has_passing_identifier_match():
         run.selector.update_debug(debug, candidates)
         best_ident = run.finalize_identifier_match()
-
-        timing.resolve_total_s = perf_counter() - resolve_started
-        return best_ident, candidates, text, debug, timing
+        return run.finish(best_ident)
 
     # ---- Phase 2: expensive candidate sources, only after identifiers fail ----
     run.collect_deferred_candidates()
@@ -449,9 +373,7 @@ def resolve(
     if run.has_passing_identifier_match():
         run.selector.update_debug(debug, candidates)
         best_ident = run.finalize_identifier_match()
-
-        timing.resolve_total_s = perf_counter() - resolve_started
-        return best_ident, candidates, text, debug, timing
+        return run.finish(best_ident)
 
     run.compute_book_signal()
 
@@ -472,9 +394,7 @@ def resolve(
     if run.has_passing_identifier_match():
         run.selector.update_debug(debug, candidates)
         best_ident = run.finalize_identifier_match()
-
-        timing.resolve_total_s = perf_counter() - resolve_started
-        return best_ident, candidates, text, debug, timing
+        return run.finish(best_ident)
 
     # Capture raw per-source candidates for debug TSVs after all candidate
     # sources have run.
@@ -495,8 +415,7 @@ def resolve(
         debug=debug,
     )
     if winner is not None:
-        timing.resolve_total_s = perf_counter() - resolve_started
-        return winner, candidates, text, debug, timing
+        return run.finish(winner)
 
     # ---- Phase 4: no external verification — return local best ----
     fallback = run.finalizer.local_fallback(
@@ -506,5 +425,4 @@ def resolve(
         debug=debug,
     )
 
-    timing.resolve_total_s = perf_counter() - resolve_started
-    return fallback, candidates, text, debug, timing
+    return run.finish(fallback)
