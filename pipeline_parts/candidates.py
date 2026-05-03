@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 
 from papis_import.models import Candidate, Metadata
+from papis_import.core.matching import title_similarity
 from papis_import.utils import (
+    clean_author_list,
     is_garbage_title,
     is_journal_abbrev_title,
     is_suspicious_title,
@@ -24,6 +26,8 @@ class CandidateSelector:
         for c in candidates:
             if c.title:
                 c.title = repair_title_ligatures(c.title)
+            if c.authors:
+                c.authors = clean_author_list(c.authors)
         good_titles = [
             c for c in candidates
             if c.title
@@ -39,7 +43,7 @@ class CandidateSelector:
         if not titles:
             return []
         best_t = self.choose_best_local(titles)
-        best_a = self.choose_best_local(authors)
+        best_a = self._choose_synth_authors(best_t, authors)
         best_y = self.choose_best_local(years)
         best_i = self.choose_best_local(idents)
         assert best_t is not None
@@ -61,11 +65,7 @@ class CandidateSelector:
         if best is None:
             return Metadata(source="none", confidence="low", notes=["no metadata extracted"])
         notes = best.notes[:]
-        best.authors = [
-            a.replace("Author(s):", "").replace("author(s):", "").strip()
-            for a in best.authors
-        ]
-        best.authors = [a for a in best.authors if a]
+        best.authors = clean_author_list(best.authors)
         confidence = "low" if best.source in {"filename_title_only", "text_header"} else "medium"
         if best.source == "pdfinfo" and best.title.startswith("PII:"):
             confidence = "low"
@@ -116,6 +116,40 @@ class CandidateSelector:
             score -= 1.5
         if c.title and len(normalize_title(c.title).split()) <= 2:
             score -= 0.5
+        return score
+
+    def _choose_synth_authors(self, title_candidate: Candidate, authors: list[Candidate]) -> Candidate | None:
+        compatible = [
+            cand for cand in authors
+            if cand.source != "synthesized" and self._authors_compatible_with_title(cand, title_candidate)
+        ]
+        if not compatible:
+            return self.choose_best_local([cand for cand in authors if cand.source != "synthesized"]) or self.choose_best_local(authors)
+        compatible.sort(key=lambda c: (-self._author_quality(c), c.priority))
+        return compatible[0]
+
+    def _authors_compatible_with_title(self, cand: Candidate, title_candidate: Candidate) -> bool:
+        if not cand.authors:
+            return False
+        if not cand.title or not title_candidate.title:
+            return True
+        return title_similarity(cand.title, title_candidate.title) >= 0.7
+
+    def _author_quality(self, cand: Candidate) -> float:
+        score = 0.0
+        if cand.source.startswith(("llm:", "vision_llm:")):
+            score += 4.0
+        elif cand.source in {"grobid", "pdfinfo", "pdf_metadata", "xmp"}:
+            score += 3.0
+        elif cand.source in {"filename_author_title", "filename_structured", "filename_series"}:
+            score += 2.0
+        elif cand.source == "text_header":
+            score += 1.0
+        score += min(1.0, 0.25 * len(cand.authors))
+        if cand.title:
+            score += 0.5
+        if cand.year:
+            score += 0.25
         return score
 
 

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from papis_import.models import Candidate, Metadata
 from papis_import.pipeline_parts.candidates import CandidateSelector
-from papis_import.pipeline_parts.title_search import is_too_generic_to_search
+from papis_import.pipeline_parts.title_search import GENERIC_TITLES, is_too_generic_to_search
 from papis_import.utils import (
     MIN_SANITY_SCORE,
     author_overlap,
+    clean_author_list,
     is_garbage_title,
     is_journal_abbrev_title,
     is_suspicious_title,
@@ -26,6 +29,26 @@ SOFT_AUTO_STRONG_SOURCES = {"grobid", "pdfinfo", "xmp", "text_header"}
 SOFT_AUTO_STRONG_PREFIXES = ("llm:", "vision_llm:")
 SOFT_AUTO_TITLE_SIM = 0.7
 SOFT_AUTO_MIN_TITLE_LEN = 5
+AUTHORITATIVE_IDENTIFIER_SOURCES = {"crossref_doi", "openlibrary_isbn", "arxiv_id"}
+GENERIC_IDENTIFIER_TITLES = frozenset({
+    *GENERIC_TITLES,
+    "lecture notes",
+    "course notes",
+    "book review",
+    "review article",
+    "research paper",
+    "term paper",
+    "working paper",
+})
+
+
+@dataclass(frozen=True)
+class IdentifierCorroboration:
+    accepted: bool = False
+    source: str = ""
+    note: str = ""
+    force_review: bool = False
+    soft_reason: str = ""
 
 
 class ResolutionFinalizer:
@@ -78,18 +101,32 @@ class ResolutionFinalizer:
         note: str,
         needs_ocr_flag: bool,
         debug: dict[str, str],
+        *,
+        force_review: bool = False,
+        soft_reason: str = "",
     ) -> Metadata:
+        meta.authors = clean_author_list(meta.authors)
         meta.merge_missing(self.selector.local_fallback(candidates))
         if note:
             meta.notes.append(note)
         meta.notes.append(f"sanity_score={meta.sanity_score:.3f} (passed)")
         meta.needs_ocr = needs_ocr_flag
+        if force_review and meta.confidence == "high":
+            meta.confidence = "medium"
         meta.auto_safe = (
-            meta.verified
+            not force_review
+            and meta.verified
             and meta.sanity_passed
             and meta.confidence == "high"
         )
-        meta.soft_auto, meta.soft_auto_reasons = _evaluate_soft_auto(meta, candidates)
+        if soft_reason:
+            meta.soft_auto = not meta.auto_safe
+            meta.soft_auto_reasons = [soft_reason] if meta.soft_auto else []
+        elif force_review:
+            meta.soft_auto = False
+            meta.soft_auto_reasons = []
+        else:
+            meta.soft_auto, meta.soft_auto_reasons = _evaluate_soft_auto(meta, candidates)
         debug["final_source"] = meta.source
         return meta
 
@@ -208,6 +245,22 @@ def _is_identifier_corroborator(source: str) -> bool:
     )
 
 
+# Sources strong enough to lift a subset-corroborated identifier match to auto_safe.
+# Must carry both title AND author independently; filename_title_only/filename_author_only
+# are excluded for the same reason as in strict corroboration.
+_SUBSET_STRONG_SOURCES = frozenset({
+    "grobid", "pdfinfo", "pdf_metadata", "xmp",
+    "filename_author_title",
+})
+
+
+def _is_subset_strong_source(source: str) -> bool:
+    return (
+        source in _SUBSET_STRONG_SOURCES
+        or source.startswith(("llm:", "vision_llm:"))
+    )
+
+
 def _identifier_corroborating_source(meta: Metadata, candidates: list[Candidate]) -> str:
     """Return the best local source that corroborates meta on title+author, or ''.
 
@@ -238,6 +291,93 @@ def _identifier_corroborating_source(meta: Metadata, candidates: list[Candidate]
             best_sim = sim
             best_source = cand.source
     return best_source
+
+
+def _identifier_corroboration_decision(meta: Metadata, candidates: list[Candidate]) -> IdentifierCorroboration:
+    strict_source = _identifier_corroborating_source(meta, candidates)
+    if strict_source:
+        if not _is_distinctive_identifier_title(meta.title):
+            return IdentifierCorroboration(
+                accepted=True,
+                source=strict_source,
+                note=f"accepted for review via generic-title corroboration by {strict_source}",
+                force_review=True,
+            )
+        return IdentifierCorroboration(accepted=True, source=strict_source)
+    subset = _identifier_subset_corroboration(meta, candidates)
+    if subset.accepted:
+        return subset
+    return IdentifierCorroboration()
+
+
+def _identifier_subset_corroboration(meta: Metadata, candidates: list[Candidate]) -> IdentifierCorroboration:
+    if meta.source not in AUTHORITATIVE_IDENTIFIER_SOURCES:
+        return IdentifierCorroboration()
+    if not (meta.title and meta.authors and meta.sanity_passed):
+        return IdentifierCorroboration()
+    if not _is_distinctive_identifier_title(meta.title):
+        return IdentifierCorroboration()
+
+    strong: list[str] = []
+    weak: list[str] = []
+    for cand in candidates:
+        if not _is_identifier_corroborator(cand.source):
+            continue
+        if not (cand.title and cand.authors):
+            continue
+        if not _is_main_title_subset(meta.title, cand.title):
+            continue
+        if author_overlap(meta.authors, cand.authors) <= 0.0:
+            continue
+        if cand.year and cand.year != meta.year:
+            continue
+        bucket = strong if _is_subset_strong_source(cand.source) else weak
+        if cand.source not in bucket:
+            bucket.append(cand.source)
+
+    if not strong and not weak:
+        return IdentifierCorroboration()
+
+    all_sources = strong + [s for s in weak if s not in strong]
+    source_text = ", ".join(all_sources)
+    note = f"identifier main-title corroborated by {source_text}"
+    if strong:
+        return IdentifierCorroboration(
+            accepted=True,
+            source=strong[0],
+            note=note,
+            force_review=False,
+        )
+    return IdentifierCorroboration(
+        accepted=True,
+        source=weak[0],
+        note=f"accepted for review via main-title corroboration by {source_text}",
+        force_review=True,
+    )
+
+
+def _is_distinctive_identifier_title(title: str) -> bool:
+    norm = normalize_title(title)
+    words = norm.split()
+    if not words:
+        return False
+    if norm in GENERIC_IDENTIFIER_TITLES:
+        return False
+    if len(norm) < 8 and len(words) < 2:
+        return False
+    if is_garbage_title(title) or is_journal_abbrev_title(title):
+        return False
+    return True
+
+
+def _is_main_title_subset(identifier_title: str, local_title: str) -> bool:
+    ident_words = normalize_title(identifier_title).split()
+    local_words = normalize_title(local_title).split()
+    if not ident_words or not local_words:
+        return False
+    if len(ident_words) >= len(local_words):
+        return False
+    return local_words[:len(ident_words)] == ident_words
 
 
 def _evaluate_soft_auto(meta: Metadata, candidates: list[Candidate]) -> tuple[bool, list[str]]:

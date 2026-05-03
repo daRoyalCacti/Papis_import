@@ -46,6 +46,8 @@ from papis_import.core.text import (
     MULTISPACE_RE,
     YEAR_RE,
     clean_filename_text,
+    clean_author_list,
+    clean_author_name,
     clean_text,
     decamelize,
     first_year,

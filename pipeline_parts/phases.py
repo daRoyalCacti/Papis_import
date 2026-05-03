@@ -12,7 +12,7 @@ from time import perf_counter
 from typing import TYPE_CHECKING
 
 from papis_import.pipeline_parts.candidates import extend_unique_candidates
-from papis_import.pipeline_parts.finalization import _identifier_corroborating_source
+from papis_import.pipeline_parts.finalization import _identifier_corroboration_decision
 from papis_import.pipeline_parts.identifiers import (
     collect_identifier_pool,
     run_identifier_lookups,
@@ -184,21 +184,39 @@ class IdentifierPhase:
         assert run.best_ident is not None
         accept_mode = getattr(run.args, "accept_mode", "default")
         note = run.best_ident_note
+        force_review = False
+        soft_reason = ""
         if accept_mode == "safe":
-            corr_source = _identifier_corroborating_source(run.best_ident, run.candidates)
-            if not corr_source:
+            decision = _identifier_corroboration_decision(run.best_ident, run.candidates)
+            if not decision.accepted:
                 # Discard uncorroborated identifier; let more extractors run so
                 # the next call can try the next identifier against a richer pool.
                 run.best_ident = None
                 run.best_ident_score = -1.0
                 run.best_ident_note = ""
                 return None
-            note = f"{note} (corroborated by {corr_source})"
+            if decision.force_review and not decision.soft_reason and not _has_deferred_candidate(run.candidates):
+                # A single cheap filename corroborator is enough to improve a
+                # review row, but not enough to stop before LLM/GROBID have had
+                # a chance to provide a second independent signal.
+                return None
+            force_review = decision.force_review
+            soft_reason = decision.soft_reason
+            suffix = decision.note or f"corroborated by {decision.source}"
+            note = f"{note} ({suffix})"
         run.selector.update_debug(run.debug, run.candidates)
         run.best_ident_corroborated = True
         return run.finalizer.finalize_identifier_winner(
             run.best_ident, run.candidates, note, run.needs_ocr_flag, run.debug,
+            force_review=force_review, soft_reason=soft_reason,
         )
+
+
+def _has_deferred_candidate(candidates: list[Candidate]) -> bool:
+    return any(
+        c.source == "grobid" or c.source.startswith(("llm:", "vision_llm:"))
+        for c in candidates
+    )
 
 
 class VisionPhase:

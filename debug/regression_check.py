@@ -24,6 +24,8 @@ from typing import Any
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
+if str(_PROJECT_ROOT.parent) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT.parent))
 
 from io_utils import DEFAULT_CONFIG_PATH, expand_path, load_json_config  # noqa: E402
 from _debug_flatten import read_debug_jsonl  # noqa: E402
@@ -675,6 +677,216 @@ def check_run(args: argparse.Namespace, *, mode: str) -> int:
     return 1
 
 
+def run_helper_checks(args: argparse.Namespace) -> int:
+    # Import package modules with the parent on sys.path, otherwise the repo's
+    # papis_import/http package can shadow the stdlib http package.
+    project_root_str = str(_PROJECT_ROOT)
+    while project_root_str in sys.path:
+        sys.path.remove(project_root_str)
+    from papis_import.core.text import clean_author_name
+    from papis_import.models import Candidate, Metadata
+    from papis_import.pipeline_parts.candidates import CandidateSelector
+    from papis_import.pipeline_parts.finalization import (
+        _identifier_corroboration_decision,
+        _is_distinctive_identifier_title,
+    )
+
+    def assert_equal(actual: object, expected: object, label: str) -> None:
+        if actual != expected:
+            raise AssertionError(f"{label}: expected {expected!r}, got {actual!r}")
+
+    assert_equal(clean_author_name("Evarist Giné (auth.)"), "Evarist Giné", "author role cleanup")
+    assert_equal(clean_author_name("Jean Picard [eds.]"), "Jean Picard", "editor role cleanup")
+    assert_equal(
+        _is_distinctive_identifier_title("Introduction to Real Analysis"),
+        True,
+        "Introduction to Real Analysis is distinctive for identifier gating",
+    )
+    assert_equal(
+        _is_distinctive_identifier_title("Introduction to High-Dimensional Statistics"),
+        True,
+        "Introduction to High-Dimensional Statistics is distinctive for identifier gating",
+    )
+    assert_equal(_is_distinctive_identifier_title("Thesis"), False, "exact Thesis is generic")
+
+    selector = CandidateSelector()
+    synthesized = selector.synthesize([
+        Candidate(
+            title="Decoupling From Dependence to Independence",
+            authors=["Víctor H. de la Peña", "Evarist Giné (auth.)"],
+            year="1999",
+            source="filename_author_title",
+            priority=45,
+        ),
+        Candidate(
+            title="Decoupling: From Dependence to Independence",
+            authors=["Víctor H. de la Peña", "Evarist Giné"],
+            year="1999",
+            source="llm:fixture",
+            priority=30,
+        ),
+    ])
+    assert_equal(synthesized[0].authors, ["Víctor H. de la Peña", "Evarist Giné"], "synthesized clean authors")
+
+    meta = Metadata(
+        title="Decoupling",
+        authors=["Víctor H. de la Peña", "Evarist Giné"],
+        year="1999",
+        source="crossref_doi",
+        confidence="high",
+        verified=True,
+        sanity_passed=True,
+        sanity_score=1.0,
+    )
+    filename_cand = Candidate(
+        title="Decoupling From Dependence to Independence",
+        authors=["Víctor H. de la Peña", "Evarist Giné (auth.)"],
+        year="1999",
+        source="filename_author_title",
+        priority=45,
+    )
+    llm_cand = Candidate(
+        title="Decoupling: From Dependence to Independence",
+        authors=["Víctor H. de la Peña", "Evarist Giné"],
+        year="1999",
+        source="llm:fixture",
+        priority=30,
+    )
+    # filename_author_title carries both title and author — counts as strong.
+    strong = _identifier_corroboration_decision(meta, [filename_cand, llm_cand])
+    assert_equal(strong.accepted, True, "strong subset accepted")
+    assert_equal(strong.force_review, False, "strong subset is auto-safe eligible")
+    assert_equal(strong.soft_reason, "", "strong subset does not use soft-auto path")
+
+    one_strong = _identifier_corroboration_decision(meta, [llm_cand])
+    assert_equal(one_strong.accepted, True, "one strong subset accepted")
+    assert_equal(one_strong.force_review, False, "one strong subset is auto-safe eligible")
+    assert_equal(one_strong.soft_reason, "", "one strong subset does not use soft-auto path")
+
+    one_filename_strong = _identifier_corroboration_decision(meta, [filename_cand])
+    assert_equal(one_filename_strong.accepted, True, "filename_author_title subset accepted")
+    assert_equal(one_filename_strong.force_review, False, "filename_author_title subset is auto-safe eligible")
+
+    # filename_structured carries structured metadata but less author fidelity — weak.
+    structured_cand = Candidate(
+        title="Decoupling: From Dependence to Independence",
+        authors=["Víctor H. de la Peña", "Evarist Giné"],
+        year="1999",
+        source="filename_structured",
+        priority=45,
+    )
+    weak = _identifier_corroboration_decision(meta, [structured_cand])
+    assert_equal(weak.accepted, True, "weak-only subset accepted for review")
+    assert_equal(weak.force_review, True, "weak-only subset still capped below auto-safe")
+    assert_equal(weak.soft_reason, "", "weak subset not soft-auto")
+
+    low_sanity = Metadata(
+        title="Decoupling",
+        authors=["Víctor H. de la Peña", "Evarist Giné"],
+        year="1999",
+        source="crossref_doi",
+        confidence="high",
+        verified=True,
+        sanity_passed=True,
+        sanity_score=0.6,
+    )
+    low_sanity_decision = _identifier_corroboration_decision(low_sanity, [llm_cand])
+    assert_equal(low_sanity_decision.accepted, True, "low-sanity subset accepted")
+    assert_equal(low_sanity_decision.force_review, False, "low-sanity strong subset is auto-safe eligible")
+    assert_equal(low_sanity_decision.soft_reason, "", "low-sanity subset does not use soft-auto path")
+
+    missing_year_cand = Candidate(
+        title="Decoupling: From Dependence to Independence",
+        authors=["Víctor H. de la Peña", "Evarist Giné"],
+        year="",
+        source="llm:fixture",
+        priority=30,
+    )
+    missing_year_decision = _identifier_corroboration_decision(meta, [missing_year_cand])
+    assert_equal(missing_year_decision.accepted, True, "missing-year subset accepted")
+    assert_equal(missing_year_decision.force_review, False, "missing-year strong subset is auto-safe eligible")
+
+    author_mismatch = _identifier_corroboration_decision(meta, [
+        Candidate(
+            title="Decoupling: From Dependence to Independence",
+            authors=["Alice Smith"],
+            year="1999",
+            source="llm:fixture",
+            priority=30,
+        )
+    ])
+    assert_equal(author_mismatch.accepted, False, "subset with author mismatch rejected")
+
+    year_mismatch = _identifier_corroboration_decision(meta, [
+        Candidate(
+            title="Decoupling: From Dependence to Independence",
+            authors=["Víctor H. de la Peña", "Evarist Giné"],
+            year="2000",
+            source="llm:fixture",
+            priority=30,
+        )
+    ])
+    assert_equal(year_mismatch.accepted, False, "subset with year mismatch rejected")
+
+    strict = _identifier_corroboration_decision(Metadata(
+        title="Introduction to Real Analysis",
+        authors=["Christopher Heil"],
+        year="2019",
+        source="openlibrary_isbn",
+        confidence="high",
+        verified=True,
+        sanity_passed=True,
+        sanity_score=1.0,
+    ), [
+        Candidate(
+            title="Introduction to Real Analysis",
+            authors=["Christopher Heil"],
+            year="2019",
+            source="llm:fixture",
+            priority=30,
+        )
+    ])
+    assert_equal(strict.accepted, True, "strict distinctive title accepted")
+    assert_equal(strict.force_review, False, "strict distinctive title remains auto-safe eligible")
+
+    generic = Metadata(
+        title="Thesis",
+        authors=["Alice Smith"],
+        year="2020",
+        source="crossref_doi",
+        confidence="high",
+        verified=True,
+        sanity_passed=True,
+        sanity_score=1.0,
+    )
+    generic_decision = _identifier_corroboration_decision(generic, [
+        Candidate(
+            title="Thesis on Probability",
+            authors=["Alice Smith"],
+            year="2020",
+            source="llm:fixture",
+            priority=30,
+        )
+    ])
+    assert_equal(generic_decision.accepted, False, "generic subset rejected")
+
+    generic_strict = _identifier_corroboration_decision(generic, [
+        Candidate(
+            title="Thesis",
+            authors=["Alice Smith"],
+            year="2020",
+            source="llm:fixture",
+            priority=30,
+        )
+    ])
+    assert_equal(generic_strict.accepted, True, "generic strict accepted for review")
+    assert_equal(generic_strict.force_review, True, "generic strict capped below auto-safe")
+    assert_equal(generic_strict.soft_reason, "", "generic strict not soft-auto")
+
+    print("helper checks passed")
+    return 0
+
+
 def add_common_args(p: argparse.ArgumentParser, *, baseline: Path) -> None:
     p.add_argument("--baseline", default=str(baseline), help="Compact JSON baseline path")
     p.add_argument("--out", default=str(DEFAULT_OUT), help="Golden output directory, default: out_testing")
@@ -722,6 +934,9 @@ def build_parser() -> argparse.ArgumentParser:
     network.add_argument("--strict-network", action="store_true", help="Fail on stable field drift")
     network.add_argument("--no-compileall", dest="compileall", action="store_false")
     network.set_defaults(func=lambda args: check_run(args, mode="network"), compileall=True)
+
+    helpers = sub.add_parser("helpers", help="Run fast pure helper/policy checks")
+    helpers.set_defaults(func=run_helper_checks)
 
     return p
 
