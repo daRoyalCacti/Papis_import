@@ -130,6 +130,32 @@ class ResolutionFinalizer:
         debug["final_source"] = meta.source
         return meta
 
+    def finalize_uncorroborated_identifier(
+        self,
+        meta: Metadata,
+        note: str,
+        candidates: list[Candidate],
+        needs_ocr_flag: bool,
+        debug: dict[str, str],
+    ) -> Metadata:
+        meta.authors = clean_author_list(meta.authors)
+        meta.merge_missing(self.selector.local_fallback(candidates))
+        if note:
+            meta.notes.append(note)
+        meta.notes.append(
+            "no local extractor corroborated this identifier match; "
+            "routed to review for human verification"
+        )
+        meta.notes.append(f"sanity_score={meta.sanity_score:.3f} (passed)")
+        meta.needs_ocr = needs_ocr_flag
+        if meta.confidence == "high":
+            meta.confidence = "medium"
+        meta.auto_safe = False
+        meta.soft_auto = False
+        meta.soft_auto_reasons = []
+        debug["final_source"] = meta.source
+        return meta
+
     def local_fallback(
         self,
         *,

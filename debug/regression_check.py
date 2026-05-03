@@ -687,6 +687,7 @@ def run_helper_checks(args: argparse.Namespace) -> int:
     from papis_import.models import Candidate, Metadata
     from papis_import.pipeline_parts.candidates import CandidateSelector
     from papis_import.pipeline_parts.finalization import (
+        ResolutionFinalizer,
         _identifier_corroboration_decision,
         _is_distinctive_identifier_title,
     )
@@ -882,6 +883,38 @@ def run_helper_checks(args: argparse.Namespace) -> int:
     assert_equal(generic_strict.accepted, True, "generic strict accepted for review")
     assert_equal(generic_strict.force_review, True, "generic strict capped below auto-safe")
     assert_equal(generic_strict.soft_reason, "", "generic strict not soft-auto")
+
+    # Uncorroborated identifier fallback: sanity-passed identifier with no local
+    # agreement should land in review (auto_safe=False, soft_auto=False) with the
+    # corroboration-failure note, not fall back to local garbage.
+    unc_meta = Metadata(
+        title="Algorithmic Learning Theory",
+        authors=["Naoki Abe", "Roni Khardon", "Thomas Zeugmann"],
+        year="2003",
+        source="openlibrary_isbn",
+        confidence="high",
+        verified=True,
+        sanity_passed=True,
+        sanity_score=1.0,
+    )
+    finalizer = ResolutionFinalizer(CandidateSelector())
+    garbage_cand = Candidate(
+        title="Lecture Notes in Artificial Intelligence",
+        authors=["Subseries of Lecture Notes in Computer Science"],
+        year="",
+        source="text_header",
+        priority=90,
+    )
+    unc_result = finalizer.finalize_uncorroborated_identifier(
+        unc_meta, "resolved by ISBN via OpenLibrary", [garbage_cand], False, {}
+    )
+    assert_equal(unc_result.auto_safe, False, "uncorroborated identifier is not auto-safe")
+    assert_equal(unc_result.soft_auto, False, "uncorroborated identifier is not soft-auto")
+    assert_equal(unc_result.confidence, "medium", "uncorroborated identifier confidence demoted")
+    if not any("no local extractor corroborated" in n for n in unc_result.notes):
+        raise AssertionError("uncorroborated identifier result missing corroboration-failure note")
+    assert_equal(unc_result.source, "openlibrary_isbn", "uncorroborated identifier retains API source")
+    assert_equal(unc_result.title, "Algorithmic Learning Theory", "uncorroborated identifier retains API title")
 
     print("helper checks passed")
     return 0

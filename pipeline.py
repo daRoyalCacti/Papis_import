@@ -103,6 +103,9 @@ class ResolutionRun:
     best_ident_note: str = ""
     any_identifier_matched: bool = False
     best_ident_corroborated: bool = False
+    uncorroborated_ident: Metadata | None = None
+    uncorroborated_ident_note: str = ""
+    uncorroborated_ident_score: float = -1.0
 
     def __post_init__(self) -> None:
         self.finalizer = ResolutionFinalizer(self.selector)
@@ -192,12 +195,25 @@ def resolve(
     if winner is not None:
         return run.finish(winner)
 
-    # ---- Phase 4: no external verification — return local best ----
-    fallback = run.finalizer.local_fallback(
-        candidates=run.candidates,
-        stable_ids=run.stable_ids,
-        needs_ocr_flag=run.needs_ocr_flag,
-        debug=run.debug,
-    )
+    # ---- Phase 4: no external verification ----
+    # Prefer a sanity-passed identifier that safe mode couldn't corroborate over
+    # the purely local fallback — the identifier is usually more reliable than
+    # whatever the local extractors synthesised from a poisoned PDF (e.g. a cover
+    # page showing only the LNCS series header instead of the actual book title).
+    if run.uncorroborated_ident is not None:
+        fallback = run.finalizer.finalize_uncorroborated_identifier(
+            run.uncorroborated_ident,
+            run.uncorroborated_ident_note,
+            run.candidates,
+            run.needs_ocr_flag,
+            run.debug,
+        )
+    else:
+        fallback = run.finalizer.local_fallback(
+            candidates=run.candidates,
+            stable_ids=run.stable_ids,
+            needs_ocr_flag=run.needs_ocr_flag,
+            debug=run.debug,
+        )
 
     return run.finish(fallback)

@@ -12,7 +12,10 @@ from time import perf_counter
 from typing import TYPE_CHECKING
 
 from papis_import.pipeline_parts.candidates import extend_unique_candidates
-from papis_import.pipeline_parts.finalization import _identifier_corroboration_decision
+from papis_import.pipeline_parts.finalization import (
+    AUTHORITATIVE_IDENTIFIER_SOURCES,
+    _identifier_corroboration_decision,
+)
 from papis_import.pipeline_parts.identifiers import (
     collect_identifier_pool,
     run_identifier_lookups,
@@ -189,8 +192,18 @@ class IdentifierPhase:
         if accept_mode == "safe":
             decision = _identifier_corroboration_decision(run.best_ident, run.candidates)
             if not decision.accepted:
-                # Discard uncorroborated identifier; let more extractors run so
-                # the next call can try the next identifier against a richer pool.
+                # Preserve the best sanity-passed rejection so Phase 4 can use it
+                # as a review fallback if no other winner emerges.
+                if (
+                    run.best_ident.sanity_passed
+                    and run.best_ident.source in AUTHORITATIVE_IDENTIFIER_SOURCES
+                    and run.best_ident_score > run.uncorroborated_ident_score
+                ):
+                    run.uncorroborated_ident = run.best_ident
+                    run.uncorroborated_ident_note = run.best_ident_note
+                    run.uncorroborated_ident_score = run.best_ident_score
+                # Discard so the next round tries the next identifier against a
+                # richer candidate pool.
                 run.best_ident = None
                 run.best_ident_score = -1.0
                 run.best_ident_note = ""
