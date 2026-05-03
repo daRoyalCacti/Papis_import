@@ -77,6 +77,7 @@ _CONFIG_MAP = {
     "vision_only_if_hard":  "vision-only-if-hard",
     "no_semantic_scholar":  "no-semantic-scholar",
     "semantic_scholar_api_key": "semantic-scholar-api-key",
+    "accept_mode":          "accept-mode",
     "ollama_model":         "ollama-model",         # legacy
 }
 

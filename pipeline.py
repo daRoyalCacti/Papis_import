@@ -102,6 +102,7 @@ class ResolutionRun:
     best_ident_score: float = -1.0
     best_ident_note: str = ""
     any_identifier_matched: bool = False
+    best_ident_corroborated: bool = False
 
     def __post_init__(self) -> None:
         self.finalizer = ResolutionFinalizer(self.selector)

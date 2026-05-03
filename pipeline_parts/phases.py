@@ -12,6 +12,7 @@ from time import perf_counter
 from typing import TYPE_CHECKING
 
 from papis_import.pipeline_parts.candidates import extend_unique_candidates
+from papis_import.pipeline_parts.finalization import _identifier_corroborating_source
 from papis_import.pipeline_parts.identifiers import (
     collect_identifier_pool,
     run_identifier_lookups,
@@ -166,21 +167,38 @@ class IdentifierPhase:
         return run.best_ident is not None and run.best_ident.sanity_passed
 
     def run_phase(self) -> Metadata | None:
-        """Refresh pool → lookup → finalize if a match passed sanity."""
+        """Refresh pool → lookup → finalize if a match passed sanity (default mode)
+        or passed sanity AND local corroboration (safe mode).
+
+        In 'safe' accept mode (--accept-mode safe) the identifier result is only
+        accepted when at least one independent local extractor agrees on both title
+        and author.  When corroboration fails the result is discarded and the
+        pipeline falls through to let GROBID / LLM / vision run, then tries the
+        next untried identifier against the richer candidate pool.
+        """
         run = self.run
         self._refresh()
         self._try_lookups()
-        if self._has_passing_match():
-            run.selector.update_debug(run.debug, run.candidates)
-            assert run.best_ident is not None
-            return run.finalizer.finalize_identifier_winner(
-                run.best_ident,
-                run.candidates,
-                run.best_ident_note,
-                run.needs_ocr_flag,
-                run.debug,
-            )
-        return None
+        if not self._has_passing_match():
+            return None
+        assert run.best_ident is not None
+        accept_mode = getattr(run.args, "accept_mode", "default")
+        note = run.best_ident_note
+        if accept_mode == "safe":
+            corr_source = _identifier_corroborating_source(run.best_ident, run.candidates)
+            if not corr_source:
+                # Discard uncorroborated identifier; let more extractors run so
+                # the next call can try the next identifier against a richer pool.
+                run.best_ident = None
+                run.best_ident_score = -1.0
+                run.best_ident_note = ""
+                return None
+            note = f"{note} (corroborated by {corr_source})"
+        run.selector.update_debug(run.debug, run.candidates)
+        run.best_ident_corroborated = True
+        return run.finalizer.finalize_identifier_winner(
+            run.best_ident, run.candidates, note, run.needs_ocr_flag, run.debug,
+        )
 
 
 class VisionPhase:
@@ -197,7 +215,17 @@ class VisionPhase:
             trigger_reason = "configured"
             if getattr(run.args, "vision_only_if_hard", False):
                 has_deep_ident = bool(run.dois or run.isbns or run.arxivs)
-                if has_deep_ident and run.any_identifier_matched:
+                accept_mode = getattr(run.args, "accept_mode", "default")
+                # In safe mode, an unverified identifier match doesn't mean we
+                # should skip vision — vision might provide the corroboration needed.
+                # In default mode, restore the original gate: any metadata returned
+                # by an identifier API call is enough to skip vision.
+                skip_for_ident = (
+                    run.best_ident_corroborated
+                    if accept_mode == "safe"
+                    else run.any_identifier_matched
+                )
+                if has_deep_ident and skip_for_ident:
                     should_call_vision = False
                     trigger_reason = "skipped: identifier lookup returned metadata"
                 elif not run.needs_ocr_flag and has_strong_searchable_candidate(run.candidates):

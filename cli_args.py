@@ -75,6 +75,16 @@ def parse_args() -> argparse.Namespace:
                    help="Output TSV path for dry-run results")
     p.add_argument("--min-confidence", choices=["low", "medium", "high"], default="high",
                    help="Only import entries at or above this confidence (default: high)")
+    p.add_argument("--accept-mode", choices=["default", "safe"], default="default",
+                   dest="accept_mode",
+                   help="Controls how strictly identifier-based results (arXiv, DOI, ISBN) "
+                        "are accepted.  'default': trust the identifier if it passes the "
+                        "sanity check (fast, matches the original pipeline behaviour).  "
+                        "'safe': also require at least one independent local extractor "
+                        "(GROBID, text_header, structured filename, LLM, vision) to agree "
+                        "on both title and author before accepting — prevents citations "
+                        "mistaken for the document itself, at the cost of more API calls "
+                        "and more entries routed to review. (default: default)")
     p.add_argument("--limit",  type=int, default=0, help="Process at most N PDFs (0 = all)")
     p.add_argument("--offset", type=int, default=0, help="Skip first N PDFs")
     p.add_argument("--verbose", action="store_true")

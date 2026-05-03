@@ -181,6 +181,65 @@ def _is_strong_soft_source(source: str) -> bool:
     return source in SOFT_AUTO_STRONG_SOURCES or source.startswith(SOFT_AUTO_STRONG_PREFIXES)
 
 
+# Sources considered reliable enough to corroborate an identifier-based result.
+# Deliberately wider than SOFT_AUTO_STRONG_SOURCES: structured filename sources
+# (filename_author_title, filename_structured, filename_series) carry both title
+# AND author and are the primary signal for well-named books and papers, but they
+# are excluded from the soft-auto path because they don't add independent evidence
+# there. For identifier corroboration they ARE independent (the identifier API is
+# a separate lookup), so they count. filename_title_only and filename_author_only
+# are excluded because they each carry only one field — not enough for a two-field check.
+_IDENTIFIER_CORROBORATION_SOURCES = frozenset({
+    "text_header",
+    "grobid",
+    "pdfinfo",
+    "pdf_metadata",
+    "xmp",
+    "filename_author_title",
+    "filename_structured",
+    "filename_series",
+})
+
+
+def _is_identifier_corroborator(source: str) -> bool:
+    return (
+        source in _IDENTIFIER_CORROBORATION_SOURCES
+        or source.startswith(("llm:", "vision_llm:"))
+    )
+
+
+def _identifier_corroborating_source(meta: Metadata, candidates: list[Candidate]) -> str:
+    """Return the best local source that corroborates meta on title+author, or ''.
+
+    Used by safe-mode accept (--accept-mode safe) to require independent local
+    confirmation before trusting an identifier API result.  The check requires:
+      - title_similarity(local_title, resolved_title) ≥ SOFT_AUTO_TITLE_SIM (0.7)
+      - author_overlap(local_authors, resolved_authors) > 0
+    from at least one source in _IDENTIFIER_CORROBORATION_SOURCES or any LLM source.
+    """
+    title = (meta.title or "").strip()
+    if not title:
+        return ""
+    best_source = ""
+    best_sim = 0.0
+    for cand in candidates:
+        if not _is_identifier_corroborator(cand.source):
+            continue
+        if not cand.title:
+            continue
+        sim = title_similarity(cand.title, title)
+        if sim < SOFT_AUTO_TITLE_SIM:
+            continue
+        if not meta.authors or not cand.authors:
+            continue
+        if author_overlap(meta.authors, cand.authors) <= 0.0:
+            continue
+        if sim > best_sim:
+            best_sim = sim
+            best_source = cand.source
+    return best_source
+
+
 def _evaluate_soft_auto(meta: Metadata, candidates: list[Candidate]) -> tuple[bool, list[str]]:
     if meta.auto_safe:
         return False, []
