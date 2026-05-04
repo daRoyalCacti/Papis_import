@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import argparse
 
+from papis_import.llm_config import text_llm_config, vision_llm_config
+
 
 class PipelineDebug(dict):
     """A plain dict with a typed constructor that initialises all expected keys.
@@ -14,6 +16,8 @@ class PipelineDebug(dict):
     """
 
     def __init__(self, args: argparse.Namespace) -> None:
+        text_cfg = text_llm_config(args)
+        vision_cfg = vision_llm_config(args)
         super().__init__(
             vision_used="no",
             vision_trigger="",
@@ -24,7 +28,7 @@ class PipelineDebug(dict):
             grobid_title="",
             grobid_authors="",
             grobid_year="",
-            vision_model=getattr(args, "vision_llm_model", "") or "",
+            vision_model=vision_cfg.model,
             vision_pages=str(getattr(args, "vision_pages", "") or ""),
             vision_dpi=str(getattr(args, "vision_dpi", "") or ""),
             vision_title="",
@@ -33,7 +37,7 @@ class PipelineDebug(dict):
             text_llm_used="no",
             text_llm_status="not_attempted",
             text_llm_error="",
-            text_llm_model=getattr(args, "llm_model", "") or "",
+            text_llm_model=text_cfg.model,
             text_llm_http_json="",
             text_llm_title="",
             text_llm_authors="",

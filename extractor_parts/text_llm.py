@@ -10,6 +10,7 @@ from papis_import.core.identifiers import validate_isbn
 from papis_import.core.text import clean_text
 from papis_import.extractor_parts.common import coerce_str
 from papis_import.http_client import HttpClient
+from papis_import.llm_config import local_llm_response_is_cacheable, text_llm_config
 from papis_import.models import Candidate
 
 
@@ -30,15 +31,13 @@ class TextLlmExtractor:
             "text_llm_status": "not_attempted",
             "text_llm_error": "",
         }
-        endpoint = getattr(self.args, "llm_endpoint", "").strip()
-        model = getattr(self.args, "llm_model", "").strip()
-        api_key = getattr(self.args, "llm_api_key", "").strip()
+        cfg = text_llm_config(self.args)
+        endpoint = cfg.endpoint
+        model = cfg.model
+        api_key = cfg.api_key
         chars = int(getattr(self.args, "llm_chars", 4000))
 
-        ollama_model = getattr(self.args, "ollama_model", "").strip()
-        if ollama_model and not model:
-            endpoint = "http://localhost:11434/v1"
-            model = ollama_model
+        if getattr(self.args, "ollama_model", "").strip() and not getattr(self.args, "local_llm", False):
             chars = int(getattr(self.args, "ollama_chars", chars))
 
         if not endpoint or not model:
@@ -79,20 +78,34 @@ class TextLlmExtractor:
             },
             {"role": "user", "content": json.dumps(prompt_data, ensure_ascii=False)},
         ]
-        payload: dict[str, Any] = {
-            "model": model,
-            "messages": messages,
-            "max_tokens": 500,
-            "response_format": {"type": "json_object"},
-        }
+        payload: dict[str, Any]
+        if cfg.local:
+            payload = {
+                "model": model,
+                "messages": messages,
+                "stream": False,
+                "format": "json",
+                "think": cfg.think,
+                "options": {"num_predict": cfg.max_tokens},
+            }
+        else:
+            payload = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": cfg.max_tokens,
+                "response_format": {"type": "json_object"},
+            }
         estimated_tokens = max(1_500, int(len(json.dumps(messages, ensure_ascii=False)) / 4) + 500)
+        min_remaining_tokens = estimated_tokens if cfg.min_remaining_tokens < 0 else cfg.min_remaining_tokens
         cache_key = f"{path.resolve()}::{path.stat().st_mtime_ns}::{endpoint}::{model}::{chars}"
+        if cfg.local:
+            cache_key += f"::max{cfg.max_tokens}::think{cfg.think}"
 
         extra_headers: dict[str, str] = {}
         if api_key:
             extra_headers["Authorization"] = f"Bearer {api_key}"
 
-        url = endpoint.rstrip("/") + "/chat/completions"
+        url = endpoint.rstrip("/") + ("/api/chat" if cfg.local else "/chat/completions")
         resp = self.http.post_json(
             url,
             payload,
@@ -100,8 +113,11 @@ class TextLlmExtractor:
             cache_key,
             extra_headers=extra_headers,
             bucket="llm",
-            min_interval=0.5,
-            min_remaining_tokens=estimated_tokens,
+            min_interval=cfg.min_interval,
+            min_remaining_tokens=min_remaining_tokens,
+            timeout_s=cfg.timeout_s,
+            track_tokens=cfg.track_tokens,
+            response_cacheable=local_llm_response_is_cacheable if cfg.local else None,
         )
         http_trace = self.http.take_last_request_trace("llm")
         if http_trace:

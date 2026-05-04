@@ -13,6 +13,7 @@ from papis_import.core.identifiers import validate_isbn
 from papis_import.core.text import clean_text
 from papis_import.extractor_parts.common import coerce_str
 from papis_import.http_client import HttpClient
+from papis_import.llm_config import local_llm_response_is_cacheable, vision_llm_config
 from papis_import.models import Candidate
 
 
@@ -96,16 +97,12 @@ class VisionLlmExtractor:
         filename_cand: Candidate | None,
         is_book: bool = False,
     ) -> tuple[list[Candidate], dict[str, str]]:
-        endpoint = getattr(self.args, "vision_llm_endpoint", "").strip()
-        model = getattr(self.args, "vision_llm_model", "").strip()
-        api_key = getattr(self.args, "vision_llm_api_key", "").strip()
+        cfg = vision_llm_config(self.args)
+        endpoint = cfg.endpoint
+        model = cfg.model
+        api_key = cfg.api_key
         pages = max(1, int(getattr(self.args, "vision_pages", 4)))
         dpi = max(72, int(getattr(self.args, "vision_dpi", 120)))
-
-        if not endpoint:
-            endpoint = getattr(self.args, "llm_endpoint", "").strip()
-        if not api_key:
-            api_key = getattr(self.args, "llm_api_key", "").strip()
 
         debug: dict[str, str] = {
             "vision_status": "not_configured",
@@ -124,7 +121,7 @@ class VisionLlmExtractor:
             cheap_dpi = min(100, dpi)
             tiers = [(1, cheap_dpi), (pages, dpi)] if pages > 1 else [(pages, dpi)]
 
-        url = endpoint.rstrip("/") + "/chat/completions"
+        url = endpoint.rstrip("/") + ("/api/chat" if cfg.local else "/chat/completions")
         extra_headers: dict[str, str] = {}
         if api_key:
             extra_headers["Authorization"] = f"Bearer {api_key}"
@@ -151,12 +148,16 @@ class VisionLlmExtractor:
                 f"Filename-based guess (may be wrong): "
                 f"{json.dumps(filename_guess, ensure_ascii=False)}"
             )
-            user_content: list[dict[str, Any]] = [{"type": "text", "text": user_text}]
-            for b64 in image_b64s:
-                user_content.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
-                })
+            if cfg.local:
+                user_content: str | list[dict[str, Any]] = user_text
+            else:
+                openai_content: list[dict[str, Any]] = [{"type": "text", "text": user_text}]
+                for b64 in image_b64s:
+                    openai_content.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
+                    })
+                user_content = openai_content
 
             messages = [
                 {
@@ -178,16 +179,29 @@ class VisionLlmExtractor:
                 },
                 {"role": "user", "content": user_content},
             ]
-            payload: dict[str, Any] = {
-                "model": model,
-                "messages": messages,
-                "max_tokens": 600,
-                "response_format": {"type": "json_object"},
-            }
+            if cfg.local:
+                messages[-1]["images"] = image_b64s
+                payload = {
+                    "model": model,
+                    "messages": messages,
+                    "stream": False,
+                    "format": "json",
+                    "think": cfg.think,
+                    "options": {"num_predict": cfg.max_tokens},
+                }
+            else:
+                payload = {
+                    "model": model,
+                    "messages": messages,
+                    "max_tokens": cfg.max_tokens,
+                    "response_format": {"type": "json_object"},
+                }
             cache_key = (
                 f"{path.resolve()}::{path.stat().st_mtime_ns}::"
                 f"{endpoint}::{model}::vision::p{tier_pages}::r{tier_dpi}"
             )
+            if cfg.local:
+                cache_key += f"::max{cfg.max_tokens}::think{cfg.think}"
 
             try:
                 resp = self.http.post_json(
@@ -197,9 +211,12 @@ class VisionLlmExtractor:
                     cache_key,
                     extra_headers=extra_headers,
                     bucket="vision_llm",
-                    min_interval=0.5,
+                    min_interval=cfg.min_interval,
                     max_retry_wait=60.0,
-                    min_remaining_tokens=10_000,
+                    min_remaining_tokens=cfg.min_remaining_tokens,
+                    timeout_s=cfg.timeout_s,
+                    track_tokens=cfg.track_tokens,
+                    response_cacheable=local_llm_response_is_cacheable if cfg.local else None,
                 )
                 http_trace = self.http.take_last_request_trace("vision_llm")
                 if http_trace:

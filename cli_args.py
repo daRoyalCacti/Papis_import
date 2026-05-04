@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from papis_import.utils import DEFAULT_CACHE_DIR
+from papis_import.llm_config import DEFAULT_LOCAL_LLM_MODEL, DEFAULT_OLLAMA_HOST
 
 
 @dataclass
@@ -187,8 +188,8 @@ def parse_args() -> argparse.Namespace:
             "       --llm-endpoint https://api.groq.com/openai/v1\n"
             "       --llm-api-key  YOUR_KEY\n"
             "       --llm-model    llama-3.1-8b-instant\n\n"
-            "Alternative (local Ollama, no key needed):\n"
-            "  --llm-endpoint http://localhost:11434/v1  --llm-model llama3.2\n\n"
+            "Local Ollama, no key needed:\n"
+            "  --local-llm --local-llm-model qwen3-vl:8b\n\n"
             "Alternative (OpenRouter, has free models):\n"
             "  --llm-endpoint https://openrouter.ai/api/v1\n"
             "  --llm-model    meta-llama/llama-3.1-8b-instruct:free\n"
@@ -202,6 +203,22 @@ def parse_args() -> argparse.Namespace:
                      help="Model identifier to request")
     llm.add_argument("--llm-chars",    type=int, default=4000,
                      help="Characters of PDF text to send to the LLM (default: 4000)")
+    llm.add_argument("--llm-request-timeout", type=float, default=90.0,
+                     help="HTTP timeout in seconds for remote text LLM requests (default: 90)")
+    llm.add_argument("--local-llm", action="store_true",
+                     help="Use local Ollama for both text and vision LLM extraction")
+    llm.add_argument("--local-llm-model", default=DEFAULT_LOCAL_LLM_MODEL,
+                     help=f"Ollama model to use with --local-llm (default: {DEFAULT_LOCAL_LLM_MODEL})")
+    llm.add_argument("--local-llm-num-predict", type=int, default=2048,
+                     help="Maximum output tokens for local Ollama LLM calls (default: 2048)")
+    llm.add_argument("--ollama-host", default=DEFAULT_OLLAMA_HOST,
+                     help=f"Ollama base URL for --local-llm (default: {DEFAULT_OLLAMA_HOST})")
+    llm.add_argument("--ollama-start-timeout", type=int, default=60,
+                     help="Seconds to wait for an auto-started Ollama service (default: 60)")
+    llm.add_argument("--ollama-request-timeout", type=float, default=300.0,
+                     help="HTTP timeout in seconds for local Ollama requests (default: 300)")
+    llm.add_argument("--ollama-pull-missing", action="store_true",
+                     help="Run 'ollama pull <model>' when the requested local model is missing")
     # Backward-compat aliases for people who had --ollama-model in their config
     llm.add_argument("--ollama-model", default="", help=argparse.SUPPRESS)
     llm.add_argument("--ollama-chars", type=int,   default=0,  help=argparse.SUPPRESS)
@@ -223,8 +240,7 @@ def parse_args() -> argparse.Namespace:
             "  --vision-llm-model    meta-llama/llama-4-scout-17b-16e-instruct\n\n"
             "Alternatives:\n"
             "  Local Ollama (no key):\n"
-            "    --vision-llm-endpoint http://localhost:11434/v1\n"
-            "    --vision-llm-model    llama3.2-vision:11b  (or qwen2.5vl:7b)\n"
+            "    --local-llm --local-llm-model qwen3-vl:8b\n"
             "  OpenAI:\n"
             "    --vision-llm-endpoint https://api.openai.com/v1\n"
             "    --vision-llm-model    gpt-4o-mini\n\n"
@@ -248,6 +264,8 @@ def parse_args() -> argparse.Namespace:
                      help="Render DPI for the page images (default: 120). "
                           "Higher = sharper but more tokens. 96 is fine for "
                           "most models; 150 for dense text or small fonts.")
+    vis.add_argument("--vision-llm-request-timeout", type=float, default=90.0,
+                     help="HTTP timeout in seconds for remote vision LLM requests (default: 90)")
     vis.add_argument("--vision-only-if-hard", action="store_true",
                      help="Only invoke the vision LLM when the text-based "
                           "candidates look weak (no DOI/ISBN/arXiv in text "

@@ -387,6 +387,9 @@ class HttpClient:
         max_retries: int = 3,
         max_retry_wait: float = 0.0,
         min_remaining_tokens: int = 0,
+        timeout_s: float = 90.0,
+        track_tokens: bool = True,
+        response_cacheable: Any | None = None,
     ) -> Any | None:
         hdrs: dict[str, str] = {
             "Content-Type": "application/json",
@@ -399,14 +402,26 @@ class HttpClient:
             "POST", url, namespace, cache_key, hdrs,
             json.dumps(payload).encode("utf-8"),
             bucket=bucket, min_interval=min_interval, max_retries=max_retries,
-            timeout_s=90, log_kind="POST",
+            timeout_s=timeout_s, log_kind="POST",
             parse_response=lambda b: json.loads(b.decode("utf-8", errors="replace")),
-            cache_valid=lambda c: c is not None and json_is_cacheable(c),
+            cache_valid=lambda c: (
+                c is not None
+                and json_is_cacheable(c)
+                and (response_cacheable(c) if response_cacheable is not None else True)
+            ),
             cache_extract=lambda c: c,
-            cache_wrap=lambda d: d if d is not None and json_is_cacheable(d) else None,
+            cache_wrap=lambda d: (
+                d
+                if (
+                    d is not None
+                    and json_is_cacheable(d)
+                    and (response_cacheable(d) if response_cacheable is not None else True)
+                )
+                else None
+            ),
             failure_value=None,
             http_error_as_data=True,
-            track_tokens=True,
+            track_tokens=track_tokens,
             min_remaining_tokens=min_remaining_tokens,
             max_retry_wait=max_retry_wait,
         )

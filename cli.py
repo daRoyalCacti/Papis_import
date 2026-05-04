@@ -15,6 +15,7 @@ from papis_import.http.cache import Cache
 from papis_import.http_client import HttpClient
 from papis_import.models import Metadata, Record, TimingBreakdown
 from papis_import.ocr_retry import run_ocr_retry
+from papis_import.ollama_service import local_ollama_session
 from papis_import.output.readers import load_previous_tsv
 from papis_import.output.writers import (
     DebugWriter,
@@ -371,23 +372,33 @@ def main() -> int:
     total = len(files)
     print(f"Scanning {total} PDF(s) in {staging_dir}")
 
-    with local_grobid_session(args) as grobid_session:
-        if grobid_session.url:
-            if grobid_session.started_here:
-                print(f"GROBID    : started local service at {grobid_session.url}")
-            elif grobid_session.url == getattr(args, "grobid_url", ""):
-                print(f"GROBID    : using {grobid_session.url}")
-        extractors = ExtractorSet.build(args, http)
-        records, ocr_attempted, ocr_recovered = run_pipeline_loop(
-            files,
-            staging_dir,
-            extractors,
-            args,
-            http,
-            prev_verified,
-            writers,
-            live_status if live_status.enabled else None,
-        )
+    try:
+        with local_ollama_session(args) as ollama_session:
+            if ollama_session.url:
+                if ollama_session.started_here:
+                    print(f"Ollama    : started local service at {ollama_session.url} ({ollama_session.model})")
+                else:
+                    print(f"Ollama    : using {ollama_session.url} ({ollama_session.model})")
+            with local_grobid_session(args) as grobid_session:
+                if grobid_session.url:
+                    if grobid_session.started_here:
+                        print(f"GROBID    : started local service at {grobid_session.url}")
+                    elif grobid_session.url == getattr(args, "grobid_url", ""):
+                        print(f"GROBID    : using {grobid_session.url}")
+                extractors = ExtractorSet.build(args, http)
+                records, ocr_attempted, ocr_recovered = run_pipeline_loop(
+                    files,
+                    staging_dir,
+                    extractors,
+                    args,
+                    http,
+                    prev_verified,
+                    writers,
+                    live_status if live_status.enabled else None,
+                )
+    except RuntimeError as exc:
+        eprint(f"[error] {exc}")
+        return 2
 
     print_summary(
         records, paths, args.cache_dir,
