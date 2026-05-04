@@ -23,7 +23,7 @@ from papis_import.utils import USER_AGENT, eprint
 
 
 def _phase_for_bucket(bucket: str) -> str:
-    if bucket == "llm":
+    if bucket == "llm" or bucket.startswith("llm:"):
         return "text_llm"
     if bucket == "vision_llm":
         return "vision_llm"
@@ -194,6 +194,7 @@ class HttpClient:
         track_tokens: bool = False,
         min_remaining_tokens: int = 0,
         max_retry_wait: float = 0.0,
+        signal_long_wait: bool = False,
     ) -> Any:
         trace_started = time.monotonic()
         trace = self._start_trace(method, url, namespace, bucket)
@@ -242,11 +243,26 @@ class HttpClient:
                     self._update_token_budget(bucket, exc.headers)
                 body_text = _fill_http_error_trace(attempt_trace, exc)
                 if exc.code in (429, 503) and attempt < max_retries - 1:
-                    wait, wait_reason = _retry_wait_s(
+                    # Get the uncapped wait so we can compare against the threshold.
+                    wait_uncapped, wait_reason = _retry_wait_s(
                         exc, body_text, attempt,
                         min_remaining_tokens=min_remaining_tokens,
-                        max_retry_wait=max_retry_wait,
+                        max_retry_wait=0.0,
                     )
+                    # signal_long_wait: if the reset window exceeds max_retry_wait,
+                    # return immediately so the outer model-cycling loop can switch.
+                    if signal_long_wait and max_retry_wait > 0 and wait_uncapped > max_retry_wait:
+                        result = {
+                            "_http_error": exc.code,
+                            "_url": url,
+                            "_body": body_text,
+                            "_retry_wait_s": wait_uncapped,
+                            "_wait_reason": wait_reason,
+                        }
+                        attempt_trace["sleep_s"] = 0.0
+                        attempt_trace["sleep_reason"] = f"signal_long_wait:{wait_reason}"
+                        break
+                    wait = wait_uncapped if max_retry_wait <= 0 else min(wait_uncapped, max_retry_wait)
                     attempt_trace["sleep_s"] = wait
                     attempt_trace["sleep_reason"] = wait_reason
                     trace["retry_sleep_s"] += wait
@@ -390,6 +406,7 @@ class HttpClient:
         timeout_s: float = 90.0,
         track_tokens: bool = True,
         response_cacheable: Any | None = None,
+        signal_long_wait: bool = False,
     ) -> Any | None:
         hdrs: dict[str, str] = {
             "Content-Type": "application/json",
@@ -424,6 +441,7 @@ class HttpClient:
             track_tokens=track_tokens,
             min_remaining_tokens=min_remaining_tokens,
             max_retry_wait=max_retry_wait,
+            signal_long_wait=signal_long_wait,
         )
 
     def post_multipart(

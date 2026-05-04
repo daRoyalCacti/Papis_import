@@ -13,6 +13,10 @@ Example config.json:
     "llm_endpoint":         "https://api.groq.com/openai/v1",
     "llm_api_key":          "gsk_...",
     "llm_model":            "llama-3.3-70b-versatile",
+    "llm_models":           ["llama-3.3-70b-versatile", "openai/gpt-oss-120b",
+                             "qwen/qwen3-32b", "meta-llama/llama-4-scout-17b-16e-instruct",
+                             "openai/gpt-oss-20b", "llama-3.1-8b-instant"],
+    "llm_switch_threshold": 120,
     "vision_llm_endpoint":  "https://api.groq.com/openai/v1",
     "vision_llm_api_key":   "gsk_...",
     "vision_llm_model":     "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -76,6 +80,8 @@ _CONFIG_MAP = {
     "llm_endpoint":         "llm-endpoint",
     "llm_api_key":          "llm-api-key",
     "llm_model":            "llm-model",
+    "llm_models":           "llm-models",
+    "llm_switch_threshold": "llm-switch-threshold",
     "llm_chars":            "llm-chars",
     "llm_request_timeout":  "llm-request-timeout",
     "local_llm":            "local-llm",
@@ -143,6 +149,9 @@ def main() -> int:
                 cmd.append(flag)
                 injected.append(flag)
         else:
+            # llm_models may be a JSON list ["a","b",...] or a comma-separated string.
+            if cfg_key == "llm_models" and isinstance(value, list):
+                value = ",".join(str(v) for v in value)
             cmd.extend([flag, str(value)])
             injected.append(f"{flag}={value}")
 
