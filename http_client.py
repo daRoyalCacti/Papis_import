@@ -18,8 +18,18 @@ from papis_import.http.trace import (
     _now_iso,
     _redacted_url,
 )
+from papis_import.output.writers import LiveStatusReporter
 from papis_import.utils import USER_AGENT, eprint
 
+
+def _phase_for_bucket(bucket: str) -> str:
+    if bucket == "llm":
+        return "text_llm"
+    if bucket == "vision_llm":
+        return "vision_llm"
+    if bucket in {"crossref", "openalex", "openlibrary", "google_books", "semanticscholar", "arxiv"}:
+        return "title_search"
+    return "identifier_lookup"
 
 
 class HttpClient:
@@ -30,10 +40,12 @@ class HttpClient:
         cache: Cache,
         mailto: str = "",
         verbose: bool = False,
+        live_reporter: LiveStatusReporter | None = None,
     ) -> None:
         self.cache   = cache
         self.mailto  = mailto.strip()   # used for both Crossref & OpenAlex polite pool
         self.verbose = verbose
+        self.live_reporter = live_reporter
         self._last: dict[str, float] = {}
         # Maps bucket → (remaining_tokens, reset_at_monotonic).
         # Populated from x-ratelimit-remaining-tokens / x-ratelimit-reset-tokens
@@ -117,6 +129,21 @@ class HttpClient:
             f"(need ≥{min_remaining}), sleeping {wait:.1f}s for quota reset"
         )
         actual = wait + 1.0  # +1 s buffer so we don't race the window edge
+        if self.live_reporter is not None:
+            self.live_reporter.update(
+                status="sleeping",
+                phase=_phase_for_bucket(bucket),
+                bucket=bucket,
+                event="pacing_sleep",
+                message=(
+                    f"{bucket} token pacing: {remaining} remaining, "
+                    f"need {min_remaining}, sleeping {actual:.1f}s"
+                ),
+                wait_s=round(actual, 3),
+                sleep_reason="tokens_reset",
+                remaining_tokens=remaining,
+                needed_tokens=min_remaining,
+            )
         time.sleep(actual)
         self._pacing_sleep[bucket] = self._pacing_sleep.get(bucket, 0.0) + actual
         return actual
@@ -189,6 +216,18 @@ class HttpClient:
                 slept = self._wait_for_token_budget(bucket, min_remaining_tokens)
                 attempt_trace["pacing_sleep_s"] = slept
                 trace["pacing_sleep_s"] += slept
+            if self.live_reporter is not None:
+                self.live_reporter.update(
+                    status="processing",
+                    phase=_phase_for_bucket(bucket),
+                    bucket=bucket,
+                    event="request_started",
+                    method=method,
+                    url=_redacted_url(url),
+                    attempt=attempt + 1,
+                    max_retries=max_retries,
+                    message=f"{bucket} {method} request started",
+                )
             req = urllib.request.Request(url, data=req_body, headers=req_headers,
                                          method=method)
             try:
@@ -211,9 +250,31 @@ class HttpClient:
                     attempt_trace["sleep_s"] = wait
                     attempt_trace["sleep_reason"] = wait_reason
                     trace["retry_sleep_s"] += wait
-                    if self.verbose:
-                        eprint(f"[retry] {log_kind} {url} HTTP {exc.code}, waiting {wait}s"
-                               f" (attempt {attempt+1}/{max_retries})")
+                    eprint(
+                        f"[retry] {bucket} {method} HTTP {exc.code}, "
+                        f"sleeping {wait}s reason={wait_reason} "
+                        f"attempt {attempt+1}/{max_retries} url={_redacted_url(url)}"
+                    )
+                    if self.live_reporter is not None:
+                        self.live_reporter.update(
+                            status="sleeping",
+                            phase=_phase_for_bucket(bucket),
+                            bucket=bucket,
+                            event="rate_limit_sleep",
+                            method=method,
+                            url=_redacted_url(url),
+                            message=(
+                                f"{bucket} {method} HTTP {exc.code}; "
+                                f"sleeping {wait}s ({wait_reason})"
+                            ),
+                            wait_s=wait,
+                            sleep_reason=wait_reason,
+                            attempt=attempt + 1,
+                            max_retries=max_retries,
+                            http_status=exc.code,
+                            rate_limit=attempt_trace.get("rate_limit") or {},
+                            rate_limit_error=attempt_trace.get("rate_limit_error") or {},
+                        )
                     time.sleep(wait)
                     continue
                 if http_error_as_data:

@@ -16,6 +16,7 @@ class OutputPaths:
     soft: Path
     debug: Path | None
     profile: Path | None
+    live_status: Path | None
 
 
 def _require_ext(path: Path, ext: str, flag: str) -> None:
@@ -46,7 +47,18 @@ def resolve_output_paths(args: argparse.Namespace) -> OutputPaths:
         _require_ext(profile, ".tsv", "profile-tsv")
     else:
         profile = None
-    return OutputPaths(auto=auto, review=review, soft=soft, debug=debug, profile=profile)
+    if getattr(args, "live_status_json", ""):
+        live_status = Path(os.path.expanduser(args.live_status_json)).resolve()
+    else:
+        live_status = None
+    return OutputPaths(
+        auto=auto,
+        review=review,
+        soft=soft,
+        debug=debug,
+        profile=profile,
+        live_status=live_status,
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -127,6 +139,10 @@ def parse_args() -> argparse.Namespace:
                    help="Optional path for a timing TSV. One row is appended "
                         "as each file finishes, with elapsed wall time broken "
                         "down by pipeline phase and per-identifier lookup timings.")
+    p.add_argument("--live-status-json", default="",
+                   help="Optional path for mutable live status JSON. The file "
+                        "is atomically rewritten as the current PDF or HTTP "
+                        "rate-limit state changes.")
     p.add_argument("--cache-dir", default=DEFAULT_CACHE_DIR,
                    help="Directory to cache API responses")
     p.add_argument("--clear-cache-errors", action="store_true",

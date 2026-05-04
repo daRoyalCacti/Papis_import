@@ -16,7 +16,12 @@ from papis_import.http_client import HttpClient
 from papis_import.models import Metadata, Record, TimingBreakdown
 from papis_import.ocr_retry import run_ocr_retry
 from papis_import.output.readers import load_previous_tsv
-from papis_import.output.writers import DebugWriter, ProfileWriter, ResultWriter
+from papis_import.output.writers import (
+    DebugWriter,
+    LiveStatusReporter,
+    ProfileWriter,
+    ResultWriter,
+)
 from papis_import.pipeline import resolve
 from papis_import.utils import (
     build_tags,
@@ -167,6 +172,7 @@ def run_pipeline_loop(
     http: HttpClient,
     prev_verified: dict[str, Record],
     writers: Writers,
+    live_status: LiveStatusReporter | None = None,
 ) -> tuple[list[Record], int, int]:
     """Process each PDF and return (records, ocr_attempted, ocr_recovered)."""
     records: list[Record] = []
@@ -181,10 +187,9 @@ def run_pipeline_loop(
             continue
 
         file_started = perf_counter()
-        if args.verbose:
-            print(f"[{idx}/{total}] {path.name}")
-        elif idx % 25 == 0:
-            print(f"  … {idx}/{total}")
+        eprint(f"[current {idx}/{total}] {path}")
+        if live_status is not None:
+            live_status.file_started(idx, total, path)
 
         tags = build_tags(staging_dir, path)
         try:
@@ -223,6 +228,8 @@ def run_pipeline_loop(
             rec.timing.file_wall_s = perf_counter() - file_started
             records.append(rec)
             _append_record(writers, rec)
+            if live_status is not None:
+                live_status.file_completed(idx, total, path)
 
         except KeyboardInterrupt:
             raise
@@ -245,7 +252,11 @@ def run_pipeline_loop(
             )
             records.append(rec)
             _append_record(writers, rec, profile_status="error")
+            if live_status is not None:
+                live_status.file_error(idx, total, path, clean_text(str(exc)))
 
+    if live_status is not None:
+        live_status.run_finished(total)
     return records, ocr_attempted, ocr_recovered
 
 
@@ -293,6 +304,8 @@ def print_summary(
         print(f"Debug JSONL  : {paths.debug}")
     if paths.profile:
         print(f"TSV (profile): {paths.profile}")
+    if paths.live_status:
+        print(f"Live status  : {paths.live_status}")
     print(f"Cache        : {Path(cache_dir).resolve()}")
 
 
@@ -347,7 +360,13 @@ def main() -> int:
     if getattr(args, "clear_cache_errors", False):
         removed = cache.clear_errors()
         print(f"Cleared {removed} stale error entries from cache.")
-    http = HttpClient(cache=cache, mailto=args.mailto, verbose=args.verbose)
+    live_status = LiveStatusReporter(paths.live_status)
+    http = HttpClient(
+        cache=cache,
+        mailto=args.mailto,
+        verbose=args.verbose,
+        live_reporter=live_status if live_status.enabled else None,
+    )
 
     total = len(files)
     print(f"Scanning {total} PDF(s) in {staging_dir}")
@@ -360,7 +379,14 @@ def main() -> int:
                 print(f"GROBID    : using {grobid_session.url}")
         extractors = ExtractorSet.build(args, http)
         records, ocr_attempted, ocr_recovered = run_pipeline_loop(
-            files, staging_dir, extractors, args, http, prev_verified, writers
+            files,
+            staging_dir,
+            extractors,
+            args,
+            http,
+            prev_verified,
+            writers,
+            live_status if live_status.enabled else None,
         )
 
     print_summary(

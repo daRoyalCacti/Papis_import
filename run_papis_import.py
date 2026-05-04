@@ -25,6 +25,7 @@ Example config.json:
     "soft_tsv":            "~/Documents/papis_import_soft.tsv",
     "debug_jsonl":         "~/Documents/papis_import_debug.jsonl",
     "profile_tsv":         "~/Documents/papis_import_profile.tsv",
+    "live_status_json":    "~/Documents/papis_import_current_status.json",
     "cache_dir":           "~/.cache/papis_import",
     "title_search_timeout": 12
 }
@@ -56,6 +57,7 @@ _CONFIG_MAP = {
     "soft_tsv":             "soft-tsv",
     "debug_jsonl":          "debug-jsonl",
     "profile_tsv":          "profile-tsv",
+    "live_status_json":     "live-status-json",
     "cache_dir":            "cache-dir",
     "title_search_timeout": "title-search-timeout",
     "google_books_api_key": "google-books-api-key",
