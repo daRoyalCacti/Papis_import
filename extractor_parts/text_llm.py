@@ -12,7 +12,7 @@ from papis_import.core.text import clean_text
 from papis_import.extractor_parts.common import coerce_str
 from papis_import.extractor_parts.llm_pool import ModelPool
 from papis_import.http_client import HttpClient
-from papis_import.llm_config import LlmRequestConfig, local_llm_response_is_cacheable, text_llm_config
+from papis_import.llm_config import LlmRequestConfig, local_llm_response_is_cacheable, remote_llm_response_is_cacheable, text_llm_config
 from papis_import.models import Candidate
 from papis_import.utils import eprint
 
@@ -177,7 +177,7 @@ class TextLlmExtractor:
                 min_remaining_tokens=min_remaining_tokens,
                 timeout_s=cfg.timeout_s,
                 track_tokens=cfg.track_tokens,
-                response_cacheable=local_llm_response_is_cacheable if cfg.local else None,
+                response_cacheable=local_llm_response_is_cacheable if cfg.local else remote_llm_response_is_cacheable,
                 max_retry_wait=cfg.switch_threshold_s if pool is not None else 0.0,
                 signal_long_wait=pool is not None,
             )

@@ -52,7 +52,7 @@ class Cache:
                     should_delete = True
                 elif "_text" in data and not data["_text"]:
                     should_delete = True
-                elif "_http_error" in data and data["_http_error"] in (429, 500, 502, 503, 504):
+                elif "_http_error" in data and data["_http_error"] in (400, 429, 500, 502, 503, 504):
                     should_delete = True
             if should_delete:
                 cache_file.unlink(missing_ok=True)
@@ -74,4 +74,4 @@ def json_is_cacheable(data: Any) -> bool:
     code = data.get("_http_error")
     if code is None:
         return True   # Successful response
-    return code not in (429, 500, 502, 503, 504)  # Retry transient HTTP errors
+    return code not in (400, 429, 500, 502, 503, 504)  # Retry transient HTTP errors

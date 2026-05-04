@@ -127,6 +127,36 @@ def vision_llm_config(args: argparse.Namespace) -> LlmRequestConfig:
     )
 
 
+def remote_llm_response_is_cacheable(data: object) -> bool:
+    """Return False for remote LLM responses that should not be persisted to cache.
+
+    Rejects: HTTP error responses (4xx/5xx), missing/empty content, unparseable
+    JSON, and responses that extract nothing (no title and no authors).
+    These are all re-tryable failures that should not be frozen for future runs.
+    """
+    if not isinstance(data, dict):
+        return True
+    if "_http_error" in data or "_error" in data:
+        return False
+    try:
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        return False
+    if not isinstance(content, str) or not content.strip():
+        return False
+    try:
+        import json as _json
+        parsed = _json.loads(content)
+    except Exception:
+        return False
+    if not isinstance(parsed, dict):
+        return False
+    title = str(parsed.get("title") or "").strip()
+    authors = parsed.get("authors") or []
+    authors_nonempty = any(str(a).strip() for a in authors) if isinstance(authors, list) else False
+    return bool(title or authors_nonempty)
+
+
 def local_llm_response_is_cacheable(data: object) -> bool:
     if not isinstance(data, dict):
         return True
