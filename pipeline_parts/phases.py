@@ -73,7 +73,10 @@ class CandidatePhase:
 
         if run.text:
             t0 = perf_counter()
-            llm_cands = run.extractors.text_llm.candidate(run.path, run.text, run.filename_best)
+            wide_text = run.extractors.text.get_wide_text(run.path)
+            llm_cands = run.extractors.text_llm.candidate(
+                run.path, run.text, run.filename_best, wide_text=wide_text
+            )
             run.candidates.extend(llm_cands)
             run.timing.text_llm_s = perf_counter() - t0
             run.debug.update({
@@ -168,6 +171,40 @@ class IdentifierPhase:
     def _has_passing_match(self) -> bool:
         run = self.run
         return run.best_ident is not None and run.best_ident.sanity_passed
+
+    def recheck_uncorroborated(self) -> Metadata | None:
+        """Re-test corroboration for a previously stashed uncorroborated identifier.
+
+        When safe-mode corroboration fails in Phase 1, the identifier result is
+        preserved in run.uncorroborated_ident and the pipeline continues to collect
+        richer candidates (GROBID, LLM, vision).  This method re-evaluates
+        corroboration against the now-extended candidate pool; if it passes, the
+        stashed result is promoted and finalized normally.
+
+        Called after each new extractor phase so that GROBID, text-LLM, and vision
+        candidates each get a chance to supply the missing corroboration — in
+        particular the vision case (case 003) where vision has the correct title
+        and authors but the corroboration check ran before vision executed.
+        """
+        run = self.run
+        if run.uncorroborated_ident is None:
+            return None
+        decision = _identifier_corroboration_decision(run.uncorroborated_ident, run.candidates)
+        if not decision.accepted:
+            return None
+        meta = run.uncorroborated_ident
+        note = run.uncorroborated_ident_note
+        run.uncorroborated_ident = None
+        run.uncorroborated_ident_note = ""
+        run.uncorroborated_ident_score = -1.0
+        run.best_ident_corroborated = True
+        suffix = decision.note or f"corroborated by {decision.source}"
+        full_note = f"{note} ({suffix})" if note else suffix
+        run.selector.update_debug(run.debug, run.candidates)
+        return run.finalizer.finalize_identifier_winner(
+            meta, run.candidates, full_note, run.needs_ocr_flag, run.debug,
+            force_review=decision.force_review, soft_reason=decision.soft_reason,
+        )
 
     def run_phase(self) -> Metadata | None:
         """Refresh pool → lookup → finalize if a match passed sanity (default mode)
@@ -266,6 +303,19 @@ class VisionPhase:
                     trigger_reason = "hard-case: identifiers found but lookup failed"
                 else:
                     trigger_reason = "hard-case: no_identifier"
+
+                # Safe-mode override: if an identifier is waiting for corroboration
+                # but local extractors haven't provided it yet, vision is the last
+                # chance — force it on regardless of the has_strong_searchable gate.
+                if (
+                    not should_call_vision
+                    and accept_mode == "safe"
+                    and run.uncorroborated_ident is not None
+                    and trigger_reason == "skipped: readable text with strong local candidate"
+                ):
+                    should_call_vision = True
+                    trigger_reason = "hard-case: uncorroborated identifier needs vision"
+
             run.debug["vision_trigger"] = trigger_reason
             if should_call_vision:
                 vision_cands, vision_dbg = run.extractors.vision_llm.candidate(
@@ -287,3 +337,32 @@ class VisionPhase:
         rem = run.http.remaining_tokens("vision_llm")
         if rem is not None:
             run.debug["vision_tokens_remaining"] = str(rem)
+
+    def collect_escalated_candidates(self) -> None:
+        """Second vision pass with more pages, used when initial vision didn't corroborate.
+
+        Only fires in safe mode when there is still an uncorroborated identifier
+        and the escalated page count exceeds the initial one.  The extra pages
+        catch books where the title page is past page 4 (e.g. Kosorok p.4).
+        """
+        run = self.run
+        if run.uncorroborated_ident is None or run.skip_vision:
+            return
+        escalate_pages = max(1, int(getattr(run.args, "vision_pages_escalate", 8)))
+        base_pages = max(1, int(getattr(run.args, "vision_pages", 4)))
+        if escalate_pages <= base_pages:
+            return
+        t0 = perf_counter()
+        vision_cands, vision_dbg = run.extractors.vision_llm.candidate(
+            run.path, run.filename_best, is_book=run.is_book, pages_override=escalate_pages,
+        )
+        extend_unique_candidates(run.candidates, vision_cands)
+        # Overwrite vision debug with escalated call values; mark as escalated.
+        run.debug.update({k: str(v) for k, v in vision_dbg.items() if v is not None})
+        run.debug["vision_escalated"] = "yes"
+        run.debug["vision_used"] = (
+            "yes" if run.debug.get("vision_status") not in {"not_configured", "skipped"} else "no"
+        )
+        run.timing.vision_llm_s += perf_counter() - t0
+        run.timing.vision_pacing_s = run.http.take_pacing_s("vision_llm")
+        run.debug["vision_pacing_s"] = f"{run.timing.vision_pacing_s:.6f}"

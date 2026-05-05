@@ -39,6 +39,8 @@ class TextLlmExtractor:
         path: Path,
         text: str,
         filename_cand: Candidate | None,
+        *,
+        wide_text: str = "",
     ) -> list[Candidate]:
         self.last_debug = {
             "text_llm_used": "no",
@@ -69,6 +71,7 @@ class TextLlmExtractor:
             "text_llm_status": "requesting",
             "text_llm_model": models_seq[0],
             "text_llm_chars": str(chars),
+            "text_llm_escalated": "no",
         })
 
         snippet = text[:chars]
@@ -82,6 +85,7 @@ class TextLlmExtractor:
                 "Strip 'Author(s):' prefixes.",
                 "Ignore download watermarks, page numbers, hashes, and JSTOR stable IDs.",
                 "Do not include publisher/series names in the title unless they are part of the real title.",
+                "If the title looks like a publisher series or imprint name (e.g. 'Lecture Notes in X', 'Studies in Logic and the Foundations of Y', 'Springer Series in Z'), return an empty title — that is the series header, not the book's title.",
                 "authors must be a JSON array of individual name strings.",
             ],
             "filename": path.name,
@@ -291,6 +295,73 @@ class TextLlmExtractor:
                 ):
                     if src in usage and usage[src] is not None:
                         self.last_debug[dst] = str(usage[src])
+
+        if final_data is None and wide_text and wide_text[:chars] != snippet:
+            # Tier 1 escalation: one retry with a wider page window.
+            # Fires only when the model-cycle loop produced nothing AND wider text
+            # is available — covers books whose title page is past page 2.
+            wide_snippet = wide_text[:chars]
+            escalate_model = models_seq[0]
+            if pool is not None:
+                pool.reset_call_state()
+            escalate_payload = dict(payload)
+            escalate_prompt_data = dict(prompt_data)
+            escalate_prompt_data["text"] = wide_snippet
+            escalate_messages = [
+                messages[0],
+                {"role": "user", "content": json.dumps(escalate_prompt_data, ensure_ascii=False)},
+            ]
+            escalate_payload["messages"] = escalate_messages
+            if not cfg.local:
+                escalate_payload["model"] = escalate_model
+            cache_key_wide = (
+                f"{path.resolve()}::{path.stat().st_mtime_ns}"
+                f"::{endpoint}::{escalate_model}::{chars}::wide"
+            )
+            if cfg.local:
+                cache_key_wide += f"::max{cfg.max_tokens}::think{cfg.think}"
+            bucket = f"llm:{escalate_model}"
+            resp_wide = self.http.post_json(
+                url,
+                escalate_payload,
+                "llm",
+                cache_key_wide,
+                extra_headers=extra_headers,
+                bucket=bucket,
+                min_interval=cfg.min_interval,
+                min_remaining_tokens=min_remaining_tokens,
+                timeout_s=cfg.timeout_s,
+                track_tokens=cfg.track_tokens,
+                response_cacheable=local_llm_response_is_cacheable if cfg.local else remote_llm_response_is_cacheable,
+                max_retry_wait=0.0,
+                signal_long_wait=False,
+            )
+            wide_content: str | None = None
+            if isinstance(resp_wide, dict) and "choices" in resp_wide:
+                try:
+                    wide_content = resp_wide["choices"][0]["message"]["content"]
+                except Exception:
+                    pass
+            elif isinstance(resp_wide, dict) and "message" in resp_wide:
+                try:
+                    wide_content = resp_wide["message"]["content"]
+                except Exception:
+                    pass
+            if wide_content is not None:
+                try:
+                    wide_data = json.loads(wide_content) if isinstance(wide_content, str) else wide_content
+                    wide_title = clean_text(coerce_str(wide_data.get("title")))
+                    wide_authors = [
+                        clean_text(a) for a in (wide_data.get("authors") or [])
+                        if clean_text(str(a))
+                    ]
+                    if wide_title or wide_authors:
+                        final_data = wide_data
+                        final_resp = resp_wide
+                        chosen = escalate_model
+                        self.last_debug["text_llm_escalated"] = "yes"
+                except Exception:
+                    pass
 
         if final_data is None:
             return []

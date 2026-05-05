@@ -160,6 +160,12 @@ def resolve(
     if (winner := identifiers.run_phase()) is not None:
         return run.finish(winner)
 
+    # Safe mode: re-check whether GROBID/LLM candidates now corroborate the
+    # stashed uncorroborated identifier (corroboration is re-evaluated against
+    # the richer candidate pool after each extractor phase).
+    if (winner := identifiers.recheck_uncorroborated()) is not None:
+        return run.finish(winner)
+
     candidates.compute_book_signal()
 
     # Vision LLM runs after deep identifier passes so books with ISBNs on
@@ -174,6 +180,21 @@ def resolve(
     # Vision may reveal new identifiers not checked before.
     if (winner := identifiers.run_phase()) is not None:
         return run.finish(winner)
+
+    # Safe mode: re-check whether vision candidates corroborate the stashed
+    # uncorroborated identifier.  This is the primary path for case 003 and
+    # similar where vision reads the title page but ran after the first
+    # corroboration check.
+    if (winner := identifiers.recheck_uncorroborated()) is not None:
+        return run.finish(winner)
+
+    # Safe mode escalation: if we still have an uncorroborated identifier, retry
+    # vision with more pages to catch books whose title page is past page 4.
+    if run.uncorroborated_ident is not None:
+        vision.collect_escalated_candidates()
+        candidates.synthesize_candidates()
+        if (winner := identifiers.recheck_uncorroborated()) is not None:
+            return run.finish(winner)
 
     # Capture raw per-source candidates for debug TSVs after all sources ran.
     run.selector.update_debug(run.debug, run.candidates)
