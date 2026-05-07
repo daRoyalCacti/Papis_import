@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import base64
 import dataclasses
+import hashlib
 import json
 import subprocess
 import tempfile
@@ -126,6 +127,7 @@ class VisionLlmExtractor:
         if api_key:
             extra_headers["Authorization"] = f"Bearer {api_key}"
         filename_guess = dataclasses.asdict(filename_cand) if filename_cand else {}
+        pdf_sha1 = hashlib.sha1(path.read_bytes()).hexdigest()
 
         for tier_idx, (tier_pages, tier_dpi) in enumerate(tiers):
             is_last_tier = tier_idx == len(tiers) - 1
@@ -196,10 +198,7 @@ class VisionLlmExtractor:
                     "max_tokens": cfg.max_tokens,
                     "response_format": {"type": "json_object"},
                 }
-            cache_key = (
-                f"{path.resolve()}::{path.stat().st_mtime_ns}::"
-                f"{endpoint}::{model}::vision::p{tier_pages}::r{tier_dpi}"
-            )
+            cache_key = f"{pdf_sha1}::{endpoint}::any::vision::p{tier_pages}::r{tier_dpi}"
             if cfg.local:
                 cache_key += f"::max{cfg.max_tokens}::think{cfg.think}"
 

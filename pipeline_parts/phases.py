@@ -71,7 +71,11 @@ class CandidatePhase:
         run.candidates.extend(run.extractors.grobid.candidate(run.path))
         run.timing.grobid_s = perf_counter() - t0
 
-        if run.text:
+        # Skip text_LLM when an uncorroborated identifier match already exists:
+        # the LLM reads the same pdf_text byte stream that produced it, so it
+        # cannot provide independent evidence.  GROBID (above) uses page layout
+        # and is the independent signal worth running first.
+        if run.text and run.uncorroborated_ident is None:
             t0 = perf_counter()
             llm_cands = run.extractors.text_llm.candidate(run.path, run.text, run.filename_best)
             run.candidates.extend(llm_cands)

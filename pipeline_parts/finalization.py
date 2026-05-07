@@ -253,7 +253,10 @@ def _is_strong_soft_source(source: str) -> bool:
 # a separate lookup), so they count. filename_title_only and filename_author_only
 # are excluded because they each carry only one field — not enough for a two-field check.
 _IDENTIFIER_CORROBORATION_SOURCES = frozenset({
-    "text_header",
+    # text_header is intentionally excluded: it reads the same pdf_text[:N]
+    # byte stream as text_llm.  When leading bytes are wrong (e.g. an ad page
+    # before the real title page), both extractors agree on the wrong answer
+    # and cannot serve as independent evidence for each other.
     "grobid",
     "pdfinfo",
     "pdf_metadata",
@@ -374,12 +377,11 @@ def _identifier_subset_corroboration(meta: Metadata, candidates: list[Candidate]
             note=note,
             force_review=False,
         )
-    return IdentifierCorroboration(
-        accepted=True,
-        source=weak[0],
-        note=f"accepted for review via main-title corroboration by {source_text}",
-        force_review=True,
-    )
+    # Weak-only (filename) is not enough to accept: treat as uncorroborated so
+    # the pipeline continues to vision, which provides independent evidence.
+    # If vision confirms the identifier's title the result is promoted to auto;
+    # if vision disagrees, title-search adjudicates on all candidates.
+    return IdentifierCorroboration()
 
 
 def _is_distinctive_identifier_title(title: str) -> bool:

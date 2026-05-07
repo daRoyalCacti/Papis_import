@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -49,6 +50,7 @@ class TextLlmExtractor:
         endpoint = cfg.endpoint
         api_key = cfg.api_key
         chars = int(getattr(self.args, "llm_chars", 4000))
+        pdf_sha1 = hashlib.sha1(path.read_bytes()).hexdigest()
 
         if getattr(self.args, "ollama_model", "").strip() and not getattr(self.args, "local_llm", False):
             chars = int(getattr(self.args, "ollama_chars", chars))
@@ -162,7 +164,7 @@ class TextLlmExtractor:
                 payload["model"] = chosen
 
             bucket = f"llm:{chosen}"
-            cache_key = f"{path.resolve()}::{path.stat().st_mtime_ns}::{endpoint}::{chosen}::{chars}"
+            cache_key = f"{pdf_sha1}::{endpoint}::any::{chars}"
             if cfg.local:
                 cache_key += f"::max{cfg.max_tokens}::think{cfg.think}"
 

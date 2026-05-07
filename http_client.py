@@ -108,12 +108,23 @@ class HttpClient:
         except Exception:
             pass
 
-    def _wait_for_token_budget(self, bucket: str, min_remaining: int) -> float:
+    def _wait_for_token_budget(
+        self,
+        bucket: str,
+        min_remaining: int,
+        *,
+        signal_long_wait: bool = False,
+        max_retry_wait: float = 0.0,
+    ) -> float:
         """Sleep proactively if the token budget is too low for another API call.
 
         Called before each attempt in the retry loop so that after a capped
         429-sleep we recheck and wait out any remaining reset time rather than
         immediately firing another request into an exhausted quota.
+
+        Returns the number of seconds slept (positive), or a negative sentinel
+        ``-wait`` when ``signal_long_wait=True`` and the required wait exceeds
+        ``max_retry_wait`` — the caller should rotate models instead of sleeping.
         """
         entry = self._token_budget.get(bucket)
         if entry is None:
@@ -124,11 +135,19 @@ class HttpClient:
         wait = reset_at - time.monotonic()
         if wait <= 0:
             return 0.0
+        actual = wait + 1.0  # +1 s buffer so we don't race the window edge
+        if signal_long_wait and max_retry_wait > 0 and actual > max_retry_wait:
+            # Signal the caller to rotate models rather than sleep.
+            eprint(
+                f"[pacing] {bucket}: {remaining} tokens remaining "
+                f"(need ≥{min_remaining}), wait {actual:.1f}s > threshold {max_retry_wait:.1f}s"
+                " — signalling rotation"
+            )
+            return -actual
         eprint(
             f"[pacing] {bucket}: {remaining} tokens remaining "
-            f"(need ≥{min_remaining}), sleeping {wait:.1f}s for quota reset"
+            f"(need ≥{min_remaining}), sleeping {actual:.1f}s for quota reset"
         )
-        actual = wait + 1.0  # +1 s buffer so we don't race the window edge
         if self.live_reporter is not None:
             self.live_reporter.update(
                 status="sleeping",
@@ -214,7 +233,24 @@ class HttpClient:
             attempt_started = time.monotonic()
             attempt_trace = _empty_attempt_trace(attempt, include_pacing=track_tokens)
             if track_tokens and min_remaining_tokens > 0:
-                slept = self._wait_for_token_budget(bucket, min_remaining_tokens)
+                slept = self._wait_for_token_budget(
+                    bucket, min_remaining_tokens,
+                    signal_long_wait=signal_long_wait,
+                    max_retry_wait=max_retry_wait,
+                )
+                if slept < 0:
+                    # Token budget too low; wait exceeds rotation threshold.
+                    result = {
+                        "_http_error": 429,
+                        "_url": url,
+                        "_body": "",
+                        "_retry_wait_s": -slept,
+                        "_wait_reason": "token_budget_pacing",
+                    }
+                    attempt_trace["pacing_sleep_s"] = 0.0
+                    attempt_trace["sleep_reason"] = "signal_long_wait:token_budget_pacing"
+                    trace["attempts"].append(attempt_trace)
+                    break
                 attempt_trace["pacing_sleep_s"] = slept
                 trace["pacing_sleep_s"] += slept
             if self.live_reporter is not None:
@@ -242,15 +278,15 @@ class HttpClient:
                 if track_tokens and exc.headers:
                     self._update_token_budget(bucket, exc.headers)
                 body_text = _fill_http_error_trace(attempt_trace, exc)
-                if exc.code in (429, 503) and attempt < max_retries - 1:
+                if exc.code in (429, 503):
                     # Get the uncapped wait so we can compare against the threshold.
                     wait_uncapped, wait_reason = _retry_wait_s(
                         exc, body_text, attempt,
                         min_remaining_tokens=min_remaining_tokens,
                         max_retry_wait=0.0,
                     )
-                    # signal_long_wait: if the reset window exceeds max_retry_wait,
-                    # return immediately so the outer model-cycling loop can switch.
+                    # signal_long_wait runs unconditionally — not gated on attempt
+                    # count — so the final attempt also triggers model rotation.
                     if signal_long_wait and max_retry_wait > 0 and wait_uncapped > max_retry_wait:
                         result = {
                             "_http_error": exc.code,
@@ -262,37 +298,38 @@ class HttpClient:
                         attempt_trace["sleep_s"] = 0.0
                         attempt_trace["sleep_reason"] = f"signal_long_wait:{wait_reason}"
                         break
-                    wait = wait_uncapped if max_retry_wait <= 0 else min(wait_uncapped, max_retry_wait)
-                    attempt_trace["sleep_s"] = wait
-                    attempt_trace["sleep_reason"] = wait_reason
-                    trace["retry_sleep_s"] += wait
-                    eprint(
-                        f"[retry] {bucket} {method} HTTP {exc.code}, "
-                        f"sleeping {wait}s reason={wait_reason} "
-                        f"attempt {attempt+1}/{max_retries} url={_redacted_url(url)}"
-                    )
-                    if self.live_reporter is not None:
-                        self.live_reporter.update(
-                            status="sleeping",
-                            phase=_phase_for_bucket(bucket),
-                            bucket=bucket,
-                            event="rate_limit_sleep",
-                            method=method,
-                            url=_redacted_url(url),
-                            message=(
-                                f"{bucket} {method} HTTP {exc.code}; "
-                                f"sleeping {wait}s ({wait_reason})"
-                            ),
-                            wait_s=wait,
-                            sleep_reason=wait_reason,
-                            attempt=attempt + 1,
-                            max_retries=max_retries,
-                            http_status=exc.code,
-                            rate_limit=attempt_trace.get("rate_limit") or {},
-                            rate_limit_error=attempt_trace.get("rate_limit_error") or {},
+                    if attempt < max_retries - 1:
+                        wait = wait_uncapped if max_retry_wait <= 0 else min(wait_uncapped, max_retry_wait)
+                        attempt_trace["sleep_s"] = wait
+                        attempt_trace["sleep_reason"] = wait_reason
+                        trace["retry_sleep_s"] += wait
+                        eprint(
+                            f"[retry] {bucket} {method} HTTP {exc.code}, "
+                            f"sleeping {wait}s reason={wait_reason} "
+                            f"attempt {attempt+1}/{max_retries} url={_redacted_url(url)}"
                         )
-                    time.sleep(wait)
-                    continue
+                        if self.live_reporter is not None:
+                            self.live_reporter.update(
+                                status="sleeping",
+                                phase=_phase_for_bucket(bucket),
+                                bucket=bucket,
+                                event="rate_limit_sleep",
+                                method=method,
+                                url=_redacted_url(url),
+                                message=(
+                                    f"{bucket} {method} HTTP {exc.code}; "
+                                    f"sleeping {wait}s ({wait_reason})"
+                                ),
+                                wait_s=wait,
+                                sleep_reason=wait_reason,
+                                attempt=attempt + 1,
+                                max_retries=max_retries,
+                                http_status=exc.code,
+                                rate_limit=attempt_trace.get("rate_limit") or {},
+                                rate_limit_error=attempt_trace.get("rate_limit_error") or {},
+                            )
+                        time.sleep(wait)
+                        continue
                 if http_error_as_data:
                     result = {"_http_error": exc.code, "_url": url, "_body": body_text}
                     if self.verbose:
