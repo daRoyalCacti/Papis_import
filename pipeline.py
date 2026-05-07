@@ -173,6 +173,21 @@ def resolve(
     vision.collect_candidates()
     candidates.synthesize_candidates()
 
+    # For image-only PDFs where OCR produced no text, vision evidence is the
+    # only document-level signal we have.  Use the vision candidates' titles and
+    # authors as a pseudo-text haystack so the sanity check can score title-search
+    # matches against that evidence rather than against nothing.
+    if not run.sanity_text and run.needs_ocr_flag:
+        vision_texts = []
+        for c in run.candidates:
+            if c.source.startswith("vision"):
+                if c.title:
+                    vision_texts.append(c.title)
+                if c.authors:
+                    vision_texts.append(" ".join(c.authors))
+        if vision_texts:
+            run.sanity_text = " ".join(vision_texts)
+
     # Demote GROBID on books: it's trained on article headers and picks up
     # editor/affiliation noise on book cover pages.
     candidates.demote_grobid_for_books()

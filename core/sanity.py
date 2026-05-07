@@ -74,6 +74,19 @@ def sanity_score_for_match(
                 return True
         return False
 
+    def _title_words_in_filename() -> bool:
+        if not filename_words or not meta_title:
+            return False
+        title_norm = _normalize_for_sanity(meta_title)
+        significant = [
+            w for w in title_norm.split()
+            if w not in _TITLE_STOPWORDS and len(w) >= 4
+        ]
+        if not significant:
+            return False
+        hits = sum(1 for w in significant if w in filename_words)
+        return hits / len(significant) >= 0.4
+
     if not pdf_text or len(pdf_text.strip()) < 100:
         if meta_source in identifier_sources:
             return 0.6
@@ -84,8 +97,12 @@ def sanity_score_for_match(
     if is_unreadable_text(pdf_text):
         if meta_source in identifier_sources:
             return 0.6
-        if meta_source in title_search_sources and _author_in_filename():
-            return 0.6
+        if meta_source in title_search_sources:
+            if _author_in_filename():
+                return 0.6
+            if _title_words_in_filename():
+                return 0.5
+        return 0.0
 
     text_norm = _normalize_for_sanity(pdf_text[:8000])
     text_words = set(text_norm.split())

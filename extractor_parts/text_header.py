@@ -88,6 +88,12 @@ class TextHeaderExtractor:
                 if not line:
                     continue
             if re.fullmatch(r"[A-Z\s\-:;,.]{4,}", line):
+                words = line.split()
+                single_char_ratio = sum(
+                    1 for w in words if len(w) == 1 and w.isalpha()
+                ) / max(1, len(words))
+                if single_char_ratio > 0.4:
+                    continue
                 title = line.title()
                 author_offset = 1
                 if i + 1 < len(kept) and _is_all_caps_phrase(kept[i + 1]):

@@ -119,6 +119,7 @@ class TimingBreakdown:
     ocrmypdf_s: float = 0.0
     ocr_reresolve_s: float = 0.0
     ocr_retry_s: float = 0.0
+    ocr_status: str = ""
 
     identifier_lookups: list[IdentifierLookupTiming] = field(default_factory=list)
     title_searches: list[TitleSearchTiming] = field(default_factory=list)
