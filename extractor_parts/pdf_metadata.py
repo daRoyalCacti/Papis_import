@@ -6,7 +6,7 @@ from pathlib import Path
 from papis_import.core.identifiers import extract_identifiers
 from papis_import.core.process import read_cmd
 from papis_import.core.text import clean_text, first_year, split_authors, strip_footnote_markers
-from papis_import.core.title_quality import is_garbage_pdfinfo_title
+from papis_import.core.title_quality import is_garbage_pdfinfo_author, is_garbage_pdfinfo_title
 from papis_import.models import Candidate
 
 try:
@@ -105,6 +105,8 @@ class PdfMetadataExtractor:
         author = fields.get("author", "")
         if is_garbage_pdfinfo_title(title):
             title = ""
+        if is_garbage_pdfinfo_author(author):
+            author = ""
         if not title and not author:
             return []
         cand = Candidate(

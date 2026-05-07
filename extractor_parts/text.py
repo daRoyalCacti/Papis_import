@@ -31,3 +31,9 @@ class TextExtractor:
         raw = read_cmd(["pdftotext", "-f", "1", "-l", str(pages), str(path), "-"])
         return repair_ligature_splits(raw)
 
+    def get_wide_text(self, path: Path) -> str:
+        """Extract a wider window for text-LLM escalation on hard cases."""
+        pages = max(5, int(getattr(self.args, "text_llm_pages_escalated", 5)))
+        raw = read_cmd(["pdftotext", "-f", "1", "-l", str(pages), str(path), "-"])
+        return repair_ligature_splits(raw)
+

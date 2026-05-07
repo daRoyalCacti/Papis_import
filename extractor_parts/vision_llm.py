@@ -96,12 +96,13 @@ class VisionLlmExtractor:
         path: Path,
         filename_cand: Candidate | None,
         is_book: bool = False,
+        pages_override: int | None = None,
     ) -> tuple[list[Candidate], dict[str, str]]:
         cfg = vision_llm_config(self.args)
         endpoint = cfg.endpoint
         model = cfg.model
         api_key = cfg.api_key
-        pages = max(1, int(getattr(self.args, "vision_pages", 4)))
+        pages = pages_override if pages_override is not None else max(1, int(getattr(self.args, "vision_pages", 4)))
         dpi = max(72, int(getattr(self.args, "vision_dpi", 120)))
 
         debug: dict[str, str] = {

@@ -287,6 +287,31 @@ def _is_subset_strong_source(source: str) -> bool:
     )
 
 
+def _identifier_from_pdf_text(meta: Metadata, candidates: list[Candidate]) -> bool:
+    """Return True if the matched identifier was extracted from the PDF text stream.
+
+    When the identifier (ISBN/DOI/arXiv) was scraped by text_header (or an LLM
+    reading the same byte stream), text_header and text_llm cannot act as
+    independent corroborators — they all read the same, potentially wrong, page.
+    """
+    for c in candidates:
+        matched = (
+            (meta.isbn and c.isbn == meta.isbn)
+            or (meta.doi and c.doi == meta.doi)
+            or (meta.arxiv and c.arxiv == meta.arxiv)
+        )
+        if matched and (c.source == "text_header" or c.source.startswith("llm:")):
+            return True
+    return False
+
+
+def _is_independent_corroborator(source: str, from_pdf_text: bool) -> bool:
+    """Return False if *source* shares the same evidence stream as the identifier."""
+    if not from_pdf_text:
+        return True
+    return not (source == "text_header" or source.startswith("llm:"))
+
+
 def _identifier_corroborating_source(meta: Metadata, candidates: list[Candidate]) -> str:
     """Return the best local source that corroborates meta on title+author, or ''.
 
@@ -295,14 +320,23 @@ def _identifier_corroborating_source(meta: Metadata, candidates: list[Candidate]
       - title_similarity(local_title, resolved_title) ≥ SOFT_AUTO_TITLE_SIM (0.7)
       - author_overlap(local_authors, resolved_authors) > 0
     from at least one source in _IDENTIFIER_CORROBORATION_SOURCES or any LLM source.
+
+    Crucially, when the identifier itself was extracted from the PDF text stream
+    (via text_header or text_llm), those same sources are excluded from
+    corroborating — they share the same potentially-wrong byte window and are not
+    independent evidence.  Only grobid, vision, filename, or embedded metadata
+    can corroborate in that case.
     """
     title = (meta.title or "").strip()
     if not title:
         return ""
+    from_pdf_text = _identifier_from_pdf_text(meta, candidates)
     best_source = ""
     best_sim = 0.0
     for cand in candidates:
         if not _is_identifier_corroborator(cand.source):
+            continue
+        if not _is_independent_corroborator(cand.source, from_pdf_text):
             continue
         if not cand.title:
             continue
@@ -344,10 +378,13 @@ def _identifier_subset_corroboration(meta: Metadata, candidates: list[Candidate]
     if not _is_distinctive_identifier_title(meta.title):
         return IdentifierCorroboration()
 
+    from_pdf_text = _identifier_from_pdf_text(meta, candidates)
     strong: list[str] = []
     weak: list[str] = []
     for cand in candidates:
         if not _is_identifier_corroborator(cand.source):
+            continue
+        if not _is_independent_corroborator(cand.source, from_pdf_text):
             continue
         if not (cand.title and cand.authors):
             continue
@@ -415,6 +452,7 @@ def _evaluate_soft_auto(meta: Metadata, candidates: list[Candidate]) -> tuple[bo
     if is_garbage_title(title) or is_journal_abbrev_title(title) or is_suspicious_title(title):
         return False, []
 
+    title_norm_words = normalize_title(title).split()
     title_match_sources: list[str] = []
     author_match_sources: set[str] = set()
     for cand in candidates:
@@ -422,8 +460,19 @@ def _evaluate_soft_auto(meta: Metadata, candidates: list[Candidate]) -> tuple[bo
             continue
         if not cand.title:
             continue
-        if title_similarity(cand.title, title) < SOFT_AUTO_TITLE_SIM:
-            continue
+        sim = title_similarity(cand.title, title)
+        if sim < SOFT_AUTO_TITLE_SIM:
+            # Also accept when candidate title is a clean word-level prefix of
+            # the winner title (e.g. text_header extracted the main title but
+            # not the subtitle).
+            cand_words = normalize_title(cand.title).split()
+            is_prefix = (
+                len(cand_words) >= 4
+                and len(cand_words) < len(title_norm_words)
+                and title_norm_words[:len(cand_words)] == cand_words
+            )
+            if not is_prefix:
+                continue
         if cand.source in title_match_sources:
             continue
         title_match_sources.append(cand.source)

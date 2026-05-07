@@ -59,6 +59,17 @@ _GARBAGE_PDFINFO_KEYWORDS = (
     "latex with hyperref", "powerpoint", "libreoffice",
 )
 
+# Matches InDesign, QuarkXPress, FrameMaker and similar layout tool filenames
+_GARBAGE_PDFINFO_EXTENSIONS_RE = re.compile(
+    r"\.(tmp|pdf|tex|dvi|docx?|indd|qxd|fm|qxp)\b", re.I
+)
+
+# ISO spec strings like "ISO 15930 - …" that leak from PDF/X metadata
+_ISO_SPEC_RE = re.compile(r"^ISO\s*\d{4,}", re.I)
+
+# Single lowercase token artefacts from PDF generators (e.g. "ufonter", "acrobat")
+_SINGLE_LOWERCASE_TOKEN_RE = re.compile(r"^[a-z]{3,20}$")
+
 
 def is_garbage_pdfinfo_title(title: str) -> bool:
     """Return True if a pdfinfo /Title field looks like software metadata."""
@@ -66,12 +77,74 @@ def is_garbage_pdfinfo_title(title: str) -> bool:
         return True
     if _GARBAGE_PDFINFO_TITLE_RE.match(title):
         return True
-    if re.search(r"\.(tmp|pdf|tex|dvi|docx?)\b", title, re.I):
+    if _GARBAGE_PDFINFO_EXTENSIONS_RE.search(title):
+        return True
+    if _ISO_SPEC_RE.match(title):
         return True
     lower = title.lower()
     if any(kw in lower for kw in _GARBAGE_PDFINFO_KEYWORDS):
         return True
     return False
+
+
+def is_garbage_pdfinfo_author(author: str) -> bool:
+    """Return True if a pdfinfo /Author field looks like a software artefact."""
+    if not author or not author.strip():
+        return True
+    stripped = author.strip()
+    # Single lowercase token (e.g. "ufonter", "operator")
+    if _SINGLE_LOWERCASE_TOKEN_RE.fullmatch(stripped):
+        return True
+    # ISO spec string
+    if _ISO_SPEC_RE.match(stripped):
+        return True
+    # Layout-tool filename
+    if _GARBAGE_PDFINFO_EXTENSIONS_RE.search(stripped):
+        return True
+    return False
+
+
+# Publisher/series banners that appear on the first page of many academic books.
+# These are NOT the book's title; blocking them from "strong candidate" lists
+# prevents them from gating off vision on books with late title pages.
+_SERIES_PAGE_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(p, re.I) for p in [
+        r"^lecture notes in\b",
+        r"^springer series in\b",
+        r"^springer monographs in\b",
+        r"^springer tracts in\b",
+        r"^studies in logic and the foundations\b",
+        r"^progress in (nonlinear|mathematics|theoretical|probability)\b",
+        r"^modeling and simulation in (science|engineering)\b",
+        r"^wiley classics library\b",
+        r"^graduate texts in (mathematics|physics|statistics)\b",
+        r"^universitext\b",
+        r"^subseries of lecture notes\b",
+        r"^applied mathematical sciences\b",
+        r"^grundlehren der mathematischen\b",
+        r"^ergebnisse der mathematik\b",
+        r"^north.?holland mathematical library\b",
+        r"^cambridge studies in advanced mathematics\b",
+        r"^london mathematical society\b",
+        r"^oxford lecture series\b",
+        r"^de gruyter studies\b",
+        r"^texts in applied mathematics\b",
+        r"^pure and applied mathematics\b",
+    ]
+]
+
+
+def is_series_page_title(title: str) -> bool:
+    """Return True when *title* looks like a publisher series banner, not a real title.
+
+    These appear on page 1 of many academic books and are frequently mistaken
+    for the actual title by text-based extractors.  The real title page is
+    typically on pages 2-4.
+    """
+    if not title:
+        return False
+    t = title.strip()
+    return any(pat.match(t) for pat in _SERIES_PAGE_PATTERNS)
 
 
 def is_journal_header_title(title: str) -> bool:

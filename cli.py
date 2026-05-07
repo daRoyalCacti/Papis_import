@@ -88,6 +88,7 @@ def _apply_ocr_result(
     timing.ocr_retry_s     += ocr_timing.ocr_retry_s
     timing.identifier_lookups_s += ocr_timing.identifier_lookups_s
     timing.identifier_lookups.extend(ocr_timing.identifier_lookups)
+    timing.ocr_status = status
 
     if new_meta is None:
         if verbose:

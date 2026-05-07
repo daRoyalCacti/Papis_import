@@ -205,6 +205,28 @@ def parse_args() -> argparse.Namespace:
                      help="Characters of PDF text to send to the LLM (default: 4000)")
     llm.add_argument("--llm-request-timeout", type=float, default=90.0,
                      help="HTTP timeout in seconds for remote text LLM requests (default: 90)")
+    llm.add_argument("--llm-models", default="",
+                     help=(
+                         "Comma-separated list of remote LLM models to cycle through when "
+                         "earlier models hit rate limits or return empty results. "
+                         "Overrides --llm-model when set. "
+                         "Recommended (strongest first): "
+                         "llama-3.3-70b-versatile,openai/gpt-oss-120b,qwen/qwen3-32b,"
+                         "meta-llama/llama-4-scout-17b-16e-instruct,"
+                         "openai/gpt-oss-20b,llama-3.1-8b-instant"
+                     ))
+    llm.add_argument("--text-llm-pages-escalated", type=int, default=5,
+                     dest="text_llm_pages_escalated",
+                     help="Leading PDF pages to extract for the text-LLM escalation retry "
+                          "(default: 5). Only used when the normal attempt returns nothing. "
+                          "Increases pdftotext coverage on books where the title page is "
+                          "past page 2 without paying extra tokens on the working majority.")
+    llm.add_argument("--llm-switch-threshold", type=float, default=120.0,
+                     help=(
+                         "Switch to the next model in --llm-models when a 429 retry "
+                         "would sleep longer than this many seconds (default: 120). "
+                         "Set to 0 to disable cycling."
+                     ))
     llm.add_argument("--local-llm", action="store_true",
                      help="Use local Ollama for both text and vision LLM extraction")
     llm.add_argument("--local-llm-model", default=DEFAULT_LOCAL_LLM_MODEL,
@@ -260,6 +282,12 @@ def parse_args() -> argparse.Namespace:
                      help="Number of leading pages to render and send for books "
                           "and as the escalation ceiling for non-books "
                           "(default: 4 — covers cover + title + copyright + one more)")
+    vis.add_argument("--vision-pages-escalate", type=int, default=8,
+                     dest="vision_pages_escalate",
+                     help="Pages to render for the vision-LLM escalation pass "
+                          "(default: 8). Used when an authoritative identifier "
+                          "exists but no local extractor corroborated it after the "
+                          "initial vision pass. Only fires once per file in safe mode.")
     vis.add_argument("--vision-dpi",          type=int, default=120,
                      help="Render DPI for the page images (default: 120). "
                           "Higher = sharper but more tokens. 96 is fine for "

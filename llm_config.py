@@ -21,6 +21,23 @@ class LlmRequestConfig:
     local: bool = False
     max_tokens: int = 0
     think: bool | str | None = None
+    # Model cycling (remote path only; ignored when local=True)
+    models: tuple[str, ...] = ()
+    switch_threshold_s: float = 120.0
+    soft_failure_cooldown_s: float = 60.0
+
+
+def _resolve_llm_models(args: argparse.Namespace) -> tuple[str, ...]:
+    """Return the ordered model preference list from args.
+
+    Prefers --llm-models (comma-separated); falls back to --llm-model as a
+    one-element list for backward compatibility.
+    """
+    raw = str(getattr(args, "llm_models", "") or "").strip()
+    if raw:
+        return tuple(m.strip() for m in raw.split(",") if m.strip())
+    single = str(getattr(args, "llm_model", "") or "").strip()
+    return (single,) if single else ()
 
 
 def local_llm_enabled(args: argparse.Namespace) -> bool:
@@ -59,15 +76,21 @@ def text_llm_config(args: argparse.Namespace) -> LlmRequestConfig:
             max_tokens=local_llm_num_predict(args),
             think=False,
         )
+    models = _resolve_llm_models(args)
+    # Space out calls per model so the aggregate endpoint rate stays reasonable
+    # (one model active at a time in normal operation; cycling is the exception).
+    min_interval = 0.5
     return LlmRequestConfig(
         endpoint=str(getattr(args, "llm_endpoint", "") or "").strip(),
-        model=str(getattr(args, "llm_model", "") or "").strip(),
+        model=models[0] if models else "",
         api_key=str(getattr(args, "llm_api_key", "") or "").strip(),
         timeout_s=float(getattr(args, "llm_request_timeout", 90.0) or 90.0),
         track_tokens=True,
-        min_interval=0.5,
+        min_interval=min_interval,
         min_remaining_tokens=-1,
         max_tokens=500,
+        models=models,
+        switch_threshold_s=float(getattr(args, "llm_switch_threshold", 120.0) or 120.0),
     )
 
 
@@ -102,6 +125,36 @@ def vision_llm_config(args: argparse.Namespace) -> LlmRequestConfig:
         min_remaining_tokens=10_000,
         max_tokens=600,
     )
+
+
+def remote_llm_response_is_cacheable(data: object) -> bool:
+    """Return False for remote LLM responses that should not be persisted to cache.
+
+    Rejects: HTTP error responses (4xx/5xx), missing/empty content, unparseable
+    JSON, and responses that extract nothing (no title and no authors).
+    These are all re-tryable failures that should not be frozen for future runs.
+    """
+    if not isinstance(data, dict):
+        return True
+    if "_http_error" in data or "_error" in data:
+        return False
+    try:
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        return False
+    if not isinstance(content, str) or not content.strip():
+        return False
+    try:
+        import json as _json
+        parsed = _json.loads(content)
+    except Exception:
+        return False
+    if not isinstance(parsed, dict):
+        return False
+    title = str(parsed.get("title") or "").strip()
+    authors = parsed.get("authors") or []
+    authors_nonempty = any(str(a).strip() for a in authors) if isinstance(authors, list) else False
+    return bool(title or authors_nonempty)
 
 
 def local_llm_response_is_cacheable(data: object) -> bool:

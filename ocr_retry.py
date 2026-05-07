@@ -49,6 +49,9 @@ def run_ocr_retry(
                     ["ocrmypdf",
                      "--force-ocr", "--optimize", "1",
                      "--output-type", "pdf",
+                     "-l", "eng",
+                     "--rotate-pages",
+                     "--deskew",
                      str(path), str(ocr_path)],
                     check=False, capture_output=True, text=True,
                     timeout=600,
@@ -60,10 +63,11 @@ def run_ocr_retry(
                 return None, "ocrmypdf-timeout", timing
 
             if cp.returncode != 0:
-                stderr_tail = (cp.stderr or cp.stdout or "").strip().splitlines()
-                stderr_tail = stderr_tail[-1] if stderr_tail else "(no output)"
+                stderr_lines = (cp.stderr or cp.stdout or "").strip().splitlines()
+                # Keep last 5 lines for a more useful diagnostic
+                stderr_tail = " | ".join(stderr_lines[-5:]) if stderr_lines else "(no output)"
                 timing.ocr_retry_s = perf_counter() - retry_started
-                return None, f"ocrmypdf-failed: {stderr_tail[:200]}", timing
+                return None, f"ocrmypdf-failed: {stderr_tail[:400]}", timing
 
             if not ocr_path.exists():
                 timing.ocr_retry_s = perf_counter() - retry_started
